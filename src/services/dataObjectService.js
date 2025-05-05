@@ -563,7 +563,6 @@ const extractTransferControlArray = (backendItem) => {
   // 处理2: 处理propagationControlJson字段（JSON字符串格式）
   if (backendItem.propagationControlJson) {
     try {
-      console.log('尝试解析propagationControlJson:', backendItem.propagationControlJson)
       // 解析JSON字符串
       const propagationControl = typeof backendItem.propagationControlJson === 'string' 
         ? JSON.parse(backendItem.propagationControlJson) 
@@ -582,11 +581,10 @@ const extractTransferControlArray = (backendItem) => {
       
       // 如果解析出了传输控制操作，直接返回
       if (transferControlArray.length > 0) {
-        console.log('从propagationControlJson提取的传输控制操作:', transferControlArray)
         return transferControlArray
       }
     } catch (error) {
-      console.error('解析propagationControlJson失败:', error)
+      // 解析失败，继续下一步处理
     }
   }
   
@@ -1943,49 +1941,37 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
 // 提取反馈信息
 const extractFeedback = (backendItem) => {
   try {
-    // 记录数据类型，方便调试
-    console.log(`提取反馈，数据类型: ${typeof backendItem}`);
-    
     // 1. 首先检查直接的feedback字段
     if (backendItem.feedback) {
-      console.log(`直接字段: feedback="${backendItem.feedback}"`);
       return backendItem.feedback;
     }
     
     // 2. 检查dataEntity中的feedback
     if (backendItem.dataEntity && backendItem.dataEntity.feedback) {
-      console.log(`dataEntity: feedback="${backendItem.dataEntity.feedback}"`);
       return backendItem.dataEntity.feedback;
     }
     
     // 3. 检查statusInfo中的feedback
     if (backendItem.statusInfo && backendItem.statusInfo.feedback) {
-      console.log(`statusInfo: feedback="${backendItem.statusInfo.feedback}"`);
       return backendItem.statusInfo.feedback;
     }
     
     // 4. 解析dataContent字段（如果它是JSON字符串）
     if (backendItem.dataContent && typeof backendItem.dataContent === 'string') {
       try {
-        console.log('尝试解析dataContent JSON字符串');
         const dataContentObj = JSON.parse(backendItem.dataContent);
         if (dataContentObj && dataContentObj.feedback) {
-          console.log(`从dataContent JSON中提取反馈: "${dataContentObj.feedback}"`);
           return dataContentObj.feedback;
         }
         
         // 检查dataContentObj.data中是否有feedback
         if (dataContentObj.data && dataContentObj.data.feedback) {
-          console.log(`从dataContent.data中提取反馈: "${dataContentObj.data.feedback}"`);
           return dataContentObj.data.feedback;
         }
       } catch (jsonError) {
-        console.warn('dataContent JSON解析失败:', jsonError);
-        
         // JSON解析失败，尝试使用正则表达式提取
         const feedbackMatch = backendItem.dataContent.match(/"feedback"\s*:\s*"([^"]*)"/);
         if (feedbackMatch && feedbackMatch[1]) {
-          console.log(`使用正则表达式从dataContent提取反馈: "${feedbackMatch[1]}"`);
           return feedbackMatch[1];
         }
       }
@@ -1993,14 +1979,11 @@ const extractFeedback = (backendItem) => {
     
     // 5. 如果是不合格状态且没有反馈，设置默认反馈
     if (extractStatus(backendItem) === '不合格') {
-      console.log('状态为不合格，设置默认反馈');
       return '数据格式不符合要求';
     }
     
-    console.log('未找到反馈信息');
     return '';
   } catch (error) {
-    console.error('提取反馈信息时出错:', error);
     return '';
   }
 }

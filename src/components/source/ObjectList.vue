@@ -449,43 +449,39 @@ const parseMetadataJson = (jsonString) => {
     
     let metadata = {}
     
-    // 处理不同格式的metadataJson
     if (typeof jsonString === 'string') {
       try {
-        // 1. 尝试直接解析标准JSON
         metadata = JSON.parse(jsonString)
       } catch (parseError) {
-        // 2. 处理各种转义的情况
         let processedString = jsonString
         
-        // 处理可能的反斜杠转义
         if (jsonString.includes('\\')) {
           try {
-            // 尝试处理双重转义的JSON字符串 
+
             processedString = jsonString.replace(/\\"/g, '"')
             metadata = JSON.parse(processedString)
           } catch (error) {
             try {
-              // 尝试删除开头和结尾的引号，并处理转义
+
               if (jsonString.startsWith('"') && jsonString.endsWith('"')) {
                 processedString = jsonString.substring(1, jsonString.length - 1).replace(/\\"/g, '"')
                 metadata = JSON.parse(processedString)
               }
             } catch (error2) {
               try {
-                // 尝试将双反斜杠替换为单反斜杠
+   
                 processedString = jsonString.replace(/\\\\/g, '\\')
                 metadata = JSON.parse(processedString)
               } catch (error3) {
-                // 解析失败，继续执行下一步
+
               }
             }
           }
         }
         
-        // 3. 如果以上都失败，尝试正则表达式提取关键字段
+
         if (Object.keys(metadata).length === 0) {
-          // 匹配各种可能的格式，应对各种转义情况
+
           const patterns = [
             /resourceSummary[\\]*"*:[\\]*"*([^"\\,}]+)/,
             /resourceSummary=([^,}]+)/,
@@ -540,47 +536,41 @@ const extractFeedback = (dataContent) => {
   try {
     // 如果是字符串类型
     if (typeof dataContent === 'string') {
-      // 1. 先尝试JSON解析
+
       try {
         const parsed = JSON.parse(dataContent);
         if (parsed && parsed.feedback) {
           return parsed.feedback;
         }
       } catch (e) {
-        // JSON解析失败，继续尝试其他方法
+
       }
-      
-      // 2. 使用正则表达式提取 - 标准格式
+
       const match1 = dataContent.match(/"feedback"\s*:\s*"([^"]*)"/);
       if (match1 && match1[1]) {
         return match1[1];
       }
       
-      // 3. 使用正则表达式提取 - 带转义的格式
       const match2 = dataContent.match(/\\"feedback\\"\\s*:\\s*\\"([^\\"]*?)\\"/);
       if (match2 && match2[1]) {
         return match2[1];
       }
-      
-      // 4. 直接查找关键词
+
       if (dataContent.includes('数据格式错误')) {
         return '数据格式错误';
       }
     } 
-    // 如果是对象类型
     else if (typeof dataContent === 'object' && dataContent !== null) {
-      // 直接访问feedback属性
+   
       if (dataContent.feedback) {
         return dataContent.feedback;
       }
       
-      // 尝试从数据子对象中获取
       if (dataContent.data && dataContent.data.feedback) {
         return dataContent.data.feedback;
       }
     }
     
-    // 没有找到任何反馈信息
     return '-';
   } catch (e) {
     return '提取失败';
@@ -610,7 +600,7 @@ const generateClassificationLevel = (row) => {
     // 显示分类分级对话框
     classificationLevelDialogVisible.value = true;
   } catch (error) {
-    console.error('生成分类分级值时出错：', error);
+    ElMessage.error('生成分类分级值时出错');
   }
 };
 
@@ -640,14 +630,12 @@ const handleClassificationLevelConfirm = (data) => {
       // 刷新表格数据
       emit('refreshData');
     } else {
-      console.error('当前行数据为空');
       ElMessage.error('更新分类分级值失败：当前行数据为空');
     }
     
     // 关闭对话框
     classificationLevelDialogVisible.value = false;
   } catch (error) {
-    console.error('处理分类分级确认时出错：', error);
     ElMessage.error(`更新分类分级值失败：${error.message}`);
   }
 };

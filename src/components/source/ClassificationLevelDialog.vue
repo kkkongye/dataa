@@ -170,7 +170,6 @@ const rowGradeValue = computed(() => {
     const result = parseFloat(avg.toFixed(1));
     return result;
   } catch (error) {
-    console.error('计算行分级值平均值出错:', error);
     return 0;
   }
 })
@@ -189,7 +188,6 @@ const columnGradeValue = computed(() => {
     const result = parseFloat(avg.toFixed(1));
     return result;
   } catch (error) {
-    console.error('计算列分级值平均值出错:', error);
     return 0;
   }
 })
@@ -209,7 +207,6 @@ const totalGradeValue = computed(() => {
     
     return result;
   } catch (error) {
-    console.error('计算总分级值出错:', error);
     return 0; // 出错时使用默认值
   }
 })
@@ -358,7 +355,6 @@ const handleConfirm = () => {
     // 关闭对话框
     emit('update:modelValue', null);
   } catch (error) {
-    console.error('确认时发生错误:', error);
     ElMessage.error('确认分类分级值时发生错误');
   }
 }
