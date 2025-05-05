@@ -65,7 +65,7 @@
                 height="100%"
                 fit
               >
-                <el-table-column prop="id" label="ID" width="400" align="center">
+                <el-table-column prop="id" label="ID" width="240" align="center">
                   <template #default="scope">
                     <div class="id-cell">{{ scope.row.id }}</div>
                   </template>
@@ -76,7 +76,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center" />
-                <el-table-column prop="constraint" label="约束条件" min-width="250" align="center">
+                <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
                   <template #default="scope">
                     <div class="constraint-container">
                       <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -1478,7 +1478,7 @@ const showReportDialog = () => {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  max-width: 400px;
+  max-width: 240px;
   width: 100%;
   padding: 0 8px;
   font-family: monospace;

@@ -62,7 +62,7 @@
         <el-table-column 
           prop="id" 
           label="ID" 
-          width="300" 
+          width="240" 
           align="center"
           sortable
         >
@@ -76,7 +76,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center" />
-        <el-table-column prop="constraint" label="约束条件" min-width="300" align="center">
+        <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
           <template #default="scope">
             <div class="constraint-container">
               <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -800,7 +800,7 @@ const handleClassificationLevelConfirm = (data) => {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  max-width: 300px;
+  max-width: 240px;
   width: 100%;
   padding: 0 8px;
   font-family: monospace;
