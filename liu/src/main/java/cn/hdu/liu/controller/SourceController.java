@@ -2,6 +2,7 @@ package cn.hdu.liu.controller;
 
 import cn.hdu.liu.obj.DataObjectRequest;
 import cn.hdu.liu.service.DataObjectService;
+import com.hdu.service.DUService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,9 @@ public class SourceController {
 
     private static final Logger log = LoggerFactory.getLogger(SourceController.class);
 
-
+  /**  @Autowired
+    private DUService duService;
+*/
     @Autowired
     private DataObjectService dataObjectService;
     @Autowired
@@ -58,9 +61,9 @@ public class SourceController {
 
         String newFileName = uuid + '.' + extname;
         log.info("新的文件名:()",newFileName);
-        file.transferTo(new File("D:\\datasystem\\excel\\"+newFileName));
+        file.transferTo(new File("D:\\datasystem\\excel"+newFileName));
 
-        DataObject tmpObject= dataObjectService.importFromExcel("D:\\datasystem\\excel\\"+newFileName,origin,uuid);
+        DataObject tmpObject= dataObjectService.importFromExcel("D:\\datasystem\\excel"+newFileName,origin,uuid);
         session.setAttribute("tmpDataObject", tmpObject);
 
         return Result.success();
@@ -92,10 +95,15 @@ public class SourceController {
         }
 
         try {
+            if (request.getMetadata() != null && tmpObject.getDataEntity() != null) {
+                tmpObject.getDataEntity().setMetadata(request.getMetadata());
+            }
+
 
             tmpObject.setConstraintSet(request.getConstraintSet());
             tmpObject.setPropagationControl(request.getPropagationControl());
             tmpObject.setLocationInfo(request.getLocationInfo());
+
 
 
             dataObjectService.saveDataObject(tmpObject);

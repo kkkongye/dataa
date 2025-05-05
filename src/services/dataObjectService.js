@@ -332,7 +332,20 @@ const adaptBackendData = (backendItem) => {
     shareConstraint: extractConstraintData(backendItem).shareConstraint || '',
     // 保存Excel数据
     excelData: backendItem.excelData || null,
-    dataItems: backendItem.dataItems || []
+    dataItems: backendItem.dataItems || [],
+    
+    // 提取分类分级值相关字段
+    classificationValue: backendItem.classificationValue || '',
+    industryCategory: backendItem.industryCategory || '',
+    dataTimeliness: backendItem.dataTimeliness || '',
+    dataSource: backendItem.dataSource || '',
+    levelValue: backendItem.levelValue || '',
+    
+    // 提取分级值字段
+    dbGrade: backendItem.dbGrade !== undefined ? backendItem.dbGrade : 0,
+    tableGrade: backendItem.tableGrade !== undefined ? backendItem.tableGrade : 0,
+    rowGrades: backendItem.rowGrades || [0, 0],
+    columnGrades: backendItem.columnGrades || [0, 0]
   };
   
   return result;

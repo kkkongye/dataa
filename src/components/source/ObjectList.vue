@@ -590,79 +590,67 @@ const extractFeedback = (dataContent) => {
 // 生成分类分级值
 const generateClassificationLevel = (row) => {
   try {
-    // 打印完整的行数据，用于调试
-    console.log('原始行数据:', JSON.stringify(row, null, 2));
-    
+    // 设置当前行数据
     currentRow.value = row;
     
-    // 初始化分类值和分级值数据
+    // 为分类分级对话框初始化数据
     classificationLevelData.value = {
-      // 分类相关数据
       classificationValue: row.classificationValue || '',
       industryCategory: row.industryCategory || '',
       dataTimeliness: row.dataTimeliness || '',
       dataSource: row.dataSource || '',
-      
-      // 分级相关数据 - 直接从行数据获取，不设置默认值
       levelValue: row.levelValue || '',
-      dbGrade: row.dbGrade, 
-      tableGrade: row.tableGrade,
-      rowGrades: row.rowGrades,
-      columnGrades: row.columnGrades
+      // 硬编码默认分级值 - 未来可以从服务获取
+      dbGrade: row.dbGrade !== undefined ? row.dbGrade : 0,
+      tableGrade: row.tableGrade !== undefined ? row.tableGrade : 0,
+      rowGrades: row.rowGrades || [0, 0],
+      columnGrades: row.columnGrades || [0, 0]
     };
     
-    console.log('传递给对话框的数据:', JSON.stringify(classificationLevelData.value, null, 2));
-    
-    // 显示对话框
+    // 显示分类分级对话框
     classificationLevelDialogVisible.value = true;
   } catch (error) {
-    console.error('生成分类分级值时出错:', error);
-    ElMessage.error('生成分类分级值时发生错误');
+    console.error('生成分类分级值时出错：', error);
   }
-}
+};
 
-/**
- * 处理分类分级值确认
- * @param {Object} data 分类分级值数据
- */
+// 处理分类分级确认
 const handleClassificationLevelConfirm = (data) => {
   try {
-    console.log('收到对话框确认数据:', JSON.stringify(data, null, 2));
-    
     if (currentRow.value) {
-      // 更新当前行数据
-      Object.assign(currentRow.value, {
-        classificationValue: data.classificationValue,
-        levelValue: data.levelValue,
-        // 保存分类的详细信息
-        industryCategory: data.industryCategory,
-        dataTimeliness: data.dataTimeliness,
-        dataSource: data.dataSource,
-        // 保存分级的详细信息
-        dbGrade: data.dbGrade,
-        tableGrade: data.tableGrade,
-        rowGrades: data.rowGrades,
-        columnGrades: data.columnGrades,
-        rowGradeValue: data.rowGradeValue,
-        columnGradeValue: data.columnGradeValue,
-        totalGradeValue: data.totalGradeValue
-      });
+      // 更新当前行的分类值和分级值
+      currentRow.value.classificationValue = data.classificationValue;
+      currentRow.value.industryCategory = data.industryCategory;
+      currentRow.value.dataTimeliness = data.dataTimeliness;
+      currentRow.value.dataSource = data.dataSource;
+      currentRow.value.levelValue = data.levelValue;
       
-      console.log('更新后的行数据:', JSON.stringify(currentRow.value, null, 2));
+      // 更新分级值
+      currentRow.value.dbGrade = data.dbGrade;
+      currentRow.value.tableGrade = data.tableGrade;
+      currentRow.value.rowGrades = data.rowGrades;
+      currentRow.value.columnGrades = data.columnGrades;
       
-      // 触发数据更新事件
-      emit('update:data', tableData.value);
+      // 通知用户更新成功
+      ElMessage.success('分类分级值已更新');
       
-      ElMessage.success('分类分级值已成功更新');
+      // 触发数据更新事件 - 注意：应该传递props.data而不是props.tableData
+      emit('update:data', props.data);
       
-      // 关闭对话框
-      classificationLevelDialogVisible.value = false;
+      // 刷新表格数据
+      emit('refreshData');
+    } else {
+      console.error('当前行数据为空');
+      ElMessage.error('更新分类分级值失败：当前行数据为空');
     }
+    
+    // 关闭对话框
+    classificationLevelDialogVisible.value = false;
   } catch (error) {
-    console.error('更新分类分级值时出错:', error);
-    ElMessage.error('更新分类分级值时发生错误');
+    console.error('处理分类分级确认时出错：', error);
+    ElMessage.error(`更新分类分级值失败：${error.message}`);
   }
-}
+};
 </script>
 
 <style scoped>

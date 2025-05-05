@@ -3,7 +3,11 @@ package cn.hdu.liu.obj;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
+import org.apache.ibatis.type.TypeReference;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -63,6 +67,73 @@ public class DataObject {
     private String propagationControlJson;
     private String auditInfoJson;
 
+    private Double dbGrade;
+    private Double tableGrade;
+    @JsonProperty("rowGrades")
+    private List<Double> rowGrades;// 每行的分级值
+    @JsonProperty("columnGrades")
+    private List<Double> columnGrades; // 每列的分级值
+
+    public Double getDbGrade() { return dbGrade; }
+    public void setDbGrade(Double dbGrade) { this.dbGrade = dbGrade; }
+
+    public Double getTableGrade() { return tableGrade; }
+    public void setTableGrade(Double tableGrade) { this.tableGrade = tableGrade; }
+
+    @JsonIgnore
+    public String getRowGradesJson() {
+        try {
+            return new ObjectMapper().writeValueAsString(rowGrades);
+        } catch (JsonProcessingException e) {
+            return "[]";
+        }
+    }
+
+    @JsonIgnore
+    public void setRowGrades(String json) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JavaType type = objectMapper.getTypeFactory()
+                    .constructCollectionType(List.class, Double.class);
+            this.rowGrades = objectMapper.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            this.rowGrades = new ArrayList<>();
+        }
+    }
+
+    @JsonIgnore
+    public String getColumnGradesJson() {
+        try {
+            return new ObjectMapper().writeValueAsString(columnGrades);
+        } catch (JsonProcessingException e) {
+            return "[]";
+        }
+    }
+
+    @JsonIgnore
+    public void setColumnGrades(String json) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JavaType type = objectMapper.getTypeFactory()
+                    .constructCollectionType(List.class, Double.class);
+            this.columnGrades = objectMapper.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            this.columnGrades = new ArrayList<>();
+        }
+    }
+
+    public List<Double> getRowGrades() {
+        if (rowGrades == null) rowGrades = new ArrayList<>();
+        return rowGrades;
+    }
+
+    public List<Double> getColumnGrades() {
+        if (columnGrades == null) columnGrades = new ArrayList<>();
+        return columnGrades;
+    }
+
+
+
     public DataObject() {
         this.id = UUID.randomUUID().toString();
         this.propagationControl = new PropagationControl();
@@ -75,7 +146,6 @@ public class DataObject {
     }
 
 
-    // 手动添加JSON字段的setter和getter
     public String getDataContent() {
         return dataContent;
     }

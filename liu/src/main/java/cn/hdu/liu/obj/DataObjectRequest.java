@@ -4,6 +4,17 @@ public class DataObjectRequest {
     private ConstraintSet constraintSet;         // 约束条件
     private PropagationControl propagationControl;   // 传播控制
     private LocationInfo locationInfo;// 定位信息
+    private Metadata metadata;
+
+    public Metadata getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Metadata metadata) {
+        this.metadata = metadata;
+    }
+
+
 
 
     public ConstraintSet getConstraintSet() {

@@ -9,16 +9,20 @@ import java.util.List;
 public interface DataMapper {
     @Insert({
             "INSERT INTO data_objects (id, data_content, metadata_json, location_info_json, ",
-            "constraint_set_json, propagation_control_json, audit_info_json, created_at, updated_at)",
+            "constraint_set_json, propagation_control_json, audit_info_json, created_at, updated_at,",
+            "db_grade, table_grade, row_grades, column_grades)",
             "VALUES (",
             "#{id}, ",
-            "#{dataContent,jdbcType=VARCHAR}, ",
-            "#{metadataJson,jdbcType=VARCHAR}, ",
-            "#{locationInfoJson,jdbcType=VARCHAR}, ",
-            "#{constraintSetJson,jdbcType=VARCHAR}, ",
-            "#{propagationControlJson,jdbcType=VARCHAR}, ",
-            "#{auditInfoJson,jdbcType=VARCHAR}, ",
-            "NOW(), NOW())"
+            "#{dataContent}, ",
+            "#{metadataJson}, ",
+            "#{locationInfoJson}, ",
+            "#{constraintSetJson}, ",
+            "#{propagationControlJson}, ",
+            "#{auditInfoJson}, ",
+            "NOW(), NOW(),",
+            "#{dbGrade}, #{tableGrade}, ",
+            "#{rowGradesJson}, ",
+            "#{columnGradesJson})"
     })
     @Options(useGeneratedKeys = true, keyProperty = "numericId")
     void insert(DataObject dataObject);
@@ -31,15 +35,20 @@ public interface DataMapper {
             "CONVERT(constraint_set_json USING utf8) as constraint_set_json, " +
             "CONVERT(propagation_control_json USING utf8) as propagation_control_json, " +
             "CONVERT(audit_info_json USING utf8) as audit_info_json, " +
+            "db_grade, table_grade, row_grades, column_grades, " +
             "created_at, updated_at " +
             "FROM data_objects WHERE id = #{id}")
     @Results({
-            @Result(column = "data_content", property = "dataContent", jdbcType = JdbcType.VARCHAR, javaType = String.class),
-            @Result(column = "metadata_json", property = "metadataJson", jdbcType = JdbcType.VARCHAR, javaType = String.class),
-            @Result(column = "location_info_json", property = "locationInfoJson", jdbcType = JdbcType.VARCHAR, javaType = String.class),
-            @Result(column = "constraint_set_json", property = "constraintSetJson", jdbcType = JdbcType.VARCHAR, javaType = String.class),
-            @Result(column = "propagation_control_json", property = "propagationControlJson", jdbcType = JdbcType.VARCHAR, javaType = String.class),
-            @Result(column = "audit_info_json", property = "auditInfoJson", jdbcType = JdbcType.VARCHAR, javaType = String.class)
+            @Result(column = "data_content", property = "dataContent", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "metadata_json", property = "metadataJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "location_info_json", property = "locationInfoJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "constraint_set_json", property = "constraintSetJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "propagation_control_json", property = "propagationControlJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "audit_info_json", property = "auditInfoJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "db_grade", property = "dbGrade"),
+            @Result(column = "table_grade", property = "tableGrade"),
+            @Result(column = "row_grades", property = "rowGrades",jdbcType = JdbcType.VARCHAR),
+            @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR)
     })
     DataObject selectById(String id);
 
@@ -51,6 +60,10 @@ public interface DataMapper {
             "constraint_set_json = #{constraintSetJson,jdbcType=VARCHAR},",
             "propagation_control_json = #{propagationControlJson,jdbcType=VARCHAR},",
             "audit_info_json = #{auditInfoJson,jdbcType=VARCHAR},",
+            "db_grade = #{dbGrade},",
+            "table_grade = #{tableGrade},",
+            "row_grades = #{rowGradesJson},",
+            "column_grades = #{columnGradesJson},",
             "updated_at = NOW() ",
             "WHERE id = #{id}"
     })
@@ -67,15 +80,20 @@ public interface DataMapper {
             "CONVERT(constraint_set_json USING utf8) as constraint_set_json, " +
             "CONVERT(propagation_control_json USING utf8) as propagation_control_json, " +
             "CONVERT(audit_info_json USING utf8) as audit_info_json, " +
+            "db_grade, table_grade, row_grades, column_grades, " +
             "created_at, updated_at " +
             "FROM data_objects")
-    @Results(value = {
-            @Result(column = "data_content", property = "dataContent", jdbcType = JdbcType.VARCHAR,javaType = String.class),
-            @Result(column = "metadata_json", property = "metadataJson", jdbcType = JdbcType.VARCHAR,javaType = String.class),
-            @Result(column = "location_info_json", property = "locationInfoJson", jdbcType = JdbcType.VARCHAR,javaType = String.class),
-            @Result(column = "constraint_set_json", property = "constraintSetJson", jdbcType = JdbcType.VARCHAR,javaType = String.class),
-            @Result(column = "propagation_control_json", property = "propagationControlJson", jdbcType = JdbcType.VARCHAR,javaType = String.class),
-            @Result(column = "audit_info_json", property = "auditInfoJson", jdbcType = JdbcType.VARCHAR,javaType = String.class)
+    @Results({
+            @Result(column = "data_content", property = "dataContent", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "metadata_json", property = "metadataJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "location_info_json", property = "locationInfoJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "constraint_set_json", property = "constraintSetJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "propagation_control_json", property = "propagationControlJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "audit_info_json", property = "auditInfoJson", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "db_grade", property = "dbGrade"),
+            @Result(column = "table_grade", property = "tableGrade"),
+            @Result(column = "row_grades", property = "rowGrades",jdbcType = JdbcType.VARCHAR),
+            @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR)
     })
     List<DataObject> selectAll();
 }

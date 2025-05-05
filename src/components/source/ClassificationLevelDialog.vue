@@ -151,44 +151,46 @@ const dataTimeliness = ref('')
 const dataSource = ref('')
 
 // 分级值数据
-const dbGrade = ref(props.modelValue.dbGrade || 100)
-const tableGrade = ref(props.modelValue.tableGrade || 10)
-const rowGrades = ref(props.modelValue.rowGrades || [0.3])
-const columnGrades = ref(props.modelValue.columnGrades || [0.3])
+const dbGrade = ref(0) // 默认库分级值为0
+const tableGrade = ref(0) // 默认表分级值为0
+const rowGrades = ref([0, 0]) // 默认行分级值包含两个0
+const columnGrades = ref([0, 0]) // 默认列分级值包含两个0
 
 // 计算行分级值（取平均值）
 const rowGradeValue = computed(() => {
-  if (!rowGrades.value || rowGrades.value.length === 0) return 0.3;
+  if (!rowGrades.value || rowGrades.value.length === 0) return 0;
   try {
     // 确保所有值都是数值类型
     const numericValues = rowGrades.value.map(val => {
       const num = parseFloat(val);
-      return isNaN(num) ? 0.3 : num;
+      return isNaN(num) ? 0 : num;
     });
     const sum = numericValues.reduce((acc, val) => acc + val, 0);
     const avg = sum / numericValues.length;
-    return parseFloat(avg.toFixed(1));
+    const result = parseFloat(avg.toFixed(1));
+    return result;
   } catch (error) {
     console.error('计算行分级值平均值出错:', error);
-    return 0.3;
+    return 0;
   }
 })
 
 // 计算列分级值（取平均值）
 const columnGradeValue = computed(() => {
-  if (!columnGrades.value || columnGrades.value.length === 0) return 0.3;
+  if (!columnGrades.value || columnGrades.value.length === 0) return 0;
   try {
     // 确保所有值都是数值类型
     const numericValues = columnGrades.value.map(val => {
       const num = parseFloat(val);
-      return isNaN(num) ? 0.3 : num;
+      return isNaN(num) ? 0 : num;
     });
     const sum = numericValues.reduce((acc, val) => acc + val, 0);
     const avg = sum / numericValues.length;
-    return parseFloat(avg.toFixed(1));
+    const result = parseFloat(avg.toFixed(1));
+    return result;
   } catch (error) {
     console.error('计算列分级值平均值出错:', error);
-    return 0.3;
+    return 0;
   }
 })
 
@@ -196,57 +198,74 @@ const columnGradeValue = computed(() => {
 const totalGradeValue = computed(() => {
   try {
     // 确保使用数值类型进行计算
-    const dbValue = parseFloat(dbGrade.value) || 100;
-    const tableValue = parseFloat(tableGrade.value) || 10;
-    const rowValue = parseFloat(rowGradeValue.value) || 0.3;
-    const colValue = parseFloat(columnGradeValue.value) || 0.3;
+    const dbValue = parseFloat(dbGrade.value) || 0;
+    const tableValue = parseFloat(tableGrade.value) || 0;
+    const rowValue = parseFloat(rowGradeValue.value) || 0;
+    const colValue = parseFloat(columnGradeValue.value) || 0;
     
     // 计算总和并保留一位小数
     const sum = dbValue + tableValue + rowValue + colValue;
     const result = parseFloat(sum.toFixed(1));
     
-    console.log(`计算总分级值: ${dbValue} + ${tableValue} + ${rowValue} + ${colValue} = ${result}`);
-    
     return result;
   } catch (error) {
     console.error('计算总分级值出错:', error);
-    return 110.6; // 出错时使用默认值
+    return 0; // 出错时使用默认值
   }
 })
 
 // 监听modelValue变化，初始化表单数据
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
-    console.log('ClassificationLevelDialog接收到的数据：', JSON.stringify(newVal, null, 2));
     // 初始化分类值
     industryCategory.value = newVal.industryCategory !== undefined ? newVal.industryCategory : '';
     dataTimeliness.value = newVal.dataTimeliness !== undefined ? newVal.dataTimeliness : '';
     dataSource.value = newVal.dataSource !== undefined ? newVal.dataSource : '';
     
     // 初始化分级值 - 确保值正确解析为数字
-    dbGrade.value = newVal.dbGrade !== undefined ? parseFloat(newVal.dbGrade) : 100;
-    tableGrade.value = newVal.tableGrade !== undefined ? parseFloat(newVal.tableGrade) : 10;
+    if (newVal.dbGrade !== undefined) {
+      dbGrade.value = parseFloat(newVal.dbGrade) || 0;
+    } else {
+      dbGrade.value = 0;
+    }
+    
+    if (newVal.tableGrade !== undefined) {
+      tableGrade.value = parseFloat(newVal.tableGrade) || 0;
+    } else {
+      tableGrade.value = 0;
+    }
     
     // 处理行分级值
-    if (newVal.rowGrades && Array.isArray(newVal.rowGrades)) {
-      rowGrades.value = newVal.rowGrades.map(val => parseFloat(val) || 0.3);
+    if (newVal.rowGrades) {
+      if (Array.isArray(newVal.rowGrades)) {
+        rowGrades.value = newVal.rowGrades.map(val => {
+          const parsedVal = parseFloat(val) || 0;
+          return parsedVal;
+        });
+      } else {
+        // 如果不是数组，尝试解析为单一值
+        const parsedVal = parseFloat(newVal.rowGrades) || 0;
+        rowGrades.value = [parsedVal, parsedVal];
+      }
     } else {
-      rowGrades.value = [0.3];
+      rowGrades.value = [0, 0];
     }
     
     // 处理列分级值
-    if (newVal.columnGrades && Array.isArray(newVal.columnGrades)) {
-      columnGrades.value = newVal.columnGrades.map(val => parseFloat(val) || 0.3);
+    if (newVal.columnGrades) {
+      if (Array.isArray(newVal.columnGrades)) {
+        columnGrades.value = newVal.columnGrades.map(val => {
+          const parsedVal = parseFloat(val) || 0;
+          return parsedVal;
+        });
+      } else {
+        // 如果不是数组，尝试解析为单一值
+        const parsedVal = parseFloat(newVal.columnGrades) || 0;
+        columnGrades.value = [parsedVal, parsedVal];
+      }
     } else {
-      columnGrades.value = [0.3];
+      columnGrades.value = [0, 0];
     }
-    
-    console.log('初始化后的分级值：', {
-      dbGrade: dbGrade.value,
-      tableGrade: tableGrade.value,
-      rowGrades: rowGrades.value,
-      columnGrades: columnGrades.value
-    });
   }
 }, { deep: true, immediate: true })
 
@@ -303,8 +322,6 @@ const calculateClassificationValue = () => {
   // 行业领域分类值 + 处理时效分类值 + 数据来源分类值
   const result = industryValue + timeValue + sourceValue
   totalClassificationValue.value = parseFloat(result.toFixed(1)).toString()
-  
-  console.log(`计算分类值: ${industryValue} + ${timeValue} + ${sourceValue} = ${totalClassificationValue.value}`)
 }
 
 // 组件挂载时初始化数据
@@ -335,8 +352,6 @@ const handleConfirm = () => {
       columnGradeValue: parseFloat(columnGradeValue.value),
       totalGradeValue: totalGradeValue.value
     };
-    
-    console.log('对话框确认返回数据:', JSON.stringify(result, null, 2));
     
     // 发送确认事件
     emit('confirm', result);

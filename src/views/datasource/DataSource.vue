@@ -18,8 +18,6 @@
             <p>可能的解决方案:</p>
             <ol>
               <li>确保后端服务在 http://localhost:8080 正常运行</li>
-              <li>在后端Controller类上添加 <code>@CrossOrigin(origins = "*")</code> 注解启用CORS</li>
-              <li>检查网络连接和防火墙设置</li>
             </ol>
             <div class="api-error-actions">
               <el-button size="small" @click="apiErrorVisible = false">知道了</el-button>
@@ -186,15 +184,6 @@
           <el-option label="可共享" value="可共享"></el-option>
           <el-option label="可委托" value="可委托"></el-option>
         </el-select>
-      </el-form-item>
-      
-      <!-- 添加分类分级值字段 -->
-      <el-form-item label="分类值：" prop="classificationValue">
-        <el-input v-model="editForm.classificationValue" placeholder="请输入分类值" style="width: 300px;"></el-input>
-      </el-form-item>
-      
-      <el-form-item label="分级值：" prop="levelValue">
-        <el-input v-model="editForm.levelValue" placeholder="请输入分级值" style="width: 300px;"></el-input>
       </el-form-item>
     </el-form>
     
@@ -878,8 +867,8 @@ const showCreateDialog = () => {
     createForm.regionConstraint = ''
     createForm.shareConstraint = ''
     createForm.transferControl = []
-    createForm.classificationValue = ''
-    createForm.excelData = null
+    createForm.status = '待检验'
+    createForm.auditInfo = ''
   }, 100)
 }
 
@@ -897,7 +886,8 @@ const createForm = reactive({
   regionConstraint: '',
   shareConstraint: '',
   transferControl: [],
-  classificationValue: '',
+  status: '待检验',
+  auditInfo: '',
   excelData: null // 新增保存Excel文件数据
 })
 
@@ -1611,8 +1601,8 @@ const resetCreateForm = () => {
   createForm.regionConstraint = ''
   createForm.shareConstraint = ''
   createForm.transferControl = []
-  createForm.classificationValue = ''
-  createForm.excelData = null
+  createForm.status = '待检验'
+  createForm.auditInfo = ''
   
   if (createFormRef.value) {
     createFormRef.value.resetFields()
