@@ -123,6 +123,26 @@
             </el-popover>
             
             <el-link type="primary" class="help-link">查看详情</el-link>
+            <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link>
+          </div>
+          
+          <!-- 权重修改表单 -->
+          <div v-if="showWeightForm" class="weight-form">
+            <div class="weight-item">
+              <span class="weight-label">一般记录的权重为:</span>
+              <el-input-number v-model="normalWeight" :min="0" :max="5" :step="0.1" size="small" />
+            </div>
+            <div class="weight-item">
+              <span class="weight-label">重要记录的权重为:</span>
+              <el-input-number v-model="importantWeight" :min="0" :max="5" :step="0.1" size="small" />
+            </div>
+            <div class="weight-item">
+              <span class="weight-label">核心记录的权重为:</span>
+              <el-input-number v-model="criticalWeight" :min="0" :max="5" :step="0.1" size="small" />
+            </div>
+            <div class="weight-actions">
+              <el-button type="primary" size="small" @click="confirmWeightChange">确认</el-button>
+            </div>
           </div>
           
           <div class="level-item">
@@ -417,6 +437,20 @@ const handleConfirm = () => {
     ElMessage.error('确认分类分级值时发生错误');
   }
 }
+
+// 权重修改相关逻辑
+const showWeightForm = ref(false)
+const normalWeight = ref(1)
+const importantWeight = ref(2)
+const criticalWeight = ref(3)
+
+const confirmWeightChange = () => {
+  // 处理权重修改逻辑
+  // 这里可以根据需要更新 rowGrades 的值
+  showWeightForm.value = false
+  // 显示修改成功提示
+  ElMessage.success('权重修改成功')
+}
 </script>
 
 <style scoped>
@@ -495,5 +529,32 @@ const handleConfirm = () => {
 
 :deep(.el-select) {
   width: 200px;
+}
+
+.weight-form {
+  margin-top: 10px;
+  margin-bottom: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-left: 140px;
+}
+
+.weight-item {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.weight-label {
+  margin-right: 10px;
+  width: 150px;
+  color: #606266;
+}
+
+.weight-actions {
+  margin-top: 15px;
+  text-align: right;
 }
 </style> 
