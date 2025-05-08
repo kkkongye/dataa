@@ -64,26 +64,85 @@
           <div class="level-item">
             <span class="label">库分级值：</span>
             <span class="value">{{ dbGrade }}</span>
-            <el-link type="primary" class="help-link">说明</el-link>
+            <el-popover
+              placement="right"
+              :width="300"
+              trigger="click"
+            >
+              <template #reference>
+                <el-link type="primary" class="help-link">说明</el-link>
+              </template>
+              <div class="help-content">
+                <h4>库分级值说明</h4>
+                <p>根据数据库的数据量、表的分级值确定数据库分级值。
+                  由数据表量对应的分级值、所有表的分级值的最大值累加确定数据库分级值;
+                  其中根据数据表的数量分为1~99的小型数据库、100~999的中型数据库、999以上的大型数据库，
+                  分别对应分级值:100、200、300;</p>
+              </div>
+            </el-popover>
           </div>
 
           <div class="level-item">
             <span class="label">表分级值：</span>
             <span class="value">{{ tableGrade }}</span>
-            <el-link type="primary" class="help-link">说明</el-link>
+            <el-popover
+              placement="right"
+              :width="300"
+              trigger="click"
+            >
+              <template #reference>
+                <el-link type="primary" class="help-link">说明</el-link>
+              </template>
+              <div class="help-content">
+                <h4>表分级值说明</h4>
+                <p>由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;
+                  其中根据表内记录的数量分为:1~999的小型数据表、
+                  1000~1000000的中型数据表、1000000以上的大型数据表，
+                  分别对应分级值10、20、30;</p>
+              </div>
+            </el-popover>
           </div>
           
           <div class="level-item">
             <span class="label">行分级值：</span>
             <span class="value">{{ rowGradeValue }}</span>
-            <el-link type="primary" class="help-link">说明</el-link>
+            <el-popover
+              placement="right"
+              :width="300"
+              trigger="click"
+            >
+              <template #reference>
+                <el-link type="primary" class="help-link">说明</el-link>
+              </template>
+              <div class="help-content">
+                <h4>行分级值说明</h4>
+                <p>数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，
+                  得到行分级值默认一般记录的权重为:1(默认值);
+                  重要记录的权重为:2;核心记录的权重为:3;</p>
+              </div>
+            </el-popover>
+            
             <el-link type="primary" class="help-link">查看详情</el-link>
           </div>
           
           <div class="level-item">
             <span class="label">列分级值：</span>
             <span class="value">{{ columnGradeValue }}</span>
-            <el-link type="primary" class="help-link">说明</el-link>
+            <el-popover
+              placement="right"
+              :width="300"
+              trigger="click"
+            >
+              <template #reference>
+                <el-link type="primary" class="help-link">说明</el-link>
+              </template>
+              <div class="help-content">
+                <h4>列分级值说明</h4>
+                <p>根据字段的敏感程度来确定数据的级别，可分为4级，由高至低分别为:敏感数据(L4级)、
+                  较敏感数据(L3 级)、低敏感数据(L2级)、不敏感数据(L1级)。
+                  分别对应字段分级值:0.8、0.6、0.4、0.2</p>
+              </div>
+            </el-popover>
             <el-link type="primary" class="help-link">查看详情</el-link>
           </div>
         </div>
