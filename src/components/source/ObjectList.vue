@@ -245,6 +245,8 @@
       v-model:visible="classificationLevelDialogVisible"
       v-model:modelValue="classificationLevelData"
       :objectId="currentRow?.id || ''"
+      :debug="true"
+      :apiBaseUrl="'http://localhost:8080'"
       @confirm="handleClassificationLevelConfirm"
     />
   </div>
