@@ -55,6 +55,35 @@
           <span>列</span>
         </div>
       </el-form-item>
+
+      <!-- 添加权重赋值按钮 -->
+      <el-form-item label="权重赋值：" style="margin-bottom: 22px;">
+        <el-button type="primary" @click="showWeightForm = !showWeightForm">
+          {{ showWeightForm ? '隐藏权重设置' : '设置权重' }}
+        </el-button>
+      </el-form-item>
+      
+      <!-- 权重修改表单 -->
+      <el-form-item v-if="showWeightForm">
+        <div class="weight-form">
+          <div class="weight-item">
+            <span class="weight-label">一般记录的权重:</span>
+            <el-input-number v-model="normalWeight" :min="0" :max="5" :step="0.1" size="small" />
+          </div>
+          <div class="weight-item">
+            <span class="weight-label">重要记录的权重:</span>
+            <el-input-number v-model="importantWeight" :min="0" :max="5" :step="0.1" size="small" />
+          </div>
+          <div class="weight-item">
+            <span class="weight-label">核心记录的权重:</span>
+            <el-input-number v-model="criticalWeight" :min="0" :max="5" :step="0.1" size="small" />
+          </div>
+          <div class="weight-actions">
+            <el-button type="primary" size="small" @click="confirmWeightChange">确认</el-button>
+          </div>
+        </div>
+      </el-form-item>
+
       <el-form-item label="约束条件：" prop="constraint">
         <div class="constraint-section">
           <div class="constraint-item">
@@ -194,6 +223,12 @@ const loadingText = ref('')
 // 上传成功标志
 const uploadSuccess = ref(false)
 
+// 权重相关状态
+const showWeightForm = ref(false)
+const normalWeight = ref(1.0)
+const importantWeight = ref(2.0)
+const criticalWeight = ref(3.0)
+
 // 表单数据
 const form = reactive({
   entity: '',
@@ -219,7 +254,8 @@ const form = reactive({
   transferControl: [],
   excelData: null,
   dataItems: [],
-  excelFileId: null
+  excelFileId: null,
+  weights: {}
 })
 
 // 表单校验规则
@@ -374,7 +410,12 @@ watch(form, (newVal) => {
     regionConstraint: newVal.regionConstraint,
     shareConstraint: newVal.shareConstraint,
     transferControl: newVal.transferControl,
-    excelData: newVal.excelData
+    excelData: newVal.excelData,
+    weights: {
+      normalWeight: normalWeight.value,
+      importantWeight: importantWeight.value,
+      criticalWeight: criticalWeight.value
+    }
   })
 }, { deep: true })
 
@@ -827,9 +868,16 @@ const resetForm = () => {
   form.excelData = null
   form.dataItems = []
   form.excelFileId = null
+  form.weights = {}
   
   // 重置上传状态
   uploadSuccess.value = false
+  
+  // 重置权重表单
+  showWeightForm.value = false
+  normalWeight.value = 1.0
+  importantWeight.value = 2.0
+  criticalWeight.value = 3.0
   
   if (formRef.value) {
     formRef.value.resetFields()
@@ -849,6 +897,35 @@ const handleDialogClosed = () => {
   if (!props.modelValue.id) {
     resetForm()
   }
+}
+
+// 权重确认功能
+const confirmWeightChange = () => {
+  form.weights = {
+    normalWeight: normalWeight.value,
+    importantWeight: importantWeight.value,
+    criticalWeight: criticalWeight.value
+  }
+  
+  // 发送权重数据到服务器
+  axios.post(`${API_URL}/setWeights`, {
+    general: normalWeight.value,
+    important: importantWeight.value,
+    core: criticalWeight.value
+  })
+    .then(response => {
+      if (response.data && response.data.code === 1) {
+        ElMessage.success('权重设置成功');
+        showWeightForm.value = false;
+      } else {
+        ElMessage.warning('权重设置失败');
+      }
+    })
+    .catch(error => {
+      ElMessage.error('权重设置失败，请稍后重试');
+      // 即使请求失败，仍在本地保存权重值
+      showWeightForm.value = false;
+    });
 }
 </script>
 
@@ -984,5 +1061,41 @@ const handleDialogClosed = () => {
   font-size: 14px;
   color: #409eff;
   background-color: #f5f7fa;
+}
+
+/* 权重表单样式 */
+.weight-form {
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  padding: 15px;
+  margin-left: 20px;
+  margin-bottom: 15px;
+}
+
+.weight-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.weight-label {
+  width: 150px;
+  font-size: 14px;
+  color: #606266;
+}
+
+.weight-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.weight-help {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
 }
 </style> 
