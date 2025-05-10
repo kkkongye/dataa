@@ -180,11 +180,11 @@
             <div class="classification-level-container">
               <div class="classification-level-item">
                 <span class="label">分类值：</span>
-                <span class="value">{{ scope.row.classificationValue || scope.row.totalCategoryValue || '未分类' }}</span>
+                <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
               </div>
               <div class="classification-level-item">
                 <span class="label">分级值：</span>
-                <span class="value">{{ scope.row.levelValue || scope.row.totalGradeValue || '未分级' }}</span>
+                <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
               </div>
               <el-button type="primary" size="small" class="generate-btn" @click.stop="generateClassificationLevel(scope.row)">生成分类分级值</el-button>
             </div>

@@ -131,11 +131,11 @@
                     <div class="classification-level-container">
                       <div class="classification-level-item">
                         <span class="label">分类值：</span>
-                        <span class="value">{{ scope.row.classificationValue || '未分类' }}</span>
+                        <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
                       </div>
                       <div class="classification-level-item">
                         <span class="label">分级值：</span>
-                        <span class="value">{{ scope.row.levelValue || '未分级' }}</span>
+                        <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
                       </div>
                     </div>
                   </template>
@@ -260,11 +260,11 @@
             <div class="classification-level-items">
               <div class="classification-level-item">
                 <span class="label">分类值：</span>
-                <span class="value">{{ previewForm.classificationValue || '未分类' }}</span>
+                <span class="value">{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
               </div>
               <div class="classification-level-item">
                 <span class="label">分级值：</span>
-                <span class="value">{{ previewForm.levelValue || '未分级' }}</span>
+                <span class="value">{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
               </div>
             </div>
           </div>
