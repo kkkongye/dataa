@@ -244,6 +244,7 @@
     <ClassificationLevelDialog
       v-model:visible="classificationLevelDialogVisible"
       v-model:modelValue="classificationLevelData"
+      :objectId="currentRow?.id || ''"
       @confirm="handleClassificationLevelConfirm"
     />
   </div>
@@ -620,6 +621,18 @@ const handleClassificationLevelConfirm = (data) => {
       currentRow.value.tableGrade = data.tableGrade;
       currentRow.value.rowGrades = data.rowGrades;
       currentRow.value.columnGrades = data.columnGrades;
+      
+      // 保存到本地存储，作为临时备份，以防API保存失败
+      try {
+        const savedValues = JSON.parse(localStorage.getItem('classificationLevelValues') || '{}');
+        savedValues[currentRow.value.id] = {
+          ...data,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('classificationLevelValues', JSON.stringify(savedValues));
+      } catch (localStorageError) {
+        console.warn('【分类分级值】本地存储保存失败:', localStorageError);
+      }
       
       // 通知用户更新成功
       ElMessage.success('分类分级值已更新');

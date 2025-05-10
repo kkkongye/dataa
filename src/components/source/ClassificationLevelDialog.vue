@@ -195,6 +195,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  objectId: {
+    type: String,
+    default: ''
+  },
   modelValue: {
     type: Object,
     default: () => ({
@@ -431,11 +435,83 @@ const handleConfirm = () => {
       totalGradeValue: totalGradeValue.value
     };
     
-    // 发送确认事件
-    emit('confirm', result);
-    // 关闭对话框
-    emit('update:modelValue', null);
+    // 从props.modelValue中获取ID，如果没有则从其他props尝试获取
+    const id = props.objectId 
+      ? props.objectId
+      : (props.modelValue && props.modelValue.id 
+          ? props.modelValue.id 
+          : (props.modelValue && props.modelValue.objectId 
+              ? props.modelValue.objectId 
+              : ''));
+            
+    if (!id) {
+      console.warn('【分类分级值】错误: 未找到有效的对象ID，无法保存分类分级值');
+      ElMessage.error('缺少对象ID，无法保存分类分级值');
+      // 仍然关闭对话框并传递本地计算结果
+      emit('confirm', result);
+      emit('update:modelValue', null);
+      return; // 提前退出，不发送请求
+    }
+    
+    // 构建要发送的数据
+    const postData = {
+      totalCategoryValue: String(totalClassificationValue.value),
+      totalGradeValue: String(totalGradeValue.value)
+    };
+
+    // 更正后的API路径格式
+    const baseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL;
+    
+    // 尝试从localStorage获取上次成功的URL模式
+    const lastSuccessfulUrlPattern = localStorage.getItem('classificationLevelSuccessUrl');
+    let url = `${API_URL}/objects/${id}/total_values`; // 默认URL
+    
+    if (lastSuccessfulUrlPattern) {
+      url = lastSuccessfulUrlPattern.replace('{id}', id);
+    }
+
+    // 向后端发送数据，使用已知成功的URL
+    axios.post(url, postData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000,
+    })
+      .then(response => {
+        if (response.status >= 200 && response.status < 300 && response.data && response.data.code === 1) {
+          // 成功情况
+          const successUrlPattern = url.replace(id, '{id}');
+          localStorage.setItem('classificationLevelSuccessUrl', successUrlPattern);
+          
+          ElMessage.success('分类分级值保存成功');
+          emit('confirm', result);
+          emit('update:modelValue', null);
+        } else {
+          // 失败情况记录日志
+          console.warn('【分类分级值】保存失败，服务器返回:', response.data);
+          ElMessage.warning(`分类分级值保存失败: ${response.data.msg || response.data.message || '服务返回未知错误'}`);
+          
+          // 即使失败仍更新前端显示
+          emit('confirm', result);
+          emit('update:modelValue', null);
+        }
+      })
+      .catch(error => {
+        console.error('【分类分级值】请求失败:', error.message);
+        
+        // 即使请求出错，仍更新前端显示
+        ElMessage({
+          message: '无法连接到后端保存分类分级值，但已更新本地显示',
+          type: 'warning',
+          duration: 5000
+        });
+        
+        emit('confirm', result);
+        emit('update:modelValue', null);
+      });
+
   } catch (error) {
+    console.error('【分类分级值】确认过程出现异常:', error);
     ElMessage.error('确认分类分级值时发生错误');
   }
 }
