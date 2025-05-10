@@ -187,6 +187,8 @@
 <script setup>
 import { ref, reactive, computed, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'
+import { API_URL } from '@/services/apiConfig'
 
 const props = defineProps({
   visible: {
@@ -445,11 +447,25 @@ const importantWeight = ref(2)
 const criticalWeight = ref(3)
 
 const confirmWeightChange = () => {
-  // 处理权重修改逻辑
-  // 这里可以根据需要更新 rowGrades 的值
-  showWeightForm.value = false
-  // 显示修改成功提示
-  ElMessage.success('权重修改成功')
+  // 发送权重数据到服务器
+  axios.post(`${API_URL}/setWeights`, {
+    general: normalWeight.value,
+    important: importantWeight.value,
+    core: criticalWeight.value
+  })
+    .then(response => {
+      if (response.data && response.data.code === 1) {
+        ElMessage.success('权重设置成功');
+        showWeightForm.value = false;
+      } else {
+        ElMessage.warning('权重设置失败');
+      }
+    })
+    .catch(error => {
+      ElMessage.error('权重设置失败，请稍后重试');
+      // 即使请求失败，仍在本地保存权重值
+      showWeightForm.value = false;
+    });
 }
 </script>
 
