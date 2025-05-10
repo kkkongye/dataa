@@ -180,11 +180,11 @@
             <div class="classification-level-container">
               <div class="classification-level-item">
                 <span class="label">分类值：</span>
-                <span class="value">{{ scope.row.classificationValue || '未分类' }}</span>
+                <span class="value">{{ scope.row.classificationValue || scope.row.totalCategoryValue || '未分类' }}</span>
               </div>
               <div class="classification-level-item">
                 <span class="label">分级值：</span>
-                <span class="value">{{ scope.row.levelValue || '未分级' }}</span>
+                <span class="value">{{ scope.row.levelValue || scope.row.totalGradeValue || '未分级' }}</span>
               </div>
               <el-button type="primary" size="small" class="generate-btn" @click.stop="generateClassificationLevel(scope.row)">生成分类分级值</el-button>
             </div>
@@ -586,11 +586,13 @@ const generateClassificationLevel = (row) => {
     
     // 为分类分级对话框初始化数据
     classificationLevelData.value = {
-      classificationValue: row.classificationValue || '',
+      // 优先使用classificationValue，如果不存在则尝试使用totalCategoryValue
+      classificationValue: row.classificationValue || row.totalCategoryValue || '',
       industryCategory: row.industryCategory || '',
       dataTimeliness: row.dataTimeliness || '',
       dataSource: row.dataSource || '',
-      levelValue: row.levelValue || '',
+      // 优先使用levelValue，如果不存在则尝试使用totalGradeValue
+      levelValue: row.levelValue || row.totalGradeValue || '',
       // 硬编码默认分级值 - 未来可以从服务获取
       dbGrade: row.dbGrade !== undefined ? row.dbGrade : 0,
       tableGrade: row.tableGrade !== undefined ? row.tableGrade : 0,
@@ -611,10 +613,14 @@ const handleClassificationLevelConfirm = (data) => {
     if (currentRow.value) {
       // 更新当前行的分类值和分级值
       currentRow.value.classificationValue = data.classificationValue;
+      currentRow.value.totalCategoryValue = data.classificationValue;
+      
       currentRow.value.industryCategory = data.industryCategory;
       currentRow.value.dataTimeliness = data.dataTimeliness;
       currentRow.value.dataSource = data.dataSource;
+      
       currentRow.value.levelValue = data.levelValue;
+      currentRow.value.totalGradeValue = data.levelValue;
       
       // 更新分级值
       currentRow.value.dbGrade = data.dbGrade;

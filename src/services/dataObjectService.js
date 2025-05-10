@@ -139,6 +139,15 @@ const fetchDataObjectsFromBackend = async () => {
         // 清空当前数据
         sharedTableData.splice(0, sharedTableData.length)
         
+        // 添加调试代码，检查第一个数据项中是否包含totalCategoryValue和totalGradeValue
+        if (dataArray[0]) {
+          console.log('【后端数据样例】首条数据:', {
+            id: dataArray[0].id,
+            totalCategoryValue: dataArray[0].totalCategoryValue,
+            totalGradeValue: dataArray[0].totalGradeValue
+          });
+        }
+        
         // 添加获取到的数据（经过适配处理）
         dataArray.forEach(item => {
           // 适配后端数据到前端格式
@@ -340,6 +349,10 @@ const adaptBackendData = (backendItem) => {
     dataTimeliness: backendItem.dataTimeliness || '',
     dataSource: backendItem.dataSource || '',
     levelValue: backendItem.levelValue || '',
+    
+    // 从后端获取totalCategoryValue和totalGradeValue字段
+    totalCategoryValue: backendItem.totalCategoryValue || '',
+    totalGradeValue: backendItem.totalGradeValue || '',
     
     // 提取分级值字段
     dbGrade: backendItem.dbGrade !== undefined ? backendItem.dbGrade : 0,
@@ -839,7 +852,17 @@ const transformToBackendFormat = (frontendData) => {
     auditInfo: auditInfo,
     // 【新增】在顶级添加元数据字段，确保后端可以直接访问
     metadata: dataEntity.metadata,
-    metadataJson: dataEntity.metadataJson
+    metadataJson: dataEntity.metadataJson,
+    
+    // 添加分类分级值字段
+    totalCategoryValue: frontendData.totalCategoryValue || frontendData.classificationValue || '',
+    totalGradeValue: frontendData.totalGradeValue || frontendData.levelValue || '',
+    
+    // 添加分级值字段
+    dbGrade: frontendData.dbGrade,
+    tableGrade: frontendData.tableGrade,
+    rowGrades: frontendData.rowGrades,
+    columnGrades: frontendData.columnGrades
   }
 
   return result;
