@@ -10,7 +10,7 @@ public interface DataMapper {
     @Insert({
             "INSERT INTO data_objects (id, data_content, metadata_json, location_info_json, ",
             "constraint_set_json, propagation_control_json, audit_info_json, created_at, updated_at,",
-            "db_grade, table_grade, row_grades, column_grades)",
+            "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value)",
             "VALUES (",
             "#{id}, ",
             "#{dataContent}, ",
@@ -22,7 +22,8 @@ public interface DataMapper {
             "NOW(), NOW(),",
             "#{dbGrade}, #{tableGrade}, ",
             "#{rowGradesJson}, ",
-            "#{columnGradesJson})"
+            "#{columnGradesJson}, ",
+            "#{totalCategoryValue}, #{totalGradeValue})"
     })
     @Options(useGeneratedKeys = true, keyProperty = "numericId")
     void insert(DataObject dataObject);
@@ -35,7 +36,7 @@ public interface DataMapper {
             "CONVERT(constraint_set_json USING utf8) as constraint_set_json, " +
             "CONVERT(propagation_control_json USING utf8) as propagation_control_json, " +
             "CONVERT(audit_info_json USING utf8) as audit_info_json, " +
-            "db_grade, table_grade, row_grades, column_grades, " +
+            "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value, " +
             "created_at, updated_at " +
             "FROM data_objects WHERE id = #{id}")
     @Results({
@@ -48,7 +49,9 @@ public interface DataMapper {
             @Result(column = "db_grade", property = "dbGrade"),
             @Result(column = "table_grade", property = "tableGrade"),
             @Result(column = "row_grades", property = "rowGrades",jdbcType = JdbcType.VARCHAR),
-            @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR)
+            @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR),
+            @Result(column = "total_category_value", property = "totalCategoryValue"),
+            @Result(column = "total_grade_value", property = "totalGradeValue")
     })
     DataObject selectById(String id);
 
@@ -64,6 +67,8 @@ public interface DataMapper {
             "table_grade = #{tableGrade},",
             "row_grades = #{rowGradesJson},",
             "column_grades = #{columnGradesJson},",
+            "total_category_value = #{totalCategoryValue},",
+            "total_grade_value = #{totalGradeValue},",
             "updated_at = NOW() ",
             "WHERE id = #{id}"
     })
@@ -80,7 +85,7 @@ public interface DataMapper {
             "CONVERT(constraint_set_json USING utf8) as constraint_set_json, " +
             "CONVERT(propagation_control_json USING utf8) as propagation_control_json, " +
             "CONVERT(audit_info_json USING utf8) as audit_info_json, " +
-            "db_grade, table_grade, row_grades, column_grades, " +
+            "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value, " +
             "created_at, updated_at " +
             "FROM data_objects")
     @Results({
@@ -93,7 +98,9 @@ public interface DataMapper {
             @Result(column = "db_grade", property = "dbGrade"),
             @Result(column = "table_grade", property = "tableGrade"),
             @Result(column = "row_grades", property = "rowGrades",jdbcType = JdbcType.VARCHAR),
-            @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR)
+            @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR),
+            @Result(column = "total_category_value", property = "totalCategoryValue"),
+            @Result(column = "total_grade_value", property = "totalGradeValue")
     })
     List<DataObject> selectAll();
 }

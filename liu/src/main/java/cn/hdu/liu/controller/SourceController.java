@@ -1,14 +1,12 @@
 package cn.hdu.liu.controller;
 
-import cn.hdu.liu.obj.DataObjectRequest;
+import cn.hdu.liu.obj.*;
 import cn.hdu.liu.service.DataObjectService;
 import com.hdu.service.DUService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cn.hdu.liu.obj.Result;
-import cn.hdu.liu.obj.DataObject;
 import cn.hdu.liu.service.SourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -109,7 +107,7 @@ public class SourceController {
             dataObjectService.saveDataObject(tmpObject);
 
 
-            session.removeAttribute("tmpDataObject");
+
             return Result.success("数字对象创建成功");
         } catch (Exception e) {
             log.error("保存失败: ", e);
@@ -200,6 +198,49 @@ public class SourceController {
 
         return Result.success(resultList);
     }
+
+
+    @PostMapping("/objects/total_values")
+    public Result addWithTotalValues(
+            @RequestBody TotalValuesRequest request,
+            HttpSession session
+    ) {
+        DataObject tmpObject = (DataObject) session.getAttribute("tmpDataObject");
+        if (tmpObject == null) {
+            return Result.error("请先上传 Excel 文件");
+        }
+
+        try {
+            tmpObject.setTotalCategoryValue(request.getTotalCategoryValue());
+            tmpObject.setTotalGradeValue(request.getTotalGradeValue());
+
+            // 添加调试日志
+            log.info("设置后的总分类值: {}", tmpObject.getTotalCategoryValue());
+            log.info("设置后的总分级值: {}", tmpObject.getTotalGradeValue());
+
+
+            dataObjectService.saveDataObject(tmpObject);
+            session.removeAttribute("tmpDataObject");
+            return Result.success("数字对象创建成功（含总分类/分级值）");
+        } catch (Exception e) {
+            log.error("保存失败: ", e);
+            return Result.error("服务器内部错误: " + e.getMessage());
+        }
+    }
+
+
+    @PostMapping("/setWeights")
+    public Result setGradeWeights(@RequestBody WeightRequest request) {
+        dataObjectService.setWeights(
+                request.getGeneral(),
+                request.getImportant(),
+                request.getCore()
+        );
+        return Result.success("分级权重更新成功");
+    }
+
+
+
 
     @PostMapping("/encrypt")
     public Result encryptData() {

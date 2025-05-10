@@ -31,4 +31,6 @@ public interface DataObjectService {
     DataObject findById(String id);
     void update(String id, DataObject dataObject);
     void delete(String id);
+    public void setWeights(double general, double important, double core);
+
 }

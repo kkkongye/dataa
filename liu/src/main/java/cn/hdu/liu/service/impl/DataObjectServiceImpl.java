@@ -38,7 +38,7 @@ public class DataObjectServiceImpl implements DataObjectService {
     @Override
     public boolean saveDataObject(DataObject dataObject) {
         try {
-                calculateGrades(dataObject);
+            calculateGrades(dataObject);
             // 确保Metadata的完整序列化
             if (dataObject.getDataEntity() != null && dataObject.getDataEntity().getMetadata() != null) {
                 dataObject.setMetadataJson(objectMapper.writeValueAsString(dataObject.getDataEntity().getMetadata()));
@@ -57,7 +57,12 @@ public class DataObjectServiceImpl implements DataObjectService {
             dataObject.setPropagationControlJson(objectMapper.writeValueAsString(dataObject.getPropagationControl()));
             dataObject.setAuditInfoJson(objectMapper.writeValueAsString(dataObject.getAuditInfo()));
 
-            dataMapper.insert(dataObject);
+
+            if (dataObject.getNumericId() == null) {
+                dataMapper.insert(dataObject);
+            } else {
+                dataMapper.update(dataObject);
+            }
             return true;
         } catch (Exception e) {
             throw new RuntimeException("保存数据对象失败", e);
@@ -114,7 +119,6 @@ public class DataObjectServiceImpl implements DataObjectService {
     }
 
 
-        // 获取表数量改为从Excel读取
         private int getTableCountFromExcel(InputStream excelStream, String fileName) {
             try (Workbook workbook = createWorkbook(excelStream, fileName)) {
                 return workbook.getNumberOfSheets(); // 表数量即工作表数量
@@ -167,8 +171,18 @@ public class DataObjectServiceImpl implements DataObjectService {
         else return 300;
     }
 
+    private volatile double generalWeight = 1.0;
+    private volatile double importantWeight = 2.0;
+    private volatile double coreWeight = 3.0;
+
+    public void setWeights(double general, double important, double core) {
+        this.generalWeight = general;
+        this.importantWeight = important;
+        this.coreWeight = core;
+    }
+
     private double calculateRowGrade(Map<String, String> row) {
-        double base = 1.0;
+        double base = generalWeight;
         boolean hasCore = false;
         boolean hasImportant = false;
 
@@ -180,9 +194,9 @@ public class DataObjectServiceImpl implements DataObjectService {
             }
         }
         if (hasCore) {
-            base = 3.0;
+            base = coreWeight;
         } else if (hasImportant) {
-            base = 2.0;
+            base = importantWeight;
         }
 
         long validFields = row.values().stream().filter(v -> !v.isEmpty()).count();

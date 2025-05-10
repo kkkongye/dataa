@@ -67,6 +67,28 @@ public class DataObject {
     private String propagationControlJson;
     private String auditInfoJson;
 
+    private String totalCategoryValue;
+    private String totalGradeValue;
+
+
+    public String getTotalCategoryValue() {
+        return totalCategoryValue;
+    }
+
+    public void setTotalCategoryValue(String totalCategoryValue) {
+        this.totalCategoryValue = totalCategoryValue;
+    }
+
+    public String getTotalGradeValue() {
+        return totalGradeValue;
+    }
+
+    public void setTotalGradeValue(String totalGradeValue) {
+        this.totalGradeValue = totalGradeValue;
+    }
+
+
+
     private Double dbGrade;
     private Double tableGrade;
     @JsonProperty("rowGrades")
