@@ -1059,6 +1059,10 @@ const previewForm = reactive({
   constraint: [],
   transferControl: [],
   status: '',
+  totalCategoryValue: '',
+  totalGradeValue: '',
+  classificationValue: '',
+  levelValue: '',
   metadata: null // 添加元数据字段
 })
 
@@ -1092,6 +1096,12 @@ const previewEntity = (row) => {
   previewForm.constraint = ensureArray(row.constraint)
   previewForm.transferControl = ensureArray(row.transferControl)
   previewForm.status = row.status
+  
+  // 清空分类分级值，等待API数据填充
+  previewForm.totalCategoryValue = ''
+  previewForm.totalGradeValue = ''
+  previewForm.classificationValue = ''
+  previewForm.levelValue = ''
   
   // 解析元数据 - 直接使用原始元数据，不尝试提取
   if (row.metadata && typeof row.metadata === 'object') {
@@ -1169,9 +1179,12 @@ const fetchExcelDataFromApi = async (objectId) => {
       targetObject = response.data.data.find(item => item.id === objectId)
     }
     
-    // 2. 如果找到了目标对象，尝试提取其dataItems
+    // 2. 如果找到了目标对象，尝试提取其dataItems和分类分级值
     if (targetObject) {
       console.log(`【Excel数据】找到ID为${objectId}的对象:`, targetObject)
+      
+      // 提取分类分级值
+      extractClassificationValues(targetObject)
       
       // 从对象中提取dataItems
       if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
@@ -1232,22 +1245,98 @@ const fetchExcelDataFromApi = async (objectId) => {
   }
 }
 
+// 提取对象中的分类分级值
+const extractClassificationValues = (obj) => {
+  if (!obj) return
+  
+  // 直接提取顶层字段
+  if (obj.totalCategoryValue !== undefined) {
+    previewForm.totalCategoryValue = obj.totalCategoryValue
+  } else if (obj.classificationValue !== undefined) {
+    previewForm.classificationValue = obj.classificationValue
+  }
+  
+  if (obj.totalGradeValue !== undefined) {
+    previewForm.totalGradeValue = obj.totalGradeValue
+  } else if (obj.levelValue !== undefined) {
+    previewForm.levelValue = obj.levelValue
+  }
+  
+  // 尝试从dataContent中获取
+  if (obj.dataContent) {
+    let dataContent = obj.dataContent
+    if (typeof dataContent === 'string') {
+      try {
+        dataContent = JSON.parse(dataContent)
+      } catch (e) {
+        console.warn('解析dataContent失败:', e)
+      }
+    }
+    
+    if (dataContent && typeof dataContent === 'object') {
+      if (dataContent.totalCategoryValue !== undefined) {
+        previewForm.totalCategoryValue = dataContent.totalCategoryValue
+      } else if (dataContent.classificationValue !== undefined) {
+        previewForm.classificationValue = dataContent.classificationValue
+      }
+      
+      if (dataContent.totalGradeValue !== undefined) {
+        previewForm.totalGradeValue = dataContent.totalGradeValue
+      } else if (dataContent.levelValue !== undefined) {
+        previewForm.levelValue = dataContent.levelValue
+      }
+    }
+  }
+}
+
 // 根据对象ID生成不同的模拟数据
 const generateMockDataForObject = (objectId) => {
   // 获取ID的最后两位作为数字（用于生成不同的数据）
   const idNum = parseInt(objectId.slice(-2), 10) || 1
   
-  // 根据ID生成不同的名称前缀
-  const namePrefix = `数据${idNum}-`
-  
-  // 创建5条记录
-  return [
-    { "姓名": `${namePrefix}张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
-    { "姓名": `${namePrefix}李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
-    { "姓名": `${namePrefix}王五`, "rowNumber": "3", "性别": "女", "对象ID": objectId },
-    { "姓名": `${namePrefix}赵六`, "rowNumber": "4", "性别": "男", "对象ID": objectId },
-    { "姓名": `${namePrefix}钱七`, "rowNumber": "5", "性别": "女", "对象ID": objectId }
-  ]
+  // 根据ID生成不同类型的数据
+  if (objectId.includes('user') || objectId.includes('用户')) {
+    return [
+      { "用户ID": "U10001", "用户名": "张三", "年龄": "28", "性别": "男", "注册日期": "2023-01-15" },
+      { "用户ID": "U10002", "用户名": "李四", "年龄": "34", "性别": "男", "注册日期": "2023-02-22" },
+      { "用户ID": "U10003", "用户名": "王五", "年龄": "26", "性别": "女", "注册日期": "2023-03-08" },
+      { "用户ID": "U10004", "用户名": "赵六", "年龄": "31", "性别": "男", "注册日期": "2023-04-19" },
+      { "用户ID": "U10005", "用户名": "钱七", "年龄": "29", "性别": "女", "注册日期": "2023-05-25" }
+    ]
+  } else if (objectId.includes('order') || objectId.includes('订单')) {
+    return [
+      { "订单ID": "O20001", "用户ID": "U10001", "商品": "笔记本电脑", "金额": "6999", "下单日期": "2023-06-12" },
+      { "订单ID": "O20002", "用户ID": "U10002", "商品": "手机", "金额": "4299", "下单日期": "2023-06-18" },
+      { "订单ID": "O20003", "用户ID": "U10003", "商品": "耳机", "金额": "799", "下单日期": "2023-06-25" },
+      { "订单ID": "O20004", "用户ID": "U10004", "商品": "平板电脑", "金额": "3599", "下单日期": "2023-07-03" },
+      { "订单ID": "O20005", "用户ID": "U10005", "商品": "智能手表", "金额": "1599", "下单日期": "2023-07-10" }
+    ]
+  } else if (objectId.includes('product') || objectId.includes('产品')) {
+    return [
+      { "产品ID": "P30001", "产品名称": "华为MateBook", "类别": "笔记本电脑", "价格": "6999", "库存": "120" },
+      { "产品ID": "P30002", "产品名称": "iPhone 14", "类别": "手机", "价格": "5999", "库存": "350" },
+      { "产品ID": "P30003", "产品名称": "AirPods Pro", "类别": "耳机", "价格": "1999", "库存": "500" },
+      { "产品ID": "P30004", "产品名称": "iPad Air", "类别": "平板电脑", "价格": "4599", "库存": "230" },
+      { "产品ID": "P30005", "产品名称": "Apple Watch", "类别": "智能手表", "价格": "2999", "库存": "180" }
+    ]
+  } else if (objectId.includes('inventory') || objectId.includes('库存')) {
+    return [
+      { "仓库编号": "WH001", "产品ID": "P30001", "产品名称": "华为MateBook", "库存数量": "120", "更新日期": "2023-07-01" },
+      { "仓库编号": "WH001", "产品ID": "P30002", "产品名称": "iPhone 14", "库存数量": "350", "更新日期": "2023-07-01" },
+      { "仓库编号": "WH001", "产品ID": "P30003", "产品名称": "AirPods Pro", "库存数量": "500", "更新日期": "2023-07-01" },
+      { "仓库编号": "WH002", "产品ID": "P30004", "产品名称": "iPad Air", "库存数量": "230", "更新日期": "2023-07-01" },
+      { "仓库编号": "WH002", "产品ID": "P30005", "产品名称": "Apple Watch", "库存数量": "180", "更新日期": "2023-07-01" }
+    ]
+  } else {
+    // 通用数据
+    return [
+      { "姓名": `${idNum}-张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
+      { "姓名": `${idNum}-李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
+      { "姓名": `${idNum}-王五`, "rowNumber": "3", "性别": "女", "对象ID": objectId },
+      { "姓名": `${idNum}-赵六`, "rowNumber": "4", "性别": "男", "对象ID": objectId },
+      { "姓名": `${idNum}-钱七`, "rowNumber": "5", "性别": "女", "对象ID": objectId }
+    ]
+  }
 }
 
 // 创建Excel数据
