@@ -235,15 +235,29 @@
       <h3>数据预览</h3>
       
       <div v-if="columnExcelData.length > 0">
-        <div class="data-info">找到 {{ columnExcelData.length }} 条记录</div>
+        <div class="data-info">找到 {{ columnExcelData.length - 1 }} 条记录</div>
         <el-table :data="columnExcelData" border style="width: 100%" max-height="400px">
           <el-table-column 
-            v-for="(key, index) in getObjectKeys(columnExcelData)" 
+            v-for="(key, index) in getObjectKeys(columnExcelData).filter(k => k !== '_isGradeRow')" 
             :key="index"
             :prop="key"
             :label="key"
             :min-width="100"
-          />
+          >
+            <template #default="scope">
+              <!-- 如果是分级值行，使用彩色标签显示分级值 -->
+              <template v-if="scope.row._isGradeRow">
+                <div class="column-grade-cell">
+                  <div class="column-grade-label">列分级值:</div>
+                  <el-tag type="info">{{ parseFloat(scope.row[key]).toFixed(1) }}</el-tag>
+                </div>
+              </template>
+              <!-- 普通数据行正常显示 -->
+              <template v-else>
+                {{ scope.row[key] }}
+              </template>
+            </template>
+          </el-table-column>
         </el-table>
       </div>
       <div v-else class="no-data-message">
@@ -838,6 +852,35 @@ const fetchExcelData = async (type = 'row') => {
           console.log('行数据已处理，添加了行分级值:', rowExcelData.value);
         } else {
           columnExcelData.value = dataItems;
+          
+          // 确保columnGrades数组长度与列数量匹配
+          const columnKeys = getObjectKeys(dataItems);
+          if (columnGrades.value.length < columnKeys.length) {
+            // 如果columnGrades数组比列少，补充默认值
+            const defaultValue = 0.4; // 默认分级值
+            const difference = columnKeys.length - columnGrades.value.length;
+            for (let i = 0; i < difference; i++) {
+              columnGrades.value.push(defaultValue);
+            }
+            console.log('已为列分级值数组补充默认值，当前数组:', columnGrades.value);
+          } else if (columnGrades.value.length > columnKeys.length) {
+            // 如果columnGrades数组比列多，截取需要的部分
+            columnGrades.value = columnGrades.value.slice(0, columnKeys.length);
+            console.log('已截取列分级值数组，当前数组:', columnGrades.value);
+          }
+          
+          // 添加一个额外的记录作为最后一行，用于显示列分级值
+          if (columnExcelData.value.length > 0) {
+            const gradeRow = {};
+            // 为每列创建一个分级值
+            columnKeys.forEach((key, index) => {
+              gradeRow[key] = columnGrades.value[index] || 0.4;
+            });
+            // 添加一个特殊标记字段，用于在表格中区分这是分级值行
+            gradeRow['_isGradeRow'] = true;
+            columnExcelData.value.push(gradeRow);
+            console.log('列数据已处理，添加了列分级值行:', gradeRow);
+          }
         }
         
         return true;
@@ -1061,5 +1104,29 @@ const getGradeTagType = (value) => {
 .loading-text {
   margin-top: 10px;
   font-size: 14px;
+}
+
+.column-grade-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.column-grade-label {
+  margin-right: 5px;
+  font-size: 12px;
+  color: #606266;
+  font-weight: bold;
+}
+
+/* 为分级值行添加样式 */
+:deep(.el-table__row:last-child) {
+  background-color: #f8f8f8;
+}
+
+:deep(.el-table__row:last-child td) {
+  border-top: 1px solid #dcdfe6;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 </style> 
