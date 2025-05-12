@@ -116,7 +116,7 @@
               </template>
               <div class="help-content">
                 <h4>行分级值说明</h4>
-                <p>数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，
+                <p>数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的最大值累加，
                   得到行分级值默认一般记录的权重为:1(默认值);
                   重要记录的权重为:2;核心记录的权重为:3;</p>
               </div>
@@ -311,7 +311,7 @@ const tableGrade = ref(0) // 默认表分级值为0
 const rowGrades = ref([0, 0]) // 默认行分级值包含两个0
 const columnGrades = ref([0, 0]) // 默认列分级值包含两个0
 
-// 计算行分级值（取平均值）
+// 计算行分级值（取最大值）
 const rowGradeValue = computed(() => {
   if (!rowGrades.value || rowGrades.value.length === 0) return 0;
   try {
@@ -320,16 +320,17 @@ const rowGradeValue = computed(() => {
       const num = parseFloat(val);
       return isNaN(num) ? 0 : num;
     });
-    const sum = numericValues.reduce((acc, val) => acc + val, 0);
-    const avg = sum / numericValues.length;
-    const result = parseFloat(avg.toFixed(1));
+    // 使用Math.max取数组中的最大值
+    const maxValue = Math.max(...numericValues);
+    // 保留一位小数
+    const result = parseFloat(maxValue.toFixed(1));
     return result;
   } catch (error) {
     return 0;
   }
 })
 
-// 计算列分级值（取平均值）
+// 计算列分级值（取最大值）
 const columnGradeValue = computed(() => {
   if (!columnGrades.value || columnGrades.value.length === 0) return 0;
   try {
@@ -338,9 +339,10 @@ const columnGradeValue = computed(() => {
       const num = parseFloat(val);
       return isNaN(num) ? 0 : num;
     });
-    const sum = numericValues.reduce((acc, val) => acc + val, 0);
-    const avg = sum / numericValues.length;
-    const result = parseFloat(avg.toFixed(1));
+    // 使用Math.max取数组中的最大值
+    const maxValue = Math.max(...numericValues);
+    // 保留一位小数
+    const result = parseFloat(maxValue.toFixed(1));
     return result;
   } catch (error) {
     return 0;
@@ -593,8 +595,11 @@ const importantWeight = ref(2)
 const criticalWeight = ref(3)
 
 const confirmWeightChange = () => {
+  // 更正后的API路径格式，确保一致性
+  const baseUrl = props.apiBaseUrl.endsWith('/api') ? props.apiBaseUrl : `${props.apiBaseUrl}/api`;
+  
   // 发送权重数据到服务器
-  axios.post(`${props.apiBaseUrl}/setWeights`, {
+  axios.post(`${baseUrl}/setWeights`, {
     general: normalWeight.value,
     important: importantWeight.value,
     core: criticalWeight.value
@@ -604,11 +609,13 @@ const confirmWeightChange = () => {
         ElMessage.success('权重设置成功');
         showWeightForm.value = false;
       } else {
-        ElMessage.warning('权重设置失败');
+        console.warn('权重设置返回非成功状态:', response.data);
+        ElMessage.warning(`权重设置失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
       }
     })
     .catch(error => {
-      ElMessage.error('权重设置失败，请稍后重试');
+      console.error('权重设置请求失败:', error.message, error.response?.status);
+      ElMessage.error(`权重设置失败: ${error.message}，请稍后重试`);
       // 即使请求失败，仍在本地保存权重值
       showWeightForm.value = false;
     });
