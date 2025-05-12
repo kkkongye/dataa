@@ -198,12 +198,22 @@
         <div class="data-info">找到 {{ rowExcelData.length }} 条记录</div>
         <el-table :data="rowExcelData" border style="width: 100%" max-height="400px">
           <el-table-column 
-            v-for="(key, index) in getObjectKeys(rowExcelData)" 
+            v-for="(key, index) in getObjectKeys(rowExcelData).filter(k => k !== 'rowGradeValue')" 
             :key="index"
             :prop="key"
             :label="key"
             :min-width="100"
           />
+          <!-- 行分级值列 -->
+          <el-table-column
+            label="行分级值"
+            align="center"
+            min-width="100"
+          >
+            <template #default="scope">
+              <el-tag :type="getGradeTagType(scope.row.rowGradeValue)">{{ scope.row.rowGradeValue }}</el-tag>
+            </template>
+          </el-table-column>
         </el-table>
       </div>
       <div v-else class="no-data-message">
@@ -801,7 +811,31 @@ const fetchExcelData = async (type = 'row') => {
         console.log(`【Excel数据】成功获取${dataItems.length}条数据项:`, dataItems);
         
         if (type === 'row') {
-          rowExcelData.value = dataItems;
+          // 将获取到的数据存储到rowExcelData中
+          // 确保rowGrades数组长度与行数据一致
+          if (rowGrades.value.length < dataItems.length) {
+            // 如果rowGrades数组比数据项少，补充默认值
+            const defaultValue = 1.0; // 默认分级值
+            const difference = dataItems.length - rowGrades.value.length;
+            for (let i = 0; i < difference; i++) {
+              rowGrades.value.push(defaultValue);
+            }
+            console.log('已为行分级值数组补充默认值，当前数组:', rowGrades.value);
+          } else if (rowGrades.value.length > dataItems.length) {
+            // 如果rowGrades数组比数据项多，截取需要的部分
+            rowGrades.value = rowGrades.value.slice(0, dataItems.length);
+            console.log('已截取行分级值数组，当前数组:', rowGrades.value);
+          }
+          
+          // 将行分级值直接添加到每行数据中
+          rowExcelData.value = dataItems.map((item, index) => {
+            return {
+              ...item,
+              rowGradeValue: rowGrades.value[index] || '未设置'
+            };
+          });
+          
+          console.log('行数据已处理，添加了行分级值:', rowExcelData.value);
         } else {
           columnExcelData.value = dataItems;
         }
@@ -871,9 +905,20 @@ const getObjectKeys = (dataArray) => {
   
   // 合并所有键集并去重
   const allKeys = [...new Set(keySets.flat())];
-  console.log('【Excel数据】获取到的所有键:', allKeys);
+  // 过滤掉 rowGradeValue 键
+  const filteredKeys = allKeys.filter(key => key !== 'rowGradeValue');
+  console.log('【Excel数据】获取到的所有键:', filteredKeys);
   
-  return allKeys;
+  return filteredKeys;
+}
+
+// 根据分级值获取标签类型
+const getGradeTagType = (value) => {
+  const num = parseFloat(value) || 0;
+  if (num >= 3.0) return 'danger';   // 高分级值：红色
+  if (num >= 2.0) return 'warning';  // 中高分级值：橙色
+  if (num >= 1.0) return 'success';  // 中等分级值：绿色
+  return 'info';                     // 低分级值：灰色
 }
 </script>
 
