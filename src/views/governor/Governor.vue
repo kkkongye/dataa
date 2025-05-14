@@ -471,8 +471,8 @@ const handleDelete = (row) => {
 
 // 更新数字对象状态
 const updateStatus = async (row, newStatus) => {
-  // 本地模式标志，改为true以避免调用后端API
-  const localModeOnly = true; // 设置为true表示只在本地更新，避免API错误
+  // 本地模式标志，改为false以启用调用后端API
+  const localModeOnly = false; // 设置为false表示将更新发送到后端数据库
   
   // 特殊处理"库存管理"实体的审查功能
   if (newStatus === '审查中' && row.entity === '库存管理') {
@@ -501,7 +501,6 @@ const updateStatus = async (row, newStatus) => {
   }
   // 处理已合格或待检验状态
   else if (newStatus === '已合格' || newStatus === '待检验') {
-    // 如果是已合格状态或待检验状态，直接更新
     try {
       const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, '', localModeOnly)
       if (result) {
