@@ -593,60 +593,53 @@ const handleEdit = (row) => {
   
   editForm.dataItems = sourceObj.dataItems || []
   
+  // 处理编辑数据中的数据内容
   if (sourceObj.dataContent) {
     try {
-      let contentObj;
+      let contentObj = null
       
       if (typeof sourceObj.dataContent === 'string') {
         try {
           contentObj = JSON.parse(sourceObj.dataContent);
         } catch (jsonError) {
+          // 保留警告日志
           console.warn(`JSON解析失败: ${jsonError}，尝试正则提取`);
           
           const feedbackMatch = sourceObj.dataContent.match(/"feedback"\s*:\s*"([^"]*)"/);
           if (feedbackMatch && feedbackMatch[1]) {
             editForm.feedback = feedbackMatch[1];
-            console.log(`通过正则提取到feedback: ${editForm.feedback}`);
           }
           
           const statusMatch = sourceObj.dataContent.match(/"status"\s*:\s*"([^"]*)"/);
           if (statusMatch && statusMatch[1]) {
             editForm.status = statusMatch[1];
-            console.log(`通过正则提取到status: ${editForm.status}`);
           }
         }
       } else {
         contentObj = sourceObj.dataContent;
       }
       
-      if (contentObj) {
-        console.log(`处理数据项 ${sourceObj.entity} 的dataContent:`, contentObj);
-        
+      if (contentObj) {      
         if (contentObj.status) {
           editForm.status = contentObj.status;
-          console.log(`从dataContent提取状态: ${sourceObj.entity} - ${editForm.status}`);
         }
         
         if (contentObj.feedback) {
           editForm.feedback = contentObj.feedback;
-          console.log(`从dataContent直接提取反馈信息: ${sourceObj.entity} - ${editForm.feedback}`);
         } else if (contentObj.data && contentObj.data.feedback) {
           editForm.feedback = contentObj.data.feedback;
-          console.log(`从dataContent.data提取反馈信息: ${sourceObj.entity} - ${editForm.feedback}`);
         }
         
         // 提取dataItems如果存在
         if (contentObj.dataItems && Array.isArray(contentObj.dataItems)) {
           editForm.dataItems = contentObj.dataItems;
-          console.log(`从dataContent提取数据项: ${sourceObj.entity} - ${contentObj.dataItems.length}项`);
         }
       }
     } catch (e) {
+      // 保留错误日志
       console.warn(`解析 ${sourceObj.entity} 的dataContent失败:`, e);
     }
   }
-  
-  console.log('最终编辑表单数据:', JSON.stringify(editForm))
   
   // 显示编辑对话框
   editDialogVisible.value = true
@@ -661,7 +654,6 @@ const cancelEdit = () => {
 
 // 保存编辑的对象
 const saveEditObject = async (updatedObject) => {
-  console.log('保存编辑对象:', updatedObject)
   const objectId = updatedObject.id
   
   try {
@@ -743,8 +735,6 @@ const saveEditObject = async (updatedObject) => {
       updatedObject.transferControl = []
     }
     
-    console.log('处理后的更新对象:', JSON.stringify(updatedObject))
-    
     // 尝试通过API保存
     ElMessage.info('正在向后端保存数据...')
     const result = await dataObjectService.updateDataObjectViaApi(objectId, updatedObject)
@@ -787,7 +777,6 @@ const saveEditObject = async (updatedObject) => {
 // 删除对象
 const handleDelete = (row) => {
   const objectId = row.id;
-  console.log('删除对象，ID:', objectId);
   
   ElMessageBox.confirm(`确定要删除"${row.entity}"吗?`, '提示', {
     confirmButtonText: '确定',
@@ -795,29 +784,38 @@ const handleDelete = (row) => {
     type: 'warning',
   }).then(async () => {
     try {
-      
       const result = await dataObjectService.deleteDataObjectViaApi(objectId)
       
-      if (!result) {
-        
-        dataObjectService.deleteDataObject(objectId)
-      }
-      
-      ElMessage.success(`已删除: ${row.entity}`)
-
-      refreshData()
-    } catch (error) {
-      console.error('删除对象时出错:', error)
-
-      const localDeleted = dataObjectService.deleteDataObject(objectId)
-      if (localDeleted) {
+      if (result) {
         ElMessage.success(`已删除: ${row.entity}`)
       } else {
-        ElMessage.error(`删除失败: ${row.entity}`)
+        // 即使API删除失败，我们也从本地删除并显示成功信息
+        dataObjectService.deleteDataObject(objectId)
+        ElMessage({
+          message: `已从本地删除: ${row.entity}，但服务器删除失败`,
+          type: 'warning',
+          duration: 3000
+        })
       }
       
       // 刷新数据
       refreshData()
+    } catch (error) {
+      console.error('删除对象时出错:', error)
+      ElMessage.error(`删除失败: ${error.message || '未知错误'}`)
+      
+      // 尝试从本地删除
+      try {
+        dataObjectService.deleteDataObject(objectId)
+        ElMessage({
+          message: `已从本地删除: ${row.entity}，但服务器删除失败`,
+          type: 'warning',
+          duration: 3000
+        })
+        refreshData()
+      } catch (localError) {
+        ElMessage.error('本地删除也失败，请稍后再试')
+      }
     }
   }).catch(() => {
     ElMessage.info('已取消删除')
@@ -1149,22 +1147,17 @@ const previewEntity = (row) => {
 // 从API获取Excel数据
 const fetchExcelDataFromApi = async (objectId) => {
   if (!objectId) {
-    console.error('【Excel数据】错误: 无法获取对象ID')
     ElMessage.warning('无法获取对象ID，无法显示Excel数据')
-    isExcelLoading.value = false
     return
   }
   
-  console.log(`【Excel数据】正在从API获取数据，对象ID:`, objectId)
   isExcelLoading.value = true
   
   // 使用对象列表API
-  const apiUrl = `${API_URL}/objects/list`
-  console.log('【Excel数据】API请求URL:', apiUrl)
+  const apiUrl = 'http://localhost:8080/api/objects/list'
   
   try {
     const response = await axios.get(apiUrl)
-    console.log('【Excel数据】API响应状态码:', response.status)
     
     // 从响应中查找特定ID的对象数据
     let targetObject = null
@@ -1181,15 +1174,12 @@ const fetchExcelDataFromApi = async (objectId) => {
     
     // 2. 如果找到了目标对象，尝试提取其dataItems和分类分级值
     if (targetObject) {
-      console.log(`【Excel数据】找到ID为${objectId}的对象:`, targetObject)
-      
       // 提取分类分级值
       extractClassificationValues(targetObject)
       
       // 从对象中提取dataItems
       if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
-        console.log(`【Excel数据】从对象中直接提取到${dataItems.length}条dataItems`)
       } else if (targetObject.dataContent) {
         // 尝试从dataContent中解析
         try {
@@ -1199,7 +1189,6 @@ const fetchExcelDataFromApi = async (objectId) => {
             
           if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
             dataItems = dataContent.dataItems
-            console.log(`【Excel数据】从dataContent中提取到${dataItems.length}条dataItems`)
           }
         } catch (e) {
           console.error('解析dataContent失败:', e)
@@ -1214,18 +1203,10 @@ const fetchExcelDataFromApi = async (objectId) => {
         item.id === objectId ||
         (item.对象ID && item.对象ID === objectId)
       )
-      
-      if (dataItems.length > 0) {
-        console.log(`【Excel数据】从全局dataItems中过滤出${dataItems.length}条与ID ${objectId}相关的数据`)
-      } else {
-        console.log('未找到与对象ID相关的数据，显示所有dataItems')
-        dataItems = response.data.dataItems
-      }
     }
     
     // 4. 如果仍然没有找到数据，使用带有对象ID的模拟数据
     if (!dataItems || dataItems.length === 0) {
-      console.log(`【Excel数据】未找到ID为${objectId}的对象数据，使用模拟数据`)
       ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
       
       // 根据对象ID生成不同的模拟数据
@@ -1235,7 +1216,7 @@ const fetchExcelDataFromApi = async (objectId) => {
     // 创建Excel数据
     createExcelFromDataItems(dataItems)
   } catch (error) {
-    console.error('【Excel数据】API请求失败:', error.message)
+    console.error('获取Excel数据失败:', error.message)
     ElMessage.error(`获取Excel数据失败: ${error.message}`)
     isExcelLoading.value = false
     
@@ -1269,7 +1250,7 @@ const extractClassificationValues = (obj) => {
       try {
         dataContent = JSON.parse(dataContent)
       } catch (e) {
-        console.warn('解析dataContent失败:', e)
+        // 忽略解析错误
       }
     }
     
@@ -1364,7 +1345,7 @@ const createExcelFromDataItems = (dataItems) => {
     isExcelLoading.value = false
     ElMessage.success(`成功获取${dataItems.length}条数据记录`)
   } catch (error) {
-    console.error('【Excel数据】创建Excel数据失败:', error)
+    console.error('创建Excel数据失败:', error)
     ElMessage.error(`创建Excel数据失败: ${error.message}`)
     isExcelLoading.value = false
   }

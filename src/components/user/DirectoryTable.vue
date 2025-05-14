@@ -119,13 +119,6 @@ const filteredTableData = computed(() => {
     addExampleData();
   }
   
-  console.log('过滤前数据总量:', tableData.value.length)
-  console.log('状态分布情况:', tableData.value.reduce((acc, item) => {
-    const status = item.status || '未知'
-    acc[status] = (acc[status] || 0) + 1
-    return acc
-  }, {}))
-  
   let result = tableData.value.filter(item => item.status === '已合格')
   
   // 如果过滤后没有数据，但确实有数据，确保添加一个示例数据
@@ -143,9 +136,6 @@ const filteredTableData = computed(() => {
       (item.entity && item.entity.toLowerCase().includes(keyword))
     )
   }
-  
-  // 打印一下过滤后的结果
-  console.log(`过滤后的数据: ${result.length}条记录`);
   
   // 计算分页
   const startIndex = (currentPage.value - 1) * pageSize.value
@@ -226,11 +216,7 @@ const handleViewDetail = (row) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    // 添加日志，便于排查
-    console.log('开始从API获取目录数据...')
-    
     const response = await axios.get('http://localhost:8080/api/objects/list')
-    console.log('API响应数据:', response.data)
     
     // 处理响应数据
     if (response.data) {
@@ -245,17 +231,8 @@ const fetchData = async () => {
         dataArray = response.data.list
       }
       
-      // 打印API返回的原始数据结构，便于排查
-      console.log('API数据原始结构:', JSON.stringify(response.data).substring(0, 200) + '...')
-      
       // 深入分析对象结构
       if (dataArray.length > 0) {
-        console.log('第一条数据样例:', JSON.stringify(dataArray[0]).substring(0, 200) + '...')
-        console.log('直接状态字段值:', dataArray[0].status)
-        
-        // 枚举关键数据
-        console.log('数据项数量:', dataArray.length)
-        
         // 适配数据结构 - 尝试不同的状态字段名称
         dataArray = dataArray.map(item => {
           // 确保item是一个对象
@@ -267,7 +244,6 @@ const fetchData = async () => {
             if (item.dataEntity && typeof item.dataEntity === 'object') {
               if (item.dataEntity.status === '已合格') {
                 item.status = '已合格'
-                console.log(`从dataEntity提取到已合格状态:`, item.id)
               }
             }
             
@@ -277,10 +253,8 @@ const fetchData = async () => {
                 const dataContent = JSON.parse(item.dataContent)
                 if (dataContent.status === '已合格') {
                   item.status = '已合格'
-                  console.log(`从dataContent解析得到已合格状态:`, item.id)
                 } else if (dataContent.dataEntity && dataContent.dataEntity.status === '已合格') {
                   item.status = '已合格'
-                  console.log(`从dataContent.dataEntity解析得到已合格状态:`, item.id)
                 }
                 
                 // 同时提取其他有用信息
@@ -294,7 +268,7 @@ const fetchData = async () => {
                   item.transferControl = dataContent.transferControl
                 }
               } catch (e) {
-                console.log(`解析dataContent失败:`, e.message)
+                // 无需输出解析错误
               }
             }
             
@@ -334,28 +308,11 @@ const fetchData = async () => {
                                item.status === 'pass' ||
                                item.status === 'PASS'))) {
               item.status = '已合格'
-              console.log(`从其他状态字段标记为已合格:`, item.id)
             }
           }
           
           return item
         })
-        
-        // 显示适配后数据状态分布
-        const statusCounts = {}
-        dataArray.forEach(item => {
-          if (!statusCounts[item.status || '未知']) {
-            statusCounts[item.status || '未知'] = 0
-          }
-          statusCounts[item.status || '未知']++
-        })
-        console.log('数据状态分布:', statusCounts)
-        
-        // 提取第一、二、三条数据的关键信息，帮助排查
-        for (let i = 0; i < Math.min(3, dataArray.length); i++) {
-          const item = dataArray[i]
-          console.log(`数据[${i}] ID: ${item.id}, 状态: ${item.status}, 实体: ${item.entity}`)
-        }
         
         tableData.value = dataArray
         
@@ -363,7 +320,6 @@ const fetchData = async () => {
         const qualifiedCount = dataArray.filter(item => item.status === '已合格').length
         
         if (qualifiedCount > 0) {
-          console.log(`找到${qualifiedCount}条已合格数据`)
           ElMessage.success(`成功获取${dataArray.length}条数据，其中${qualifiedCount}条已合格`)
         } else {
           ElMessage.warning('没有找到已合格的数据，将添加示例数据并将部分数据标记为已合格')
@@ -374,7 +330,6 @@ const fetchData = async () => {
             const maxToMark = Math.min(3, dataArray.length)
             for (let i = 0; i < maxToMark; i++) {
               dataArray[i].status = '已合格'
-              console.log(`已将数据[${i}]标记为已合格:`, dataArray[i].id || dataArray[i].entity || '未知')
             }
           }
           
@@ -421,8 +376,6 @@ const addExampleData = () => {
     // 如果不存在，添加示例数据
     tableData.value.push(exampleData)
   }
-  
-  console.log('添加示例数据后的数据集:', tableData.value)
 }
 
 // 初始化时和visible变化时都获取数据
