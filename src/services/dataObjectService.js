@@ -1436,28 +1436,33 @@ const deleteDataObjectViaApi = async (id) => {
     console.log('准备通过API删除数据对象, ID:', id)
     let apiResponse = null
     try {
+      // 使用原始API路径
       apiResponse = await axiosInstance.delete(`/${id}`)
+      console.log('删除数据对象API响应:', apiResponse)
+      
+      // 检查HTTP状态码
+      if (apiResponse.status === 200 || apiResponse.status === 204) {
+        console.log('通过状态码确认数字对象删除成功')
+        return true
+      }
+      
+      // 检查响应数据
+      if (apiResponse && apiResponse.data) {
+        // 支持多种成功响应格式
+        if (apiResponse.data.code === 200 || 
+            apiResponse.data.code === 0 || 
+            apiResponse.data.success === true || 
+            apiResponse.data.status === 'success') {
+          console.log('通过响应数据确认数字对象删除成功')
+          return true
+        }
+      }
+      
+      return false
     } catch (apiError) {
       console.error('API调用失败:', apiError)
       return false
     }
-    
-    console.log('删除数据对象API响应:', apiResponse)
-    
-    // 检查响应状态
-    if (apiResponse && apiResponse.data) {
-      // 判断返回格式
-      if (apiResponse.data.code === 200) {
-        console.log('数字对象删除成功')
-        
-        // 同时更新本地数据
-        deleteDataObject(id)
-        
-        return true
-      }
-    }
-    
-    return false
   } catch (error) {
     console.error('通过API删除数字对象失败:', error)
     return false
@@ -2107,4 +2112,19 @@ export default {
   updateObjectStatusViaApi,
   syncDataObjects,
   updateDataObjects, // 添加新方法到导出对象
+  updateDataObjectViaApi, // 添加API更新方法
+  addDataObjectViaApi,
+  prepareCsrfToken,
+  getCsrfToken,
+  syncDataObjects,  fetchDataObjectsFromBackend,
+  getLastReceivedApiData,
+  fetchDataObjectById,
+  updateDataObjectViaApi,
+  addDataObjectViaApi,
+  deleteDataObjectViaApi,
+  compareIds,
+  cookieService,  
+  updateObjectStatusViaApi,
+  getAllDataObjects
+
 } 

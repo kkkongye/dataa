@@ -1,13 +1,10 @@
 <template>
   <div class="directory-container">
-    <div class="directory-header">
-      <p class="directory-info">显示所有状态为"已合格"的数据对象</p>
-    </div>
     
     <div class="search-bar">
       <el-input 
         v-model="searchKeyword" 
-        placeholder="搜索ID、实体名称" 
+        placeholder="搜索ID、实体、约束条件、传输控制操作" 
         clearable
         class="search-input"
       >
@@ -128,13 +125,66 @@ const filteredTableData = computed(() => {
     result = tableData.value.filter(item => item.status === '已合格');
   }
   
-  // 搜索过滤
+  // 搜索过滤 - 增强版，支持搜索实体、约束条件和传输控制操作
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(item => 
-      (item.id && item.id.toString().toLowerCase().includes(keyword)) || 
-      (item.entity && item.entity.toLowerCase().includes(keyword))
-    )
+    result = result.filter(item => {
+      // 搜索ID和实体
+      if ((item.id && item.id.toString().toLowerCase().includes(keyword)) || 
+          (item.entity && item.entity.toLowerCase().includes(keyword))) {
+        return true;
+      }
+      
+      // 搜索约束条件
+      if (item.constraint) {
+        // 处理数组格式
+        if (Array.isArray(item.constraint)) {
+          if (item.constraint.some(constraint => 
+            constraint && constraint.toString().toLowerCase().includes(keyword)
+          )) {
+            return true;
+          }
+        } 
+        // 处理字符串格式
+        else if (typeof item.constraint === 'string' && 
+                item.constraint.toLowerCase().includes(keyword)) {
+          return true;
+        }
+        // 处理对象格式
+        else if (typeof item.constraint === 'object') {
+          try {
+            const entries = Object.entries(item.constraint)
+            if (entries.some(([key, value]) => 
+              (key && key.toLowerCase().includes(keyword)) || 
+              (value && value.toString().toLowerCase().includes(keyword))
+            )) {
+              return true;
+            }
+          } catch (e) {
+            console.error('搜索约束条件对象失败:', e)
+          }
+        }
+      }
+      
+      // 搜索传输控制操作
+      if (item.transferControl) {
+        // 处理数组格式
+        if (Array.isArray(item.transferControl)) {
+          if (item.transferControl.some(control => 
+            control && control.toString().toLowerCase().includes(keyword)
+          )) {
+            return true;
+          }
+        }
+        // 处理字符串格式
+        else if (typeof item.transferControl === 'string' && 
+                item.transferControl.toLowerCase().includes(keyword)) {
+          return true;
+        }
+      }
+      
+      return false;
+    });
   }
   
   // 计算分页
@@ -148,10 +198,63 @@ const totalCount = computed(() => {
   const qualified = tableData.value.filter(item => item.status === '已合格')
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    return qualified.filter(item => 
-      (item.id && item.id.toString().toLowerCase().includes(keyword)) || 
-      (item.entity && item.entity.toLowerCase().includes(keyword))
-    ).length
+    return qualified.filter(item => {
+      // 搜索ID和实体
+      if ((item.id && item.id.toString().toLowerCase().includes(keyword)) || 
+          (item.entity && item.entity.toLowerCase().includes(keyword))) {
+        return true;
+      }
+      
+      // 搜索约束条件
+      if (item.constraint) {
+        // 处理数组格式
+        if (Array.isArray(item.constraint)) {
+          if (item.constraint.some(constraint => 
+            constraint && constraint.toString().toLowerCase().includes(keyword)
+          )) {
+            return true;
+          }
+        } 
+        // 处理字符串格式
+        else if (typeof item.constraint === 'string' && 
+                item.constraint.toLowerCase().includes(keyword)) {
+          return true;
+        }
+        // 处理对象格式
+        else if (typeof item.constraint === 'object') {
+          try {
+            const entries = Object.entries(item.constraint)
+            if (entries.some(([key, value]) => 
+              (key && key.toLowerCase().includes(keyword)) || 
+              (value && value.toString().toLowerCase().includes(keyword))
+            )) {
+              return true;
+            }
+          } catch (e) {
+            console.error('搜索约束条件对象失败:', e)
+          }
+        }
+      }
+      
+      // 搜索传输控制操作
+      if (item.transferControl) {
+        // 处理数组格式
+        if (Array.isArray(item.transferControl)) {
+          if (item.transferControl.some(control => 
+            control && control.toString().toLowerCase().includes(keyword)
+          )) {
+            return true;
+          }
+        }
+        // 处理字符串格式
+        else if (typeof item.transferControl === 'string' && 
+                item.transferControl.toLowerCase().includes(keyword)) {
+          return true;
+        }
+      }
+      
+      return false;
+    }).length
   }
   return qualified.length
 })

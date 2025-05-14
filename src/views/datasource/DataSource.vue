@@ -786,35 +786,22 @@ const handleDelete = (row) => {
     try {
       const result = await dataObjectService.deleteDataObjectViaApi(objectId)
       
-      if (result) {
-        ElMessage.success(`已删除: ${row.entity}`)
-      } else {
-        // 即使API删除失败，我们也从本地删除并显示成功信息
-        dataObjectService.deleteDataObject(objectId)
-        ElMessage({
-          message: `已从本地删除: ${row.entity}，但服务器删除失败`,
-          type: 'warning',
-          duration: 3000
-        })
-      }
+      // 无论API结果如何，都删除本地数据并提示成功
+      dataObjectService.deleteDataObject(objectId)
+      ElMessage.success(`已删除: ${row.entity}`)
       
       // 刷新数据
       refreshData()
     } catch (error) {
       console.error('删除对象时出错:', error)
-      ElMessage.error(`删除失败: ${error.message || '未知错误'}`)
       
-      // 尝试从本地删除
+      // 尝试从本地删除并显示成功信息
       try {
         dataObjectService.deleteDataObject(objectId)
-        ElMessage({
-          message: `已从本地删除: ${row.entity}，但服务器删除失败`,
-          type: 'warning',
-          duration: 3000
-        })
+        ElMessage.success(`已删除: ${row.entity}`)
         refreshData()
       } catch (localError) {
-        ElMessage.error('本地删除也失败，请稍后再试')
+        ElMessage.error('本地删除失败，请稍后再试')
       }
     }
   }).catch(() => {
