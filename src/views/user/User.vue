@@ -27,6 +27,7 @@
               </div>
               <div class="action-buttons">
                 <el-button type="primary" :disabled="selectedRows.length === 0" @click="handleDownload">下载数字对象</el-button>
+                <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
                 <el-button v-if="!isDecrypted" type="primary" plain @click="showDecryptDialog">解密</el-button>
                 <el-button v-else type="warning" plain @click="resetDecryption">重新解密</el-button>
               </div>
@@ -267,6 +268,24 @@
       </span>
     </template>
   </el-dialog>
+
+  <!-- 添加目录对话框 -->
+  <el-dialog
+    v-model="directoryDialogVisible"
+    title="目录"
+    width="80%"
+    :close-on-click-modal="false"
+    :show-close="true"
+    draggable
+    class="directory-dialog"
+    destroy-on-close
+  >
+    <DirectoryTable 
+      :visible="directoryDialogVisible"
+      @close="directoryDialogVisible = false"
+      @view-detail="handleViewDirectoryItem"
+    />
+  </el-dialog>
 </template>
 
 <script setup>
@@ -278,6 +297,7 @@ import * as XLSX from 'xlsx'
 import ExcelPreview from '@/components/ExcelPreview.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import CommonPagination from '@/components/CommonPagination.vue'
+import DirectoryTable from '@/components/user/DirectoryTable.vue'
 import dataObjectService from '@/services/dataObjectService'
 import { ensureArray, advancedSearch } from '@/utils/searchUtils';
 import axios from 'axios'
@@ -1299,6 +1319,32 @@ const fetchLatestDataFromApi = async () => {
     console.error('获取最新数据失败:', error)
     ElMessage.error(`获取最新数据失败: ${error.message}`)
   }
+}
+
+// 目录对话框
+const directoryDialogVisible = ref(false)
+
+// 显示目录对话框
+const showDirectoryDialog = () => {
+  // 先获取最新数据，再显示目录对话框
+  fetchLatestDataFromApi()
+    .then(() => {
+      console.log('成功获取最新数据，显示目录对话框')
+      directoryDialogVisible.value = true
+    })
+    .catch(error => {
+      console.error('获取数据失败，但仍然显示目录对话框:', error)
+      directoryDialogVisible.value = true
+    })
+}
+
+// 处理查看目录项目
+const handleViewDirectoryItem = (item) => {
+  // 关闭目录对话框
+  directoryDialogVisible.value = false
+  
+  // 预览选中的实体
+  previewEntity(item)
 }
 </script>
 
