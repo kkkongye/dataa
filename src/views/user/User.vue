@@ -37,7 +37,7 @@
               <div v-if="!isDecrypted" class="data-locked-placeholder">
                 <el-icon class="locked-icon"><Lock /></el-icon>
                 <p>数据已加密，请点击右上角"解密"按钮并输入正确的数字对象ID和Token进行解密</p>
-                <p class="locked-subtitle">解密后将只显示对应ID的数字对象数据</p>
+                <p class="locked-subtitle">解密后将显示所有匹配ID的数字对象数据</p>
               </div>
               <el-table
                 v-else
@@ -150,7 +150,7 @@
   <el-dialog
     v-model="decryptDialogVisible"
     title="解密"
-    width="400px"
+    width="500px"
     append-to-body
     destroy-on-close
     :close-on-click-modal="false"
@@ -160,10 +160,20 @@
   >
     <el-form :model="decryptForm" label-width="120px" ref="decryptFormRef" :rules="decryptFormRules">
       <el-form-item label="数字对象ID:" prop="objectId">
-        <el-input v-model="decryptForm.objectId" placeholder="请输入ID"></el-input>
+        <el-input 
+          v-model="decryptForm.objectId" 
+          placeholder="请输入ID，多个ID请用逗号分隔"
+          type="textarea"
+          :rows="3"
+        ></el-input>
       </el-form-item>
       <el-form-item label="token:" prop="token">
-        <el-input v-model="decryptForm.token" placeholder="请输入token"></el-input>
+        <el-input 
+          v-model="decryptForm.token" 
+          placeholder="请输入token"
+          type="textarea"
+          :rows="2"
+        ></el-input>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -315,8 +325,12 @@ onMounted(() => {
 const totalCount = computed(() => {
   let result = tableData.value;
   
-  // 如果已解密且有指定的对象ID，则只计算匹配ID的条目数
-  if (isDecrypted.value && decryptedObjectId.value) {
+  // 如果已解密且有指定的对象ID列表，则只计算匹配ID的条目数
+  if (isDecrypted.value && decryptedObjectIds.value.length > 0) {
+    result = result.filter(item => decryptedObjectIds.value.includes(item.id));
+    return result.length;
+  } else if (isDecrypted.value && decryptedObjectId.value) {
+    // 兼容旧代码，如果decryptedObjectIds为空但有单个ID
     result = result.filter(item => item.id === decryptedObjectId.value);
     return result.length;
   }
@@ -336,8 +350,11 @@ const totalCount = computed(() => {
 const filteredTableData = computed(() => {
   let result = tableData.value;
 
-  // 如果已解密且有指定的对象ID，则只显示该ID的对象
-  if (isDecrypted.value && decryptedObjectId.value) {
+  // 如果已解密且有指定的对象ID列表，则只显示这些ID的对象
+  if (isDecrypted.value && decryptedObjectIds.value.length > 0) {
+    result = result.filter(item => decryptedObjectIds.value.includes(item.id));
+  } else if (isDecrypted.value && decryptedObjectId.value) {
+    // 兼容旧代码，如果decryptedObjectIds为空但有单个ID
     result = result.filter(item => item.id === decryptedObjectId.value);
   } else if (currentStatus.value) {
     // 状态过滤
@@ -449,6 +466,8 @@ const decryptFormRules = {
   objectId: [{ required: true, message: '请输入数字对象ID', trigger: 'blur' }],
   token: [{ required: true, message: '请输入token', trigger: 'blur' }]
 }
+// 存储解密后的对象ID列表
+const decryptedObjectIds = ref([])
 
 // 显示解密对话框
 const showDecryptDialog = () => {
@@ -471,10 +490,21 @@ const handleDecrypt = () => {
       if (decryptForm.token === receivedToken) {
         // token一致，解密成功
         isDecrypted.value = true
-        // 保存解密对象ID
-        decryptedObjectId.value = decryptForm.objectId
+        
+        // 处理多个ID，分割并去除空格
+        const idList = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id);
+        
+        // 保存解密对象ID列表
+        decryptedObjectIds.value = idList
+        // 为了兼容现有代码，如果只有一个ID，也设置单独的变量
+        decryptedObjectId.value = idList.length === 1 ? idList[0] : ''
+        
         decryptDialogVisible.value = false
         localStorage.removeItem('receivedToken') // 清除已使用的token
+        
+        // 从API获取最新数据
+        fetchLatestDataFromApi()
+        
         ElMessage.success('解密成功')
       } else {
         // token不一致，解密失败
@@ -496,7 +526,7 @@ const handleRequestToken = () => {
   }
   
   // 显示申请中信息
-  ElMessage.info(`正在为数字对象[${decryptForm.objectId}]申请token，请稍候...`)
+  ElMessage.info(`正在申请token，请稍候...`)
   
   // 使用后端API获取token
   const apiUrl = 'http://localhost:8080/api/getToken'
@@ -1227,12 +1257,48 @@ const resetDecryption = () => {
   }).then(() => {
     isDecrypted.value = false;
     decryptedObjectId.value = '';
+    decryptedObjectIds.value = [];
     decryptForm.objectId = '';
     decryptForm.token = '';
     showDecryptDialog();
   }).catch(() => {
     // 用户取消操作
   });
+}
+
+// 从API获取最新数据
+const fetchLatestDataFromApi = async () => {
+  try {
+    ElMessage.info('正在从API获取最新数据...')
+    
+    // 使用API获取最新对象数据
+    const apiUrl = 'http://localhost:8080/api/objects/list'
+    const response = await axios.get(apiUrl)
+    
+    if (response.data) {
+      // 更新表格数据
+      let newData = []
+      
+      if (Array.isArray(response.data)) {
+        newData = response.data
+      } else if (response.data.list && Array.isArray(response.data.list)) {
+        newData = response.data.list
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        newData = response.data.data
+      }
+      
+      if (newData.length > 0) {
+        // 更新服务中的数据
+        dataObjectService.updateDataObjects(newData)
+        ElMessage.success(`成功获取${newData.length}条最新数据`)
+      } else {
+        ElMessage.warning('API返回的数据为空')
+      }
+    }
+  } catch (error) {
+    console.error('获取最新数据失败:', error)
+    ElMessage.error(`获取最新数据失败: ${error.message}`)
+  }
 }
 </script>
 

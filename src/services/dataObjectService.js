@@ -2063,27 +2063,48 @@ const syncDataObjects = (dataObjects) => {
   }
 }
 
+// 更新所有数据对象
+const updateDataObjects = (newDataObjects) => {
+  if (!newDataObjects || !Array.isArray(newDataObjects)) {
+    console.error('更新数据对象失败：提供的数据不是数组')
+    return false
+  }
+  
+  try {
+    // 清空当前数据
+    sharedTableData.splice(0, sharedTableData.length)
+    
+    // 添加新数据（经过适配处理）
+    newDataObjects.forEach(item => {
+      // 适配后端数据到前端格式
+      const adaptedItem = adaptBackendData(item)
+      sharedTableData.push(adaptedItem)
+    })
+    
+    // 通知所有监听器数据已变化
+    notifyListeners()
+    return true
+  } catch (error) {
+    console.error('更新数据对象时出错:', error)
+    return false
+  }
+}
+
 // 导出模块
 export default {
+  getAllDataObjects,
+  fetchDataObjectsFromBackend,
+  fetchDataObjectById,
+  getLastReceivedApiData,
   addDataObject,
   updateDataObject,
   deleteDataObject,
   updateObjectStatus,
-  updateObjectStatusViaApi,
-  getAllDataObjects,
   addChangeListener,
   removeChangeListener,
-  fetchDataObjectsFromBackend,
-  getLastReceivedApiData,
-  fetchDataObjectById,
-  updateDataObjectViaApi,
-  addDataObjectViaApi,
-  deleteDataObjectViaApi,
-  compareIds,
-  cookieService,
   fetchTempDataObject,
   uploadExcelFile,
-  prepareCsrfToken,
-  getCsrfToken,
-  syncDataObjects
+  updateObjectStatusViaApi,
+  syncDataObjects,
+  updateDataObjects, // 添加新方法到导出对象
 } 
