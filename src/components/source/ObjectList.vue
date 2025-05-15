@@ -35,6 +35,10 @@
         </el-input>
       </div>
       <div class="action-buttons">
+        <el-button type="primary" plain @click="$emit('visualization')" class="visualization-btn">
+          <el-icon><DataAnalysis /></el-icon>
+          三维数据可视化
+        </el-button>
         <el-button type="primary" plain @click="$emit('export')">导出检验</el-button>
         <el-button type="primary" @click="$emit('create')">新建数字对象</el-button>
       </div>
@@ -254,7 +258,7 @@
 
 <script setup>
 import { ref, computed, watch, defineEmits, defineProps, onMounted } from 'vue'
-import { Search, InfoFilled } from '@element-plus/icons-vue'
+import { Search, InfoFilled, DataAnalysis } from '@element-plus/icons-vue'
 import CommonPagination from '@/components/CommonPagination.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ClassificationLevelDialog from './ClassificationLevelDialog.vue'
@@ -298,17 +302,19 @@ const props = defineProps({
 })
 
 const emit = defineEmits([
-  'update:currentStatus', 
-  'update:searchKeyword', 
-  'update:currentPage', 
-  'update:pageSize',
+  'update:current-status',
+  'update:search-keyword',
+  'update:current-page',
+  'update:page-size',
+  'update:data',
   'selection-change',
   'sort-change',
   'edit',
   'delete',
   'preview',
   'create',
-  'export'
+  'export',
+  'visualization'
 ])
 
 // 内部状态
@@ -361,25 +367,25 @@ watch(() => props.pageSize, (newVal) => {
 
 // 监听内部状态变化，向外发出事件
 watch(searchValue, (newVal) => {
-  emit('update:searchKeyword', newVal)
+  emit('update:search-keyword', newVal)
 })
 
 watch(currentPageValue, (newVal) => {
-  emit('update:currentPage', newVal)
+  emit('update:current-page', newVal)
 })
 
 watch(pageSizeValue, (newVal) => {
-  emit('update:pageSize', newVal)
+  emit('update:page-size', newVal)
 })
 
 // 处理状态筛选
 const setStatus = (status) => {
-  emit('update:currentStatus', status)
+  emit('update:current-status', status)
 }
 
 // 处理搜索输入
 const handleSearchInput = (value) => {
-  emit('update:searchKeyword', value)
+  emit('update:search-keyword', value)
 }
 
 // 处理表格选择变更
@@ -406,13 +412,13 @@ const handlePreview = (row) => {
 // 处理分页大小变化
 const handleSizeChange = (size) => {
   pageSizeValue.value = size
-  emit('update:pageSize', size)
+  emit('update:page-size', size)
 }
 
 // 处理当前页变化
 const handleCurrentChange = (page) => {
   currentPageValue.value = page
-  emit('update:currentPage', page)
+  emit('update:current-page', page)
 }
 
 // 处理排序变化
@@ -845,5 +851,15 @@ const handleClassificationLevelConfirm = (data) => {
 .generate-btn {
   margin-top: 5px;
   font-size: 12px;
+}
+
+.visualization-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.visualization-btn .el-icon {
+  font-size: 16px;
 }
 </style> 

@@ -32,7 +32,7 @@
     <div class="main-content">
       <!-- 标签页 -->
       <div class="content-card">
-        <!-- 删除刷新按钮容器 -->
+        <!-- 删除可视化按钮容器和按钮 -->
         <el-tabs v-model="activeTab">
           <el-tab-pane label="数字对象列表" name="objectList">
             <!-- 使用ObjectList组件代替原有的列表内容 -->
@@ -52,6 +52,7 @@
               @create="showCreateDialog"
               @export="handleExport"
               @update:data="handleDataUpdate"
+              @visualization="showVisualization"
             />
           </el-tab-pane>
         </el-tabs>
@@ -295,21 +296,25 @@
     <el-button @click="testEditDialog">测试打开编辑对话框</el-button>
   </div>
 
+  <!-- 在底部添加可视化对话框组件 -->
+  <VisualizationDialog v-model:visible="visualizationVisible" />
+
 </template>
 
 <script setup>
 import { ref, computed, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Search, Document, RefreshRight } from '@element-plus/icons-vue'
+import { Search, Document, RefreshRight, DataAnalysis } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
-import CreateObjectDialog from '@/components/source/CreateObjectDialog.vue'
-import ObjectList from '@/components/source/ObjectList.vue'
-import AppHeader from '@/components/AppHeader.vue'
+import CreateObjectDialog from '../../components/source/CreateObjectDialog.vue'
+import ObjectList from '../../components/source/ObjectList.vue'
+import AppHeader from '../../components/AppHeader.vue'
 import CommonPagination from '@/components/CommonPagination.vue'
 import dataObjectService from '@/services/dataObjectService'
 import axios from 'axios'
 import { API_URL, axiosInstance, testApiConnection } from '@/services/apiConfig'
+import VisualizationDialog from '../../components/visualization/VisualizationDialog.vue'
 
 const router = useRouter()
 const activeTab = ref('objectList')
@@ -2581,6 +2586,14 @@ const handleExportExcel = () => {
     ElMessage.error(`导出Excel失败: ${error.message}`);
   }
 }
+
+// 添加可视化对话框控制变量
+const visualizationVisible = ref(false);
+
+// 添加显示可视化方法
+const showVisualization = () => {
+  visualizationVisible.value = true;
+};
 </script>
 
 <style scoped>
@@ -3133,5 +3146,13 @@ pre {
   padding-bottom: 8px;
   border-bottom: 1px solid #ebeef5;
   text-align: center;
+}
+
+.visualization-button-container {
+  display: none;
+}
+
+.visualization-btn {
+  display: none;
 }
 </style> 
