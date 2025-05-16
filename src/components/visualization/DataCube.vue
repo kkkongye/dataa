@@ -208,85 +208,192 @@ const forceRender = async () => {
         xAxis3D: {
           type: 'time',
           name: '编辑时间',
+          nameGap: 60,
           nameTextStyle: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: 'bold',
             color: '#333',
-            backgroundColor: '#f5f5f5',
-            padding: [5, 8],
-            borderRadius: 3
-          }
+            backgroundColor: 'rgba(245,245,245,0.7)',
+            padding: [12, 25],
+            borderRadius: 3,
+            distance: 180,
+            align: 'left',
+            position: 'end',
+            margin: 80
+          },
+          axisLine: {
+            lineStyle: { 
+              width: 3,
+              color: '#666666' // 将轴线颜色改为深灰色
+            }
+          },
+          axisLabel: {
+            formatter: function (value) {
+              const date = new Date(value);
+              if (date.getDate() === 1) {
+                return (date.getMonth() + 1) + '月';
+              }
+              return '';
+            },
+            margin: 8,
+            fontSize: 12
+          },
+          minInterval: 24 * 3600 * 1000,
+          maxInterval: 30 * 24 * 3600 * 1000
         },
         yAxis3D: {
           type: 'category',
           name: '行业分类',
+          nameGap: 80,
           data: industries,
           nameTextStyle: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: 'bold',
             color: '#333',
-            backgroundColor: '#f5f5f5',
-            padding: [5, 8],
-            borderRadius: 3
+            backgroundColor: 'rgba(245,245,245,0.7)',
+            padding: [12, 25],
+            borderRadius: 3,
+            distance: 200,
+            align: 'left',
+            position: 'end',
+            margin: 100
+          },
+          axisLine: {
+            lineStyle: { 
+              width: 3,
+              color: '#666666' // 将轴线颜色改为深灰色
+            }
+          },
+          axisLabel: {
+            formatter: function (value) {
+              return value;
+            },
+            margin: 16,
+            fontSize: 13,
+            show: true,
+            lineHeight: 23,
+            interval: 0,
+            textStyle: {
+              color: '#333',
+              fontWeight: 'bold'
+            }
+          },
+          axisTick: {
+            show: true,
+            interval: 0,
+            inside: false,
+            length: 6,
+            lineStyle: {
+              color: '#666666', // 将刻度线颜色改为深灰色
+              width: 2
+            }
           }
         },
         zAxis3D: {
           type: 'value',
           name: '分类值',
+          nameGap: 60,
           nameTextStyle: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: 'bold',
             color: '#333',
-            backgroundColor: '#f5f5f5',
-            padding: [5, 8],
-            borderRadius: 3
+            backgroundColor: 'rgba(245,245,245,0.7)',
+            padding: [12, 25],
+            borderRadius: 3,
+            distance: 180,
+            align: 'left',
+            position: 'end',
+            margin: 80
+          },
+          axisLine: {
+            lineStyle: { 
+              width: 3,
+              color: '#666666' // 将轴线颜色改为深灰色
+            }
+          },
+          min: 0,
+          max: 100,
+          splitNumber: 5,
+          axisLabel: {
+            formatter: '{value}',
+            margin: 10,
+            fontSize: 12
           }
         },
         grid3D: {
-          boxWidth: 150,
-          boxHeight: 150,
-          boxDepth: 150,
+          boxWidth: 210,
+          boxHeight: 210,
+          boxDepth: 210,
           axisLine: {
-            lineStyle: { width: 2 }
+            show: true,
+            lineStyle: { 
+              width: 3,
+              color: '#666666' // 将轴线颜色改为深灰色
+            }
           },
           axisLabel: {
             fontSize: 12,
-            margin: 6
+            margin: 6,
+            show: true
           },
+          axisTick: {
+            show: true,
+            lineStyle: {
+              color: '#666666', // 将刻度线颜色改为深灰色
+              width: 2
+            },
+            length: 6
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              color: '#666666', // 将网格线颜色改为深灰色
+              width: 1.8,
+              opacity: 0.5 // 降低一点不透明度，使网格线不那么突兀
+            }
+          },
+          splitArea: {
+            show: true,
+            areaStyle: {
+              color: ['rgba(255,255,255,0.02)', 'rgba(250,250,250,0.05)'] // 更轻微的区域分隔，保持白色背景
+            }
+          },
+          environment: '#ffffff', // 确保背景为纯白色
           viewControl: {
             projection: 'perspective',
             autoRotate: autoRotate.value,
             autoRotateSpeed: 5,
-            beta: 15,
-            alpha: 25,
-            distance: 350,
-            minDistance: 250,
-            maxDistance: 500,
+            alpha: 15,
+            beta: 25,
+            distance: 550,
+            minDistance: 300,
+            maxDistance: 800,
             minAlpha: 0,
-            maxAlpha: 90,
+            maxAlpha: 60,
             minBeta: -90,
             maxBeta: 90,
             zoomSensitivity: 1.5,
-            panSensitivity: 1
+            panSensitivity: 1,
+            damping: 0.8
           },
           light: {
             main: {
-              intensity: 1.2,
-              shadow: true
+              intensity: 1.5,
+              shadow: true,
+              shadowQuality: 'high'
             },
             ambient: {
-              intensity: 0.3
+              intensity: 0.5
+            },
+            ambientCubemap: {
+              texture: null,
+              exposure: 1,
+              diffuseIntensity: 0.5,
+              specularIntensity: 0.5
             }
           },
           postEffect: {
-            enable: true,
-            bloom: {
-              enable: true
-            },
-            SSAO: {
-              enable: true,
-              radius: 5
-            }
+            enable: false // 禁用后期效果，可能导致背景变灰
           },
           temporalSuperSampling: {
             enable: true
@@ -442,85 +549,192 @@ const initChart = async () => {
       xAxis3D: {
         type: 'time',
         name: '编辑时间',
+        nameGap: 60,
         nameTextStyle: {
-          fontSize: 18,
+          fontSize: 15,
           fontWeight: 'bold',
           color: '#333',
-          backgroundColor: '#f5f5f5',
-          padding: [5, 8],
-          borderRadius: 3
-        }
+          backgroundColor: 'rgba(245,245,245,0.7)',
+          padding: [12, 25],
+          borderRadius: 3,
+          distance: 180,
+          align: 'left',
+          position: 'end',
+          margin: 80
+        },
+        axisLine: {
+          lineStyle: { 
+            width: 3,
+            color: '#666666' // 将轴线颜色改为深灰色
+          }
+        },
+        axisLabel: {
+          formatter: function (value) {
+            const date = new Date(value);
+            if (date.getDate() === 1) {
+              return (date.getMonth() + 1) + '月';
+            }
+            return '';
+          },
+          margin: 8,
+          fontSize: 12
+        },
+        minInterval: 24 * 3600 * 1000,
+        maxInterval: 30 * 24 * 3600 * 1000
       },
       yAxis3D: {
         type: 'category',
         name: '行业分类',
+        nameGap: 80,
         data: industries,
         nameTextStyle: {
-          fontSize: 18,
+          fontSize: 15,
           fontWeight: 'bold',
           color: '#333',
-          backgroundColor: '#f5f5f5',
-          padding: [5, 8],
-          borderRadius: 3
+          backgroundColor: 'rgba(245,245,245,0.7)',
+          padding: [12, 25],
+          borderRadius: 3,
+          distance: 200,
+          align: 'left',
+          position: 'end',
+          margin: 100
+        },
+        axisLine: {
+          lineStyle: { 
+            width: 3,
+            color: '#666666' // 将轴线颜色改为深灰色
+          }
+        },
+        axisLabel: {
+          formatter: function (value) {
+            return value;
+          },
+          margin: 16,
+          fontSize: 13,
+          show: true,
+          lineHeight: 23,
+          interval: 0,
+          textStyle: {
+            color: '#333',
+            fontWeight: 'bold'
+          }
+        },
+        axisTick: {
+          show: true,
+          interval: 0,
+          inside: false,
+          length: 6,
+          lineStyle: {
+            color: '#666666', // 将刻度线颜色改为深灰色
+            width: 2
+          }
         }
       },
       zAxis3D: {
         type: 'value',
         name: '分类值',
+        nameGap: 60,
         nameTextStyle: {
-          fontSize: 18,
+          fontSize: 15,
           fontWeight: 'bold',
           color: '#333',
-          backgroundColor: '#f5f5f5',
-          padding: [5, 8],
-          borderRadius: 3
+          backgroundColor: 'rgba(245,245,245,0.7)',
+          padding: [12, 25],
+          borderRadius: 3,
+          distance: 180,
+          align: 'left',
+          position: 'end',
+          margin: 80
+        },
+        axisLine: {
+          lineStyle: { 
+            width: 3,
+            color: '#666666' // 将轴线颜色改为深灰色
+          }
+        },
+        min: 0,
+        max: 100,
+        splitNumber: 5,
+        axisLabel: {
+          formatter: '{value}',
+          margin: 10,
+          fontSize: 12
         }
       },
       grid3D: {
-        boxWidth: 150,
-        boxHeight: 150,
-        boxDepth: 150,
+        boxWidth: 210,
+        boxHeight: 210,
+        boxDepth: 210,
         axisLine: {
-          lineStyle: { width: 2 }
+          show: true,
+          lineStyle: { 
+            width: 3,
+            color: '#666666' // 将轴线颜色改为深灰色
+          }
         },
         axisLabel: {
           fontSize: 12,
-          margin: 6
+          margin: 6,
+          show: true
         },
+        axisTick: {
+          show: true,
+          lineStyle: {
+            color: '#666666', // 将刻度线颜色改为深灰色
+            width: 2
+          },
+          length: 6
+        },
+        splitLine: {
+          show: true,
+          lineStyle: {
+            color: '#666666', // 将网格线颜色改为深灰色
+            width: 1.8,
+            opacity: 0.5 // 降低一点不透明度，使网格线不那么突兀
+          }
+        },
+        splitArea: {
+          show: true,
+          areaStyle: {
+            color: ['rgba(255,255,255,0.02)', 'rgba(250,250,250,0.05)'] // 更轻微的区域分隔，保持白色背景
+          }
+        },
+        environment: '#ffffff', // 确保背景为纯白色
         viewControl: {
           projection: 'perspective',
           autoRotate: autoRotate.value,
           autoRotateSpeed: 5,
-          beta: 15,
-          alpha: 25,
-          distance: 350,
-          minDistance: 250,
-          maxDistance: 500,
+          alpha: 15,
+          beta: 25,
+          distance: 550,
+          minDistance: 300,
+          maxDistance: 800,
           minAlpha: 0,
-          maxAlpha: 90,
+          maxAlpha: 60,
           minBeta: -90,
           maxBeta: 90,
           zoomSensitivity: 1.5,
-          panSensitivity: 1
+          panSensitivity: 1,
+          damping: 0.8
         },
         light: {
           main: {
-            intensity: 1.2,
-            shadow: true
+            intensity: 1.5,
+            shadow: true,
+            shadowQuality: 'high'
           },
           ambient: {
-            intensity: 0.3
+            intensity: 0.5
+          },
+          ambientCubemap: {
+            texture: null,
+            exposure: 1,
+            diffuseIntensity: 0.5,
+            specularIntensity: 0.5
           }
         },
         postEffect: {
-          enable: true,
-          bloom: {
-            enable: true
-          },
-          SSAO: {
-            enable: true,
-            radius: 5
-          }
+          enable: false // 禁用后期效果，可能导致背景变灰
         },
         temporalSuperSampling: {
           enable: true
@@ -685,6 +899,7 @@ defineExpose({
   position: relative;
   align-items: center;
   justify-content: center;
+  background-color: #ffffff; /* 确保容器背景为白色 */
 }
 
 .chart-container {
@@ -695,7 +910,7 @@ defineExpose({
   display: block !important;
   overflow: hidden;
   border: 1px solid #f0f0f0;
-  background-color: #fff;
+  background-color: #ffffff; /* 确保图表容器背景为白色 */
   box-sizing: border-box;
   z-index: 1;
   margin: 5px auto;
@@ -720,7 +935,7 @@ defineExpose({
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: #fff;
+  background-color: #ffffff; /* 确保加载容器背景为白色 */
   z-index: 2;
   margin: 5px auto;
 }
