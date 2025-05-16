@@ -862,7 +862,10 @@ const transformToBackendFormat = (frontendData) => {
     dbGrade: frontendData.dbGrade,
     tableGrade: frontendData.tableGrade,
     rowGrades: frontendData.rowGrades,
-    columnGrades: frontendData.columnGrades
+    columnGrades: frontendData.columnGrades,
+    
+    // 【新增】确保dataItems也被添加到顶级对象中，保持编辑时不丢失数据
+    dataItems: frontendData.dataItems || []
   }
 
   return result;
@@ -1309,11 +1312,61 @@ const updateDataObjectViaApi = async (id, dataObject) => {
       return false
     }
     
+    // 获取当前对象，确保保留已有的dataItems
+    let originalDataItems = [];
+    try {
+      const currentIndex = sharedTableData.findIndex(item => compareIds(item.id, id));
+      if (currentIndex !== -1) {
+        const currentObject = sharedTableData[currentIndex];
+        if (currentObject.dataItems && Array.isArray(currentObject.dataItems) && currentObject.dataItems.length > 0) {
+          originalDataItems = [...currentObject.dataItems];
+          console.log(`【API更新】从本地数据中保留了${originalDataItems.length}条dataItems`);
+        }
+      }
+    } catch (e) {
+      console.warn('获取本地dataItems失败:', e);
+    }
+    
+    // 检查传入对象是否有dataItems
+    if (!dataObject.dataItems || dataObject.dataItems.length === 0) {
+      if (originalDataItems.length > 0) {
+        console.log(`【API更新】传入对象没有dataItems，使用本地保存的${originalDataItems.length}条数据`);
+        dataObject.dataItems = originalDataItems;
+      } else {
+        console.log(`【API更新】未找到dataItems数据，可能会导致数据丢失`);
+      }
+    } else {
+      console.log(`【API更新】使用传入对象的${dataObject.dataItems.length}条dataItems数据`);
+    }
+    
     // 获取CSRF令牌
     const token = await prepareCsrfToken();
     
     // 将前端数据转换为后端格式
     const backendData = transformToBackendFormat(dataObject)
+    
+    // 再次确认backendData包含dataItems
+    if (!backendData.dataItems || backendData.dataItems.length === 0) {
+      if (dataObject.dataItems && dataObject.dataItems.length > 0) {
+        console.log(`【API更新】transformToBackendFormat后丢失了dataItems，手动添加回来`);
+        backendData.dataItems = dataObject.dataItems;
+      } else if (originalDataItems.length > 0) {
+        console.log(`【API更新】使用原始dataItems作为后备`);
+        backendData.dataItems = originalDataItems;
+      }
+    }
+    
+    // 确保dataEntity中也包含dataItems
+    if (backendData.dataEntity && (!backendData.dataEntity.dataItems || backendData.dataEntity.dataItems.length === 0)) {
+      if (backendData.dataItems && backendData.dataItems.length > 0) {
+        console.log(`【API更新】确保dataEntity.dataItems也包含数据`);
+        backendData.dataEntity.dataItems = backendData.dataItems;
+      } else if (dataObject.dataItems && dataObject.dataItems.length > 0) {
+        backendData.dataEntity.dataItems = dataObject.dataItems;
+      } else if (originalDataItems.length > 0) {
+        backendData.dataEntity.dataItems = originalDataItems;
+      }
+    }
     
     console.log('准备通过API更新数据对象, ID:', id, '数据:', JSON.stringify(backendData))
     
@@ -1411,6 +1464,12 @@ const updateDataObject = (updatedObject) => {
   if (index !== -1) {
     // 保留原始对象中没被更新的字段
     const originalObject = sharedTableData[index]
+    
+    // 特别处理dataItems字段，确保不会丢失
+    if (!updatedObject.dataItems && originalObject.dataItems) {
+      updatedObject.dataItems = originalObject.dataItems
+    }
+    
     sharedTableData[index] = {
       ...originalObject,
       ...updatedObject

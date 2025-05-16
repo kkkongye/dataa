@@ -450,8 +450,7 @@ const handleSelectionChange = (rows) => {
 }
 
 // 编辑指定的对象
-const handleEdit = (row) => {
-
+const handleEdit = async (row) => {
   // 克隆对象以避免直接修改原始引用
   const sourceObj = JSON.parse(JSON.stringify(row))
   
@@ -468,7 +467,6 @@ const handleEdit = (row) => {
         col: sourceObj.locationInfo.col || '' 
       }
     } else if (typeof sourceObj.locationInfo === 'string') {
-
       const locationInfo = parseLocationInfoString(sourceObj.locationInfo)
       editForm.locationInfo = locationInfo
     }
@@ -476,7 +474,6 @@ const handleEdit = (row) => {
   
   // 处理元数据
   editForm.metadata = extractMetadata(sourceObj)
-  
   
   editForm.constraint = []
   
@@ -596,6 +593,7 @@ const handleEdit = (row) => {
   
   editForm.excelData = sourceObj.excelData || null
   
+  // 首先设置本地dataItems
   editForm.dataItems = sourceObj.dataItems || []
   
   // 处理编辑数据中的数据内容
@@ -638,6 +636,7 @@ const handleEdit = (row) => {
         // 提取dataItems如果存在
         if (contentObj.dataItems && Array.isArray(contentObj.dataItems)) {
           editForm.dataItems = contentObj.dataItems;
+          console.log(`【编辑】从dataContent中获取到${contentObj.dataItems.length}条数据项`);
         }
       }
     } catch (e) {
@@ -645,6 +644,72 @@ const handleEdit = (row) => {
       console.warn(`解析 ${sourceObj.entity} 的dataContent失败:`, e);
     }
   }
+  
+  // 尝试从后端获取最新的dataItems数据
+  try {
+    console.log(`【编辑】尝试从后端获取ID为${sourceObj.id}的数据项`);
+    const apiUrl = 'http://localhost:8080/api/objects/list';
+    const response = await axios.get(apiUrl);
+    
+    let targetObject = null;
+    let fetchedDataItems = null;
+    
+    // 查找目标对象
+    if (response.data && Array.isArray(response.data)) {
+      targetObject = response.data.find(item => item.id === sourceObj.id);
+    } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
+      targetObject = response.data.list.find(item => item.id === sourceObj.id);
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      targetObject = response.data.data.find(item => item.id === sourceObj.id);
+    }
+    
+    // 提取dataItems
+    if (targetObject) {
+      console.log(`【编辑】找到目标对象:`, targetObject);
+      
+      if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
+        fetchedDataItems = targetObject.dataItems;
+        console.log(`【编辑】从后端对象中直接获取到${fetchedDataItems.length}条数据项`);
+      } else if (targetObject.dataContent) {
+        // 尝试从dataContent中解析
+        try {
+          const dataContent = typeof targetObject.dataContent === 'string' 
+            ? JSON.parse(targetObject.dataContent) 
+            : targetObject.dataContent;
+          
+          if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
+            fetchedDataItems = dataContent.dataItems;
+            console.log(`【编辑】从后端dataContent中获取到${fetchedDataItems.length}条数据项`);
+          }
+        } catch (e) {
+          console.error('解析dataContent失败:', e);
+        }
+      }
+      
+      // 如果成功获取到dataItems，使用它
+      if (fetchedDataItems && fetchedDataItems.length > 0) {
+        editForm.dataItems = fetchedDataItems;
+        console.log(`【编辑】成功设置${fetchedDataItems.length}条数据项到编辑表单`);
+      }
+    } else if (response.data && response.data.dataItems && Array.isArray(response.data.dataItems)) {
+      // 尝试从全局dataItems中过滤匹配的数据
+      const filteredItems = response.data.dataItems.filter(item => 
+        item.objectId === sourceObj.id || 
+        item.id === sourceObj.id ||
+        (item.对象ID && item.对象ID === sourceObj.id)
+      );
+      
+      if (filteredItems.length > 0) {
+        editForm.dataItems = filteredItems;
+        console.log(`【编辑】从全局dataItems中过滤出${filteredItems.length}条数据项`);
+      }
+    }
+  } catch (error) {
+    console.error(`【编辑】获取dataItems失败:`, error);
+  }
+  
+  // 显示当前dataItems的状态
+  console.log(`【编辑对象】${sourceObj.entity} 的dataItems:`, editForm.dataItems ? `${editForm.dataItems.length}条数据` : '无数据');
   
   // 显示编辑对话框
   editDialogVisible.value = true
@@ -662,6 +727,62 @@ const saveEditObject = async (updatedObject) => {
   const objectId = updatedObject.id
   
   try {
+    // 记录传入对象的dataItems情况
+    console.log(`【保存对象】${updatedObject.entity} 的dataItems:`, updatedObject.dataItems ? `${updatedObject.dataItems.length}条数据` : '无数据');
+    
+    // 如果对象没有dataItems或dataItems为空数组，尝试从后端获取
+    if (!updatedObject.dataItems || updatedObject.dataItems.length === 0) {
+      try {
+        console.log(`【保存对象】尝试从后端获取ID为${objectId}的数据项...`);
+        const apiUrl = 'http://localhost:8080/api/objects/list';
+        const response = await axios.get(apiUrl);
+        
+        let targetObject = null;
+        let fetchedDataItems = null;
+        
+        // 查找目标对象
+        if (response.data && Array.isArray(response.data)) {
+          targetObject = response.data.find(item => item.id === objectId);
+        } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
+          targetObject = response.data.list.find(item => item.id === objectId);
+        } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+          targetObject = response.data.data.find(item => item.id === objectId);
+        }
+        
+        // 提取dataItems
+        if (targetObject) {
+          console.log(`【保存对象】找到目标对象:`, targetObject);
+          
+          if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
+            fetchedDataItems = targetObject.dataItems;
+            console.log(`【保存对象】从后端对象中直接获取到${fetchedDataItems.length}条数据项`);
+          } else if (targetObject.dataContent) {
+            // 尝试从dataContent中解析
+            try {
+              const dataContent = typeof targetObject.dataContent === 'string' 
+                ? JSON.parse(targetObject.dataContent) 
+                : targetObject.dataContent;
+              
+              if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
+                fetchedDataItems = dataContent.dataItems;
+                console.log(`【保存对象】从后端dataContent中获取到${fetchedDataItems.length}条数据项`);
+              }
+            } catch (e) {
+              console.error('解析dataContent失败:', e);
+            }
+          }
+          
+          // 如果成功获取到dataItems，使用它
+          if (fetchedDataItems && fetchedDataItems.length > 0) {
+            updatedObject.dataItems = fetchedDataItems;
+            console.log(`【保存对象】成功设置${fetchedDataItems.length}条数据项到更新对象`);
+          }
+        }
+      } catch (error) {
+        console.error(`【保存对象】获取dataItems失败:`, error);
+      }
+    }
+    
     // 修复位置信息
     if (updatedObject.locationInfo) {
       if (typeof updatedObject.locationInfo === 'object' && 
@@ -698,8 +819,16 @@ const saveEditObject = async (updatedObject) => {
     dataContent.feedback = updatedObject.feedback
     
     // 保留dataItems
-    if (updatedObject.dataItems) {
+    if (updatedObject.dataItems && updatedObject.dataItems.length > 0) {
       dataContent.dataItems = updatedObject.dataItems
+      console.log(`【保存对象】添加${updatedObject.dataItems.length}条数据项到dataContent`);
+    } else {
+      // 如果updatedObject.dataItems为空，尝试保留dataContent中可能存在的dataItems
+      console.log(`【保存对象】updatedObject.dataItems为空，检查dataContent中是否有dataItems`);
+      if (dataContent.dataItems && Array.isArray(dataContent.dataItems) && dataContent.dataItems.length > 0) {
+        console.log(`【保存对象】保留dataContent中已有的${dataContent.dataItems.length}条数据项`);
+        updatedObject.dataItems = dataContent.dataItems;
+      }
     }
     
     // 如果元数据存在，添加到dataContent
@@ -739,6 +868,14 @@ const saveEditObject = async (updatedObject) => {
     if (!Array.isArray(updatedObject.transferControl)) {
       updatedObject.transferControl = []
     }
+    
+    // 再次检查dataItems和dataContent，确保数据完整
+    console.log(`【保存前最终检查】`, {
+      hasDataItems: updatedObject.dataItems && updatedObject.dataItems.length > 0,
+      dataItemsCount: updatedObject.dataItems ? updatedObject.dataItems.length : 0,
+      hasDataContent: !!updatedObject.dataContent,
+      dataContentLength: updatedObject.dataContent ? updatedObject.dataContent.length : 0
+    });
     
     // 尝试通过API保存
     ElMessage.info('正在向后端保存数据...')
@@ -990,7 +1127,7 @@ const handleSaveEditManually = () => {
           status: editForm.status || '',
           feedback: editForm.feedback || '',
           excelData: editForm.excelData,
-          dataItems: editForm.dataItems || [] // 添加数据项
+          dataItems: editForm.dataItems || [] // 确保保留原始dataItems数据
         }
         
         console.log('准备保存更新的对象:', updatedObject)
