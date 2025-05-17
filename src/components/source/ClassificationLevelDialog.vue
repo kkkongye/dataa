@@ -549,48 +549,84 @@ const handleConfirm = () => {
       return; // 提前退出，不发送请求
     }
     
-    // 构建要发送的数据
+    // 构建要发送的总分类分级值数据
     const postData = {
       totalCategoryValue: String(totalClassificationValue.value),
       totalGradeValue: String(totalGradeValue.value)
     };
-
-    // 更正后的API路径格式
-    const baseUrl = props.apiBaseUrl.endsWith('/api') ? props.apiBaseUrl.slice(0, -4) : props.apiBaseUrl;
     
-    // 尝试从localStorage获取上次成功的URL模式
-    const lastSuccessfulUrlPattern = localStorage.getItem('classificationLevelSuccessUrl');
-    let url = `${baseUrl}/objects/${id}/total_values`; // 默认URL
-    
-    if (lastSuccessfulUrlPattern) {
-      url = lastSuccessfulUrlPattern.replace('{id}', id);
-    }
+    // 构建要发送的分类类别数据
+    const categoryData = {
+      industryCategory: industryCategory.value,
+      processingTimeCategory: dataTimeliness.value,  // 注意这里的映射，前端使用dataTimeliness，后端使用processingTimeCategory
+      dataSourceCategory: dataSource.value
+    };
 
-    // 向后端发送数据，使用已知成功的URL
-    axios.post(url, postData, {
+    // 确保API路径正确
+    const baseUrl = 'http://localhost:8080/api';
+    
+    // 创建一个Promise数组以并行发送两个请求
+    const requests = [];
+
+    // 1. 发送总分类分级值数据到服务器
+    const totalValuesUrl = `${baseUrl}/objects/${id}/total_values`;
+    const totalValuesRequest = axios.post(totalValuesUrl, postData, {
       headers: {
         'Content-Type': 'application/json',
       },
       timeout: 10000,
-    })
-      .then(response => {
-        if (response.status >= 200 && response.status < 300 && response.data && response.data.code === 1) {
+    });
+    requests.push(totalValuesRequest);
+
+    // 2. 发送分类类别数据到服务器
+    const categoriesUrl = `${baseUrl}/objects/${id}/categories`;
+    console.log('发送分类数据到：', categoriesUrl, '数据：', JSON.stringify(categoryData));
+    const categoriesRequest = axios.post(categoriesUrl, categoryData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000,
+    });
+    requests.push(categoriesRequest);
+
+    // 并行处理两个请求
+    Promise.all(requests)
+      .then(([totalValuesResponse, categoriesResponse]) => {
+        let successMessages = [];
+        let warningMessages = [];
+
+        // 处理总分类分级值响应
+        if (totalValuesResponse.status >= 200 && totalValuesResponse.status < 300 && 
+            totalValuesResponse.data && totalValuesResponse.data.code === 1) {
           // 成功情况
-          const successUrlPattern = url.replace(id, '{id}');
+          const successUrlPattern = totalValuesUrl.replace(id, '{id}');
           localStorage.setItem('classificationLevelSuccessUrl', successUrlPattern);
-          
-          ElMessage.success('分类分级值保存成功');
-          emit('confirm', result);
-          emit('update:modelValue', null);
+          successMessages.push('分类分级总值保存成功');
         } else {
           // 失败情况记录日志
-          console.warn('【分类分级值】保存失败，服务器返回:', response.data);
-          ElMessage.warning(`分类分级值保存失败: ${response.data.msg || response.data.message || '服务返回未知错误'}`);
-          
-          // 即使失败仍更新前端显示
-          emit('confirm', result);
-          emit('update:modelValue', null);
+          warningMessages.push(`分类分级总值保存失败: ${totalValuesResponse.data?.msg || totalValuesResponse.data?.message || '未知错误'}`);
         }
+
+        // 处理分类类别响应
+        if (categoriesResponse.status >= 200 && categoriesResponse.status < 300 && 
+            categoriesResponse.data && categoriesResponse.data.code === 1) {
+          successMessages.push('分类类别值保存成功');
+        } else {
+          // 失败情况记录日志
+          warningMessages.push(`分类类别值保存失败: ${categoriesResponse.data?.msg || categoriesResponse.data?.message || '未知错误'}`);
+        }
+
+        // 显示消息
+        if (successMessages.length > 0) {
+          ElMessage.success(successMessages.join('；'));
+        }
+        if (warningMessages.length > 0) {
+          ElMessage.warning(warningMessages.join('；'));
+        }
+
+        // 无论成功还是失败，都更新前端显示并关闭对话框
+        emit('confirm', result);
+        emit('update:modelValue', null);
       })
       .catch(error => {
         console.error('【分类分级值】请求失败:', error.message);
