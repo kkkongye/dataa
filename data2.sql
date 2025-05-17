@@ -107,3 +107,18 @@ ALTER TABLE data_objects
 ADD COLUMN total_category_value VARCHAR(255),
 ADD COLUMN total_grade_value VARCHAR(255);
 
+ALTER TABLE data_objects 
+ADD COLUMN industry_category VARCHAR(255),
+ADD COLUMN processing_time_category VARCHAR(255),
+ADD COLUMN data_source_category VARCHAR(255);
+
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    PASSWORD VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE users
+ADD COLUMN roll VARCHAR(255);

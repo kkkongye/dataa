@@ -33,4 +33,5 @@ public interface DataObjectService {
     void delete(String id);
     public void setWeights(double general, double important, double core);
 
+
 }

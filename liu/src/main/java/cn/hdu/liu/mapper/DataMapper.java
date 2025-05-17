@@ -10,7 +10,8 @@ public interface DataMapper {
     @Insert({
             "INSERT INTO data_objects (id, data_content, metadata_json, location_info_json, ",
             "constraint_set_json, propagation_control_json, audit_info_json, created_at, updated_at,",
-            "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value)",
+            "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value,",
+            "industry_category, processing_time_category, data_source_category)",
             "VALUES (",
             "#{id}, ",
             "#{dataContent}, ",
@@ -23,7 +24,8 @@ public interface DataMapper {
             "#{dbGrade}, #{tableGrade}, ",
             "#{rowGradesJson}, ",
             "#{columnGradesJson}, ",
-            "#{totalCategoryValue}, #{totalGradeValue})"
+            "#{totalCategoryValue}, #{totalGradeValue},",
+            "#{industryCategory}, #{processingTimeCategory}, #{dataSourceCategory})"
     })
     @Options(useGeneratedKeys = true, keyProperty = "numericId")
     void insert(DataObject dataObject);
@@ -51,7 +53,10 @@ public interface DataMapper {
             @Result(column = "row_grades", property = "rowGrades",jdbcType = JdbcType.VARCHAR),
             @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR),
             @Result(column = "total_category_value", property = "totalCategoryValue"),
-            @Result(column = "total_grade_value", property = "totalGradeValue")
+            @Result(column = "total_grade_value", property = "totalGradeValue"),
+            @Result(column = "industry_category", property = "industryCategory", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "processing_time_category", property = "processingTimeCategory", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "data_source_category", property = "dataSourceCategory", jdbcType = JdbcType.VARCHAR)
     })
     DataObject selectById(String id);
 
@@ -69,6 +74,9 @@ public interface DataMapper {
             "column_grades = #{columnGradesJson},",
             "total_category_value = #{totalCategoryValue},",
             "total_grade_value = #{totalGradeValue},",
+            "industry_category = #{industryCategory},",  // 新增更新字段
+            "processing_time_category = #{processingTimeCategory},",
+            "data_source_category = #{dataSourceCategory},",
             "updated_at = NOW() ",
             "WHERE id = #{id}"
     })
@@ -100,7 +108,10 @@ public interface DataMapper {
             @Result(column = "row_grades", property = "rowGrades",jdbcType = JdbcType.VARCHAR),
             @Result(column = "column_grades", property = "columnGrades",jdbcType = JdbcType.VARCHAR),
             @Result(column = "total_category_value", property = "totalCategoryValue"),
-            @Result(column = "total_grade_value", property = "totalGradeValue")
+            @Result(column = "total_grade_value", property = "totalGradeValue"),
+            @Result(column = "industry_category", property = "industryCategory", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "processing_time_category", property = "processingTimeCategory", jdbcType = JdbcType.VARCHAR),
+            @Result(column = "data_source_category", property = "dataSourceCategory", jdbcType = JdbcType.VARCHAR)
     })
     List<DataObject> selectAll();
 }

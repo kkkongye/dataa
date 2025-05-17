@@ -45,7 +45,7 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>5.2.3</version> <!-- 或更高版本 -->
+            <version>5.2.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
@@ -86,6 +86,50 @@
             <version>3.0.4</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>4.9.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bctls-gm-jdk15on</artifactId>
+            <version>0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.77</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.netease.blockchain.thanos</groupId>
+            <artifactId>thanos-web3j</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.netease.blockchain.thanos</groupId>
+            <artifactId>thanos-web3j</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>jpbc-api</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/jpbc-api-1.2.1.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>jpbc-plaf</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/jpbc-plaf-1.2.1.jar</systemPath>
+        </dependency>
     </dependencies>
 
     <build>
@@ -114,10 +158,23 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <compilerArgs>--enable-preview</compilerArgs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <repositories>
+        <repository>
+            <id>local-mvn-repo</id>
+            <url>file://E:/Maven/apache-maven-3.9.9/mvn_repo</url>
+        </repository>
         <repository>
             <id>jpbc-repo</id>
             <url>https://repository.apache.org/content/repositories/snapshots/</url>

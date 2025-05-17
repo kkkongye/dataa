@@ -26,10 +26,11 @@ public class UploadController {
         String extname = filename.substring(index + 1);
         String newFileName = UUID.randomUUID().toString() + extname;
         log.info("新的文件名:()",newFileName);
-        file.transferTo(new File("D:\\datasystem\\excel"+newFileName));
+        file.transferTo(new File("J:\\za\\cun\\"+newFileName));
 
         return Result.success();
     }
 }
+
 
 

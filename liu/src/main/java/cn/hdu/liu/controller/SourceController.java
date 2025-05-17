@@ -1,13 +1,26 @@
 package cn.hdu.liu.controller;
 
+import cn.hdu.liu.blockchain.yuan.contract.Yuan;
+import cn.hdu.liu.mapper.UserMapper;
 import cn.hdu.liu.obj.*;
 import cn.hdu.liu.service.DataObjectService;
-import com.hdu.service.DUService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hdu.Entity.DataCapsule;
+import com.hdu.bswabe.BswabePub;
+import com.hdu.service.DPService;
+import com.hdu.service.Impl.DPServiceImpl;
+import com.thanos.web3j.abi.datatypes.Utf8String;
+import com.thanos.web3j.config.SystemConfig;
+import com.thanos.web3j.crypto.Credentials;
+import com.thanos.web3j.model.ThanosTransactionReceipt;
+import com.thanos.web3j.protocol.Web3j;
+import com.thanos.web3j.protocol.manage.Web3Manager;
+import com.thanos.web3j.utils.ConfigResourceUtil;
+//import com.thanos.common.crypto.key.asymmetric.SecureKey;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cn.hdu.liu.service.SourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,11 +29,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.ls.LSOutput;
 
+import javax.crypto.spec.PSource;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 
 @RestController
@@ -28,16 +45,64 @@ import java.util.*;
 public class SourceController {
 
     private static final Logger log = LoggerFactory.getLogger(SourceController.class);
+/**
+    static List<String> httpList = List.of("121.36.228.85:8580");
+    static List<String> rpcList = List.of("121.36.228.85:8180");
 
-  /**  @Autowired
-    private DUService duService;
-*/
+    SystemConfig Config = new SystemConfig(
+            1,
+            60,
+            httpList,
+            rpcList,
+            false,
+            null,
+            null,
+            "J:\\za\\新建文件夹\\新建文件夹\\liu\\src\\main\\resources\\logback.xml"
+    );
+    SystemConfig systemConfig = ConfigResourceUtil.loadSystemConfig();
+    //ConfigResourceUtil.loadLogConfig(systemConfig.logConfigPath());
+    Web3Manager web3Manager = new Web3Manager(systemConfig);
+    Web3j web3j = web3Manager.getHttpWeb3jRandomly();
+    //SecureKey user = SecureKey.fromPrivate(Hex.decode("010001308f761b30da0baa33457550420bb8938d040a0c6f0582d9351fd5cead86ff11"));
+    SecureKey user = SecureKey.getInstance("ECDSA", 1); //随机生成密钥对
+    Credentials cred = Credentials.create(user);//封装用户信息
+
+    Yuan yuan1 = Yuan.deploy(
+            web3j,
+            cred,
+            BigInteger.valueOf(1),
+            BigInteger.valueOf(3000000),
+            BigInteger.valueOf(0)
+    ).get();
+    String contractAddress = yuan1.getContractAddress();
+    Yuan yuan = Yuan.load(
+            contractAddress,
+            web3j,
+            cred,
+            BigInteger.ONE,          // Gas Price
+            BigInteger.valueOf(3000000) // Gas Limit
+    );
+
+
+    ThanosTransactionReceipt receipt = yuan.register(new Utf8String("123456"), (Set) null).get();
+    int ret = receipt.hashCode();
+
+ **/
+    DPService dpService = new DPServiceImpl();
+
     @Autowired
     private DataObjectService dataObjectService;
+
+
     @Autowired
-    private SourceService SourceService;
+    private UserMapper userMapper;
+
+
     private String encryptedData;
     private String token;
+
+    public SourceController() throws Exception {
+    }
 
     @PostMapping("/objects/excel")
     public Result upload(MultipartFile file, HttpSession session) throws IOException {
@@ -59,9 +124,9 @@ public class SourceController {
 
         String newFileName = uuid + '.' + extname;
         log.info("新的文件名:()",newFileName);
-        file.transferTo(new File("D:\\datasystem\\excel"+newFileName));
+        file.transferTo(new File("J:\\za\\cun\\"+newFileName));
 
-        DataObject tmpObject= dataObjectService.importFromExcel("D:\\datasystem\\excel"+newFileName,origin,uuid);
+        DataObject tmpObject= dataObjectService.importFromExcel("J:\\za\\cun\\"+newFileName,origin,uuid);
         session.setAttribute("tmpDataObject", tmpObject);
 
         return Result.success();
@@ -76,8 +141,13 @@ public class SourceController {
     }
 
     @GetMapping("/objects/{id}")
-    public Result search(@PathVariable String id) {
+    public Result search(@PathVariable String id) throws ExecutionException, InterruptedException {
         DataObject dataObject =  dataObjectService.findById(id);
+        /**
+        String objectCode = dataObject.getId();
+        ThanosTransactionReceipt receipt = yuan.query(new Utf8String(objectCode),(Set) null).get();
+        log.info("查询成功!"+receipt);
+         **/
         return Result.success(dataObject);
     }
 
@@ -103,10 +173,16 @@ public class SourceController {
             tmpObject.setLocationInfo(request.getLocationInfo());
 
 
-
+            String  objectCode = tmpObject.getId();
             dataObjectService.saveDataObject(tmpObject);
+            session.removeAttribute("tmpDataObject");
+            /**
+            log.info("注册成功！"+ret);
 
-
+            ThanosTransactionReceipt receipt = yuan.upload(new Utf8String(objectCode),(Set) null).get();
+            int ret1 = receipt.hashCode();
+            log.info("上传成功!"+ret1);
+             **/
 
             return Result.success("数字对象创建成功");
         } catch (Exception e) {
@@ -116,9 +192,14 @@ public class SourceController {
     }
 
     @PutMapping("/objects/{id}")
-    public Result update(@PathVariable String id, @RequestBody DataObject dataObject) {
+    public Result update(@PathVariable String id, @RequestBody DataObject dataObject) throws ExecutionException, InterruptedException {
         log.info("根据ID修改数字对象: {}, 数据: {}", id, dataObject);
         dataObjectService.update(id, dataObject);
+        String objectCode = dataObject.getId();
+        /**
+        ThanosTransactionReceipt receipt = yuan.modify(new Utf8String(objectCode),(Set) null).get();
+        log.info("修改成功!"+receipt);
+        **/
         return Result.success();
     }
     @GetMapping(value = "/objects/list", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -175,20 +256,25 @@ public class SourceController {
 
 
 
-    @GetMapping(value="/selectIds")
-    public Result<List<DataObject>> selectIds(@RequestParam String ids) {
+    @GetMapping("/selectIds")
+    public Result<DataCapsule> selectIds(
+            @RequestParam String ids
+    ) throws ExecutionException, InterruptedException {
         log.info("根据ID列表查询数据对象: {}", ids);
 
         if (ids == null || ids.trim().isEmpty()) {
-            log.info("ID列表不能为空");
+           log.error("ID列表不能为空");
         }
-
 
         String[] idArray = ids.split("\\s*,\\s*");
         List<DataObject> resultList = new ArrayList<>();
-
         for (String id : idArray) {
             DataObject dataObject = dataObjectService.findById(id);
+            /**
+            String objectCode = dataObject.getId();
+            ThanosTransactionReceipt receipt = yuan.query(new Utf8String(objectCode),(Set) null).get();
+            log.info("查询成功!"+receipt);
+             **/
             if (dataObject != null) {
                 resultList.add(dataObject);
             } else {
@@ -196,32 +282,97 @@ public class SourceController {
             }
         }
 
-        return Result.success(resultList);
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            byte[] plainText = objectMapper.writeValueAsBytes(resultList);
+
+            BswabePub bswabePub = new BswabePub();
+
+            // 4. 设置过期时间
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(2025, Calendar.AUGUST, 15, 10, 30, 0);
+            Date timeExpire = calendar.getTime();
+
+            // 5. 访问次数限制
+            int visitTime = 100;
+
+            // 6. 构造访问策略
+            String duId = "DU_123"; // 数据需求方ID
+            String dsId = "DS_456"; // 数源方ID
+            String sduId = "SDU_789"; // 数据需求方ID
+            String policy = String.format("%s %s %s 3of3", duId, dsId, sduId);
+
+            DataCapsule dataCapsule = dpService.encapsulate(
+                    bswabePub,
+                    plainText,
+                    timeExpire,
+                    visitTime,
+                    policy,
+                    new String[]{duId, dsId, sduId}
+            );
+
+            return Result.success(dataCapsule);
+        } catch (Exception e) {
+            log.error("加密数据失败: ", e);
+            DataCapsule dataCapsule1 = new DataCapsule();
+            return Result.success(dataCapsule1);
+        }
+    }
+
+    @PostMapping("/objects/{id}/categories")
+    public Result setCategories(
+            @PathVariable String id,
+            @RequestBody CategoryRequest request
+    ) {
+        DataObject dataObject = dataObjectService.findById(id);
+        if (dataObject == null) {
+            return Result.error("ID为 " + id + " 的数字对象不存在");
+        }
+        try {
+            dataObject.setIndustryCategory(request.getIndustryCategory());
+            dataObject.setProcessingTimeCategory(request.getProcessingTimeCategory());
+            dataObject.setDataSourceCategory(request.getDataSourceCategory());
+            dataObjectService.saveDataObject(dataObject);
+            return Result.success("分类值设置成功");
+        } catch (Exception e) {
+            log.error("保存失败: ", e);
+            return Result.error("服务器内部错误: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/register")
+    public Result registerUser(@RequestBody UserRegistrationRequest request) {
+        try {
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setPassword(request.getPassword());
+            user.setRoll(request.getRoll());
+            userMapper.insert(user);
+            return Result.success("用户注册成功");
+        } catch (Exception e) {
+            log.error("注册失败: ", e);
+            return Result.error("用户名已存在或数据格式错误");
+        }
     }
 
 
-    @PostMapping("/objects/total_values")
-    public Result addWithTotalValues(
-            @RequestBody TotalValuesRequest request,
-            HttpSession session
+
+
+
+    @PostMapping("/objects/{id}/total_values")
+    public Result setTotalValues(
+            @PathVariable String id,
+            @RequestBody TotalValuesRequest request
     ) {
-        DataObject tmpObject = (DataObject) session.getAttribute("tmpDataObject");
-        if (tmpObject == null) {
-            return Result.error("请先上传 Excel 文件");
+        DataObject dataObject = dataObjectService.findById(id);
+        if (dataObject == null) {
+            return Result.error("ID为 " + id + " 的数字对象不存在");
         }
-
         try {
-            tmpObject.setTotalCategoryValue(request.getTotalCategoryValue());
-            tmpObject.setTotalGradeValue(request.getTotalGradeValue());
-
-            // 添加调试日志
-            log.info("设置后的总分类值: {}", tmpObject.getTotalCategoryValue());
-            log.info("设置后的总分级值: {}", tmpObject.getTotalGradeValue());
-
-
-            dataObjectService.saveDataObject(tmpObject);
-            session.removeAttribute("tmpDataObject");
-            return Result.success("数字对象创建成功（含总分类/分级值）");
+            dataObject.setTotalCategoryValue(request.getTotalCategoryValue());
+            dataObject.setTotalGradeValue(request.getTotalGradeValue());
+            dataObjectService.saveDataObject(dataObject);
+            return Result.success("总分类/分级值设置成功");
         } catch (Exception e) {
             log.error("保存失败: ", e);
             return Result.error("服务器内部错误: " + e.getMessage());
@@ -291,3 +442,5 @@ public class SourceController {
         return Result.success(token);
     }
 }
+
+

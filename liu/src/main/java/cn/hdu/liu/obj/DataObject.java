@@ -67,6 +67,21 @@ public class DataObject {
     private String propagationControlJson;
     private String auditInfoJson;
 
+    private String industryCategory;     // 行业领域分类值
+    private String processingTimeCategory; // 处理时效分类值
+    private String dataSourceCategory;    // 数据来源分类值
+
+    // Getter和Setter
+    public String getIndustryCategory() { return industryCategory; }
+    public void setIndustryCategory(String industryCategory) { this.industryCategory = industryCategory; }
+
+    public String getProcessingTimeCategory() { return processingTimeCategory; }
+    public void setProcessingTimeCategory(String processingTimeCategory) { this.processingTimeCategory = processingTimeCategory; }
+
+    public String getDataSourceCategory() { return dataSourceCategory; }
+    public void setDataSourceCategory(String dataSourceCategory) { this.dataSourceCategory = dataSourceCategory; }
+
+
     private String totalCategoryValue;
     private String totalGradeValue;
 
