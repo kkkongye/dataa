@@ -125,7 +125,6 @@ const fetchDataObjectsFromBackend = async () => {
       }
       // 情况4: 其他未知格式，尝试寻找数组
       else {
-        console.warn('无法识别API响应格式，尝试查找数组数据')
         for (const key in response.data) {
           if (Array.isArray(response.data[key])) {
             dataArray = response.data[key]
@@ -150,20 +149,14 @@ const fetchDataObjectsFromBackend = async () => {
         notifyListeners()
         return sharedTableData
       } else {
-        console.warn('从API获取的数据为空数组或未找到数组数据')
         return sharedTableData
       }
     } else {
-      console.error('获取数据对象列表失败: API返回了空响应')
       return sharedTableData
     }
   } catch (error) {
-    console.error('API请求错误:', error)
-    // 提供更详细的错误信息
-    const errorMessage = error.response 
-      ? `状态码: ${error.response.status}, 消息: ${error.response.statusText || '无详细消息'}`
-      : error.message || '网络错误'
-    console.error(`详细错误信息: ${errorMessage}`)
+    // 保留错误日志但简化
+    console.error('API请求错误:', error.message || '未知错误')
     return sharedTableData
   }
 }
@@ -176,7 +169,6 @@ const getLastReceivedApiData = () => {
 // 适配后端数据到前端格式
 const adaptBackendData = (backendItem) => {
   if (!backendItem) {
-    console.warn('收到空数据项，将创建默认对象')
     return createDefaultDataObject()
   }
   
@@ -186,7 +178,7 @@ const adaptBackendData = (backendItem) => {
     try {
       parsedLocation = JSON.parse(backendItem.locationInfoJson)
     } catch (error) {
-      console.error('位置信息JSON解析失败:', error)
+      // 省略解析错误日志
     }
   }
   
@@ -261,7 +253,7 @@ const adaptBackendData = (backendItem) => {
         };
       }
     } catch (error) {
-      console.error('解析metadataJson失败:', error);
+      // 省略元数据解析错误日志
     }
   }
   
@@ -285,7 +277,7 @@ const adaptBackendData = (backendItem) => {
           headers: parsedMetadata.headers || []
         };
       } catch (error) {
-        console.error('解析dataEntity.metadataJson失败:', error);
+        // 省略解析错误日志
       }
     }
   }
@@ -862,7 +854,6 @@ const prepareCsrfToken = async () => {
     // 首先检查是否已经有令牌
     const existingToken = getCsrfToken();
     if (existingToken) {
-      console.log('使用现有的CSRF令牌');
       return existingToken;
     }
     
@@ -881,9 +872,7 @@ const prepareCsrfToken = async () => {
         return response.data;
       }
     } catch (firstError) {
-      console.warn('第一个CSRF端点失败，尝试备用端点:', firstError.message);
-      
-      // 如果第一个端点失败，尝试备用端点
+      // 尝试备用端点
       try {
         const backupResponse = await axiosInstance.get('/api/security/csrf');
         if (backupResponse.data && (backupResponse.data.token || typeof backupResponse.data === 'string')) {
@@ -893,8 +882,7 @@ const prepareCsrfToken = async () => {
           return token;
         }
       } catch (backupError) {
-        console.warn('备用CSRF端点也失败:', backupError.message);
-        // 继续尝试从cookie获取
+        // 继续尝试其他方法
       }
     }
     
@@ -910,25 +898,21 @@ const prepareCsrfToken = async () => {
         return tokenHeader;
       }
     } catch (headError) {
-      console.warn('通过HEAD请求获取CSRF令牌失败:', headError.message);
+      // 省略头请求失败的日志
     }
     
     // 如果上述方法都失败，尝试生成一个随机令牌
-    // 这是一个回退方案，可能不是所有后端都接受
     const randomToken = Math.random().toString(36).substring(2, 15);
-    console.warn('无法从服务器获取CSRF令牌，使用随机生成的令牌:', randomToken);
     cookieService.setCookie('XSRF-TOKEN', randomToken);
     csrfToken = randomToken;
     return randomToken;
   } catch (error) {
-    console.error('获取CSRF token失败:', error);
     // 失败时仍尝试从cookie获取
     const fallbackToken = Cookies.get('XSRF-TOKEN') || Cookies.get('csrf_token') || '';
     
     // 如果有回退令牌，使用它
     if (fallbackToken) {
       csrfToken = fallbackToken;
-      console.log('使用回退的CSRF令牌');
     }
     
     return fallbackToken;
@@ -1152,7 +1136,7 @@ const addDataObjectViaApi = async (dataObject, extraParams = {}) => {
 const updateDataObjectViaApi = async (id, dataObject) => {
   try {
     if (!id || !dataObject) {
-      console.error('更新数据对象失败: ID或数据对象为空', id, dataObject)
+      console.error('更新数据对象失败: ID或数据对象为空')
       return false
     }
     
@@ -1167,7 +1151,7 @@ const updateDataObjectViaApi = async (id, dataObject) => {
         }
       }
     } catch (e) {
-      console.warn('获取本地dataItems失败:', e);
+      // 简化错误日志
     }
     
     // 检查传入对象是否有dataItems
@@ -1221,8 +1205,6 @@ const updateDataObjectViaApi = async (id, dataObject) => {
     
     // 检查响应状态
     if (response.status === 200 || response.status === 204) {
-      console.log('数字对象更新成功')
-      
       // 同时更新本地数据
       updateDataObject(dataObject)
       
@@ -1232,8 +1214,6 @@ const updateDataObjectViaApi = async (id, dataObject) => {
     // 处理返回的数据格式
     if (response && response.data) {
       if (response.data.code === 200) {
-        console.log('数字对象更新成功')
-        
         // 同时更新本地数据
         updateDataObject(dataObject)
         
@@ -1241,23 +1221,16 @@ const updateDataObjectViaApi = async (id, dataObject) => {
       }
     }
     
-    console.warn('API返回了非预期的响应格式:', response)
     return false
   } catch (error) {
-    console.error('通过API更新数字对象失败:', error)
-    
-    // 提供更详细的错误信息
-    const errorDetails = error.response 
-      ? `错误状态: ${error.response.status}, 消息: ${error.response.statusText || '未知错误'}`
-      : error.message || '网络错误';
-    console.error(`详细错误信息: ${errorDetails}`);
+    // 保留关键错误信息但简化日志
+    console.error('通过API更新数字对象失败');
     
     // 尽管API调用失败，我们仍然更新本地数据
     try {
       updateDataObject(dataObject);
-      console.log('API更新失败，但已更新本地数据');
     } catch (localError) {
-      console.error('本地数据更新也失败:', localError);
+      console.error('本地数据更新也失败');
     }
     
     return false
@@ -1437,7 +1410,7 @@ const cookieService = {
   // 设置认证Token
   setAuthToken: (token, days = 7) => {
     Cookies.set('auth_token', token, { expires: days, path: '/' })
-    console.log('已设置认证Token Cookie:', token)
+    // 删除不必要的日志
     return token
   },
   
@@ -1450,14 +1423,14 @@ const cookieService = {
   // 清除认证Token
   clearAuthToken: () => {
     Cookies.remove('auth_token')
-    console.log('已清除认证Token Cookie')
+    // 删除不必要的日志
     return true
   },
   
   // 设置其他Cookie
   setCookie: (name, value, options = {}) => {
     Cookies.set(name, value, { path: '/', ...options })
-    console.log(`已设置Cookie: ${name}=${value}`)
+    // 删除不必要的日志
     return value
   },
   
@@ -1469,7 +1442,7 @@ const cookieService = {
   // 清除指定Cookie
   removeCookie: (name) => {
     Cookies.remove(name, { path: '/' })
-    console.log(`已删除Cookie: ${name}`)
+    // 删除不必要的日志
     return true
   }
 }
@@ -1909,50 +1882,33 @@ const extractFeedback = (backendItem) => {
 // 同步数据对象
 const syncDataObjects = (dataObjects) => {
   try {
-    // 更新内部数据
-    _dataObjects = [...dataObjects];
+    // 清空当前数据
+    sharedTableData.splice(0, sharedTableData.length);
+    
+    // 添加新数据
+    dataObjects.forEach(item => {
+      sharedTableData.push(item);
+    });
     
     // 通知监听器数据已更改
     notifyListeners();
     
     // 尝试保存到本地存储
-    localStorage.setItem('dataObjects', JSON.stringify(_dataObjects));
+    try {
+      localStorage.setItem('dataObjects', JSON.stringify(sharedTableData));
+    } catch (storageError) {
+      // 本地存储失败时的简化日志
+      console.warn('本地存储失败');
+    }
     
-    // 遍历所有数据对象，确保分类分级值和库表行列分级值已正确保存
-    for (let i = 0; i < _dataObjects.length; i++) {
-      const obj = _dataObjects[i];
-      
-      // 如果有API接口，可以尝试调用API更新数据
-      // 此处只是示例，实际实现可能需要根据后端API调整
-      if (axiosInstance) {
-        try {
-          // 构造要发送的数据对象
-          const updateData = {
-            id: obj.id,
-            classificationValue: obj.classificationValue,
-            levelValue: obj.levelValue,
-            dbGrade: obj.dbGrade,
-            tableGrade: obj.tableGrade,
-            rowGrades: obj.rowGrades,
-            columnGrades: obj.columnGrades
-          };
-          
-          // 异步发送到后端，不等待响应
-          axiosInstance.post(`${API_URL}/objects/sync`, updateData)
-            .then(response => {
-              console.log(`同步对象 ${obj.id} 成功:`, response.data);
-            })
-            .catch(error => {
-              console.error(`同步对象 ${obj.id} 出错:`, error);
-            });
-        } catch (apiError) {
-          console.error('调用API同步数据失败:', apiError);
-        }
-      }
+    // 遍历所有数据对象，同步完成
+    for (let i = 0; i < sharedTableData.length; i++) {
+      // 不输出每个对象的同步日志，减少控制台噪音
     }
     
     return true;
   } catch (error) {
+    // 保留关键错误信息
     console.error('同步数据对象失败:', error);
     return false;
   }
@@ -2006,15 +1962,9 @@ export default {
   addDataObjectViaApi,
   prepareCsrfToken,
   getCsrfToken,
-  syncDataObjects,  fetchDataObjectsFromBackend,
-  getLastReceivedApiData,
-  fetchDataObjectById,
-  updateDataObjectViaApi,
-  addDataObjectViaApi,
+  // 移除重复的导出
   deleteDataObjectViaApi,
   compareIds,
-  cookieService,  
-  updateObjectStatusViaApi,
-  getAllDataObjects
-
+  cookieService  
+  // 已经在前面导出的方法不需要重复导出
 } 

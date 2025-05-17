@@ -616,7 +616,7 @@ const generateClassificationLevel = (row) => {
 };
 
 // 处理分类分级确认
-const handleClassificationLevelConfirm = (data) => {
+const handleClassificationLevelConfirm = async (data) => {
   try {
     if (currentRow.value) {
       // 更新当前行的分类值和分级值
@@ -648,14 +648,52 @@ const handleClassificationLevelConfirm = (data) => {
         console.warn('【分类分级值】本地存储保存失败:', localStorageError);
       }
       
+      // 构建分类值数据
+      const categoryData = {
+        industryCategory: data.industryCategory || '',
+        processingTimeCategory: data.dataTimeliness || '', // 后端使用processingTimeCategory，前端使用dataTimeliness
+        dataSourceCategory: data.dataSource || ''
+      };
+      
+      // 直接向API提交分类数据，而不是通过数据服务同步
+      try {
+        const objectId = currentRow.value.id;
+        
+        // 使用fetch API发送分类数据到特定端点
+        const categoriesResponse = await fetch(`http://localhost:8080/api/objects/${objectId}/categories`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(categoryData)
+        });
+        
+        // 检查响应状态
+        if (!categoriesResponse.ok) {
+          console.warn(`分类数据提交状态: ${categoriesResponse.status} ${categoriesResponse.statusText}`);
+        } else {
+          console.log('分类数据提交成功:', await categoriesResponse.text());
+        }
+      } catch (apiError) {
+        console.error('分类数据API提交失败:', apiError);
+        // API错误不阻止本地更新
+      }
+      
+      // 确保表格数据也得到更新
+      const index = props.data.findIndex(item => item.id === currentRow.value.id);
+      if (index !== -1) {
+        // 创建对象的副本进行更新而不是直接修改
+        const updatedItem = { ...props.data[index], ...currentRow.value };
+        // 替换原对象
+        props.data[index] = updatedItem;
+        console.log('已更新数据源中的数据项:', updatedItem);
+      }
+      
       // 通知用户更新成功
       ElMessage.success('分类分级值已更新');
       
-      // 触发数据更新事件 - 注意：应该传递props.data而不是props.tableData
-      emit('update:data', props.data);
-      
-      // 刷新表格数据
-      emit('refreshData');
+      // 触发数据更新事件 - 使用新数组触发Vue的响应性系统
+      emit('update:data', [...props.data]);
     } else {
       ElMessage.error('更新分类分级值失败：当前行数据为空');
     }
@@ -663,6 +701,7 @@ const handleClassificationLevelConfirm = (data) => {
     // 关闭对话框
     classificationLevelDialogVisible.value = false;
   } catch (error) {
+    console.error('更新分类分级值时出错:', error);
     ElMessage.error(`更新分类分级值失败：${error.message}`);
   }
 };

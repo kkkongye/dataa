@@ -2622,14 +2622,37 @@ const getDefaultEditForm = () => {
 
 // 处理数据更新
 const handleDataUpdate = (newData) => {
-  // 更新表格数据
-  tableData.value = newData
-  
-  // 尝试保存更新到数据服务
-  dataObjectService.syncDataObjects(tableData.value)
-  
-  // 更新总数
-  totalCount.value = getFilteredDataCount()
+  try {
+    console.log('收到数据更新事件，数据项数量:', newData ? newData.length : 0);
+    
+    // 检查数据是否为空
+    if (!newData || newData.length === 0) {
+      console.warn('接收到的更新数据为空，尝试从dataObjectService获取数据');
+      // 尝试从服务获取所有数据，而不是使用可能为空的newData
+      tableData.value = dataObjectService.getAllDataObjects();
+    } else {
+      // 更新表格数据
+      tableData.value = newData;
+    }
+    
+    // 无论何种情况，都确保数据同步到服务
+    dataObjectService.syncDataObjects(tableData.value);
+    
+    // 检查表格数据是否为空
+    if (!tableData.value || tableData.value.length === 0) {
+      console.warn('同步后表格数据仍为空，尝试刷新数据');
+      // 数据同步后如果仍然为空，尝试重新获取
+      refreshData();
+    } else {
+      // 更新总数
+      totalCount.value = getFilteredDataCount();
+    }
+  } catch (error) {
+    console.error('处理数据更新时出错:', error);
+    ElMessage.warning('数据更新处理失败，尝试刷新页面');
+    // 出错时自动尝试刷新数据
+    refreshData();
+  }
 }
 
 // 获取过滤后的数据总数
