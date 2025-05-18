@@ -85,7 +85,6 @@ const industryValues = {
 const fetchDataFromBackend = async () => {
   try {
     const response = await axios.get(apiUrl);
-    console.log('后端返回的原始数据:', JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (err) {
     console.error('获取后端数据失败:', err);
@@ -101,7 +100,6 @@ const processBackendData = async () => {
     const backendData = await fetchDataFromBackend();
     if (!backendData) {
       // 如果获取数据失败，返回空对象
-      console.warn('未能获取后端数据');
       return { data: [], industries: Object.keys(industryValues) };
     }
     
@@ -112,28 +110,18 @@ const processBackendData = async () => {
     if (!Array.isArray(dataArray)) {
       if (backendData.data && Array.isArray(backendData.data)) {
         dataArray = backendData.data;
-        console.log('数据在data字段中');
       } else if (backendData.results && Array.isArray(backendData.results)) {
         dataArray = backendData.results;
-        console.log('数据在results字段中');
       } else if (backendData.items && Array.isArray(backendData.items)) {
         dataArray = backendData.items;
-        console.log('数据在items字段中');
       } else if (backendData.list && Array.isArray(backendData.list)) {
         dataArray = backendData.list;
-        console.log('数据在list字段中');
       } else if (backendData.content && Array.isArray(backendData.content)) {
         dataArray = backendData.content;
-        console.log('数据在content字段中');
       } else {
         console.error('无法识别的数据结构:', backendData);
         return { data: [], industries: Object.keys(industryValues) };
       }
-    }
-    
-    console.log('处理的数据数组长度:', dataArray.length);
-    if (dataArray.length > 0) {
-      console.log('第一个数据项示例:', JSON.stringify(dataArray[0], null, 2));
     }
     
     // 提取所有唯一的行业分类
@@ -141,8 +129,6 @@ const processBackendData = async () => {
       // 行业分类位于顶层的industryCategory字段
       return item.industryCategory || '未分类';
     }))];
-    
-    console.log('提取的行业分类:', industries);
     
     // 处理数据
     const data = dataArray.map((item, index) => {
@@ -210,15 +196,6 @@ const processBackendData = async () => {
           }
         }
         
-        // 记录日志，确认数据已正确提取
-        if (index === 0) {
-          console.log('处理后的第一个数据项:', {
-            entity: entityName,
-            status: statusInfo,
-            metadata: metadata
-          });
-        }
-        
         return {
           name: entityName,
           value: [
@@ -241,7 +218,7 @@ const processBackendData = async () => {
           metadata: metadata
         };
       } catch (err) {
-        console.error('处理数据项时出错:', err, item);
+        console.error('处理数据项时出错:', err);
         // 返回一个默认数据点
         return {
           name: `错误数据${index+1}`,
@@ -339,8 +316,6 @@ const generateMockData = () => {
 
 // 强制渲染方法
 const forceRender = async () => {
-  console.log('用户请求强制渲染');
-  
   // 重置所有状态
   loading.value = true;
   error.value = false;
@@ -357,8 +332,6 @@ const forceRender = async () => {
       errorMessage.value = '容器元素不可用，请联系开发人员';
       return;
     }
-    
-    console.log('强制渲染 - 容器尺寸:', chartContainer.value.offsetWidth, chartContainer.value.offsetHeight);
     
     try {
       // 如果已经有chart实例，销毁它
@@ -385,11 +358,11 @@ const forceRender = async () => {
       // 获取后端数据
       const { data, industries } = await processBackendData();
       
+      let chartData = data;
       if (data.length === 0) {
         // 如果没有数据，使用模拟数据作为备选方案
-        console.warn('未能获取后端数据，使用模拟数据作为备选');
         const mockData = generateMockData();
-        data = mockData;
+        chartData = mockData;
       }
       
       // 设置图表选项
@@ -625,7 +598,7 @@ const forceRender = async () => {
         },
         series: [{
           type: 'scatter3D',
-          data: data.map(item => ({
+          data: chartData.map(item => ({
             name: item.name,
             value: item.value,
             industry: item.industry,
@@ -656,7 +629,6 @@ const forceRender = async () => {
       // 更新状态
       loading.value = false;
       error.value = false;
-      console.log('强制渲染成功');
     } catch (err) {
       console.error('强制渲染失败:', err);
       error.value = true;
@@ -673,8 +645,6 @@ const initChart = async () => {
   initAttempts++;
   
   try {
-    console.log(`开始第${initAttempts}次图表初始化尝试...`);
-    
     // 确保DOM已经渲染
     await nextTick();
     
@@ -687,25 +657,11 @@ const initChart = async () => {
     chartContainer.value.style.visibility = 'visible';
     chartContainer.value.style.display = 'block';
     
-    // 检查容器尺寸并打印更详细的信息
+    // 检查容器尺寸出现问题时强制设置尺寸
     const containerWidth = chartContainer.value.clientWidth;
     const containerHeight = chartContainer.value.clientHeight;
-    const containerDisplay = window.getComputedStyle(chartContainer.value).display;
-    const containerVisibility = window.getComputedStyle(chartContainer.value).visibility;
-    const containerPosition = window.getComputedStyle(chartContainer.value).position;
-    
-    console.log(`图表容器详细信息:
-      - 尺寸: ${containerWidth}x${containerHeight}
-      - 显示: ${containerDisplay}
-      - 可见性: ${containerVisibility}
-      - 定位: ${containerPosition}
-      - offsetWidth: ${chartContainer.value.offsetWidth}
-      - offsetHeight: ${chartContainer.value.offsetHeight}
-    `);
     
     if (containerWidth <= 0 || containerHeight <= 0) {
-      console.error(`图表容器尺寸无效: ${containerWidth}x${containerHeight}`);
-      
       // 强制设置容器尺寸
       chartContainer.value.style.width = '96%';
       chartContainer.value.style.height = '75vh';
@@ -719,8 +675,6 @@ const initChart = async () => {
       const newWidth = chartContainer.value.clientWidth;
       const newHeight = chartContainer.value.clientHeight;
       
-      console.log(`强制设置尺寸后: ${newWidth}x${newHeight}`);
-      
       // 如果尺寸仍然为0，抛出错误
       if (newWidth <= 0 || newHeight <= 0) {
         throw new Error(`无法设置图表容器的有效尺寸，对话框可能尚未完全显示`);
@@ -733,19 +687,16 @@ const initChart = async () => {
       chart = null;
     }
     
-    console.log('准备创建ECharts实例...');
     chart = echarts.init(chartContainer.value);
-    console.log('ECharts实例创建成功');
     
     // 获取后端数据
     const { data, industries } = await processBackendData();
     
     // 如果没有数据，使用模拟数据作为备选方案
+    let chartData = data;
     if (data.length === 0) {
-      console.warn('未能获取后端数据，使用模拟数据作为备选');
       const mockData = generateMockData();
-      data = mockData.data;
-      industries = Object.keys(industryValues);
+      chartData = mockData;
     }
     
     // 设置图表选项
@@ -981,7 +932,7 @@ const initChart = async () => {
       },
       series: [{
         type: 'scatter3D',
-        data: data.map(item => ({
+        data: chartData.map(item => ({
           name: item.name,
           value: item.value,
           industry: item.industry,
@@ -1004,14 +955,11 @@ const initChart = async () => {
     };
     
     // 设置图表选项
-    console.log('设置图表选项...');
     chart.setOption(option);
-    console.log('图表选项设置成功');
     
     // 添加窗口大小改变时自动调整图表大小的事件监听
     window.addEventListener('resize', resizeChart);
     
-    console.log('图表初始化完全成功');
     loading.value = false;
     error.value = false;
     initAttempts = 0; // 重置尝试次数
@@ -1020,8 +968,6 @@ const initChart = async () => {
     
     // 如果尝试次数未达到最大值，则延迟重试
     if (initAttempts < MAX_INIT_ATTEMPTS) {
-      console.log(`将在${RETRY_DELAY}毫秒后进行第 ${initAttempts + 1} 次尝试`);
-      
       setTimeout(() => {
         initChart();
       }, RETRY_DELAY);
@@ -1037,22 +983,18 @@ const initChart = async () => {
 
 // 外部调用的初始化方法
 const initializeChart = () => {
-  console.log('收到初始化图表请求');
   // 重置尝试次数
   initAttempts = 0;
   error.value = false;
   
   // 延迟初始化，确保DOM已经完全渲染
-  // 增加延迟时间，给对话框更多时间完全打开
   setTimeout(() => {
-    console.log('延迟结束，开始初始化图表');
     initChart();
   }, 300); // 减少延迟时间
 };
 
 // 重试初始化
 const retryInit = () => {
-  console.log('用户手动重试初始化');
   initAttempts = 0;
   initChart();
 };

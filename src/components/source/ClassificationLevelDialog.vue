@@ -504,10 +504,90 @@ const calculateClassificationValue = () => {
 
 // 组件挂载时初始化数据
 onMounted(() => {
-  // 不设置默认选项，保持所有下拉选项为空
   // 确保初始化totalClassificationValue为0
   totalClassificationValue.value = "0";
+  
+  // 如果有对象ID，尝试从后端获取分类数据
+  if (props.objectId) {
+    fetchCategoryData(props.objectId);
+  }
 })
+
+// 添加获取分类数据的方法
+const fetchCategoryData = async (objectId) => {
+  try {
+    if (!objectId) {
+      console.warn('获取分类值数据失败：缺少对象ID');
+      return;
+    }
+    
+    // 构建API URL - 使用正确的获取单个对象信息的接口
+    const baseUrl = 'http://localhost:8080/api';
+    const url = `${baseUrl}/objects/${objectId}`;
+    
+    // 发送GET请求获取对象信息
+    const response = await axios.get(url);
+    
+    if (response.data) {
+      let categoryData = null;
+      
+      // 尝试从响应中提取分类数据
+      // 首先检查直接在数据对象中的分类值
+      if (response.data.industryCategory !== undefined || 
+          response.data.processingTimeCategory !== undefined || 
+          response.data.dataSourceCategory !== undefined) {
+        categoryData = response.data;
+      } 
+      // 如果直接在响应中没有找到，检查data字段
+      else if (response.data.data) {
+        if (response.data.data.industryCategory !== undefined || 
+            response.data.data.processingTimeCategory !== undefined || 
+            response.data.data.dataSourceCategory !== undefined) {
+          categoryData = response.data.data;
+        }
+      }
+      
+      if (categoryData) {
+        // 设置分类值
+        if (categoryData.industryCategory) {
+          industryCategory.value = categoryData.industryCategory;
+        }
+        
+        if (categoryData.processingTimeCategory) {
+          // 注意这里是前后端字段映射，后端是processingTimeCategory，前端用dataTimeliness
+          dataTimeliness.value = categoryData.processingTimeCategory;
+        }
+        
+        if (categoryData.dataSourceCategory) {
+          dataSource.value = categoryData.dataSourceCategory;
+        }
+        
+        // 计算总分类值
+        calculateClassificationValue();
+      } else {
+        console.warn('在对象数据中未找到分类数据');
+      }
+    } else {
+      console.warn('获取对象数据返回空结果');
+    }
+  } catch (error) {
+    console.error('获取对象数据出错:', error);
+    // 发生错误时，使用默认值
+    industryCategory.value = '';
+    dataTimeliness.value = '';
+    dataSource.value = '';
+  }
+};
+
+// 监听dialogVisible变化，在显示时获取最新分类值
+watch(dialogVisible, (newVal) => {
+  emit('update:visible', newVal);
+  
+  // 当对话框打开时，获取最新分类数据
+  if (newVal && props.objectId) {
+    fetchCategoryData(props.objectId);
+  }
+});
 
 // 确认按钮处理
 const handleConfirm = () => {
@@ -580,7 +660,6 @@ const handleConfirm = () => {
 
     // 2. 发送分类类别数据到服务器
     const categoriesUrl = `${baseUrl}/objects/${id}/categories`;
-    console.log('发送分类数据到：', categoriesUrl, '数据：', JSON.stringify(categoryData));
     const categoriesRequest = axios.post(categoriesUrl, categoryData, {
       headers: {
         'Content-Type': 'application/json',
@@ -695,7 +774,7 @@ const fetchingData = ref(false)
 // 显示行分级值详情弹窗
 const showRowDetailDialog = async () => {
   try {
-    console.log('显示行分级值详情，当前对象ID:', props.objectId);
+    // console.log('显示行分级值详情，当前对象ID:', props.objectId);
     
     // 清空之前的数据，避免显示上一次的结果
     rowExcelData.value = [];
@@ -714,7 +793,7 @@ const showRowDetailDialog = async () => {
 // 显示列分级值详情弹窗
 const showColumnDetailDialog = async () => {
   try {
-    console.log('显示列分级值详情，当前对象ID:', props.objectId);
+    // console.log('显示列分级值详情，当前对象ID:', props.objectId);
     
     // 清空之前的数据，避免显示上一次的结果
     columnExcelData.value = [];
@@ -741,68 +820,67 @@ const fetchExcelData = async (type = 'row') => {
       throw new Error('无法获取对象ID');
     }
     
-    console.log(`【Excel数据】正在获取${type === 'row' ? '行' : '列'}数据，对象ID:`, id);
+    // 移除不必要的日志，保留简化版
+    // console.log(`【Excel数据】正在获取${type === 'row' ? '行' : '列'}数据，对象ID:`, id);
     
     // 使用对象特定的API端点，可以从props中获取自定义API基础URL
     const apiBaseUrl = props.apiBaseUrl || 'http://localhost:8080';
     const apiUrl = `${apiBaseUrl}/api/objects/${id}`;
-    console.log('【Excel数据】API请求URL:', apiUrl);
+    // console.log('【Excel数据】API请求URL:', apiUrl);
     
     // 如果开启了调试模式，添加随机参数避免缓存
     const url = props.debug ? `${apiUrl}?_t=${Date.now()}` : apiUrl;
     
     const response = await axios.get(url);
     
-    // 在调试模式下打印更多信息
+    // 只在调试模式下打印响应信息
     if (props.debug) {
       console.log('【Excel数据-DEBUG】API响应状态码:', response.status);
       console.log('【Excel数据-DEBUG】API响应头:', response.headers);
       console.log('【Excel数据-DEBUG】API响应数据类型:', typeof response.data);
       console.log('【Excel数据-DEBUG】API响应数据:', response.data);
-    } else {
-      console.log('【Excel数据】API响应状态码:', response.status);
-      console.log('【Excel数据】API响应数据类型:', typeof response.data);
     }
     
     // 查看是否可以直接从API响应中提取数据项
     if (response.data && typeof response.data === 'object') {
-      console.log('【Excel数据】API响应数据顶级键:', Object.keys(response.data));
+      // 移除不必要的日志
+      // console.log('【Excel数据】API响应数据顶级键:', Object.keys(response.data));
       
       // 处理响应数据的方法
       const extractDataItems = (data) => {
         // 尝试获取dataItems字段
         if (data.dataItems && Array.isArray(data.dataItems)) {
-          console.log('【Excel数据】从response.dataItems获取数据');
+          // console.log('【Excel数据】从response.dataItems获取数据');
           return data.dataItems;
         }
         
         // 尝试获取data.data.dataItems字段
         if (data.data && data.data.dataItems && Array.isArray(data.data.dataItems)) {
-          console.log('【Excel数据】从response.data.dataItems获取数据');
+          // console.log('【Excel数据】从response.data.dataItems获取数据');
           return data.data.dataItems;
         }
         
         // 尝试从data字段获取数据
         if (data.data) {
           const objectData = data.data;
-          console.log('【Excel数据】data字段键:', Object.keys(objectData));
+          // console.log('【Excel数据】data字段键:', Object.keys(objectData));
           
           // 尝试获取dataContent字段
           if (objectData.dataContent) {
-            console.log('【Excel数据】发现dataContent字段，类型:', typeof objectData.dataContent);
+            // console.log('【Excel数据】发现dataContent字段，类型:', typeof objectData.dataContent);
             
             try {
               // 如果dataContent是字符串，尝试解析
               let content = objectData.dataContent;
               
               if (typeof content === 'string') {
-                // 打印字符串前100个字符便于调试
-                console.log('【Excel数据】dataContent前100个字符:', content.substring(0, 100));
+                // 移除不必要的日志
+                // console.log('【Excel数据】dataContent前100个字符:', content.substring(0, 100));
                 
                 // 尝试解析JSON
                 try {
                   content = JSON.parse(content);
-                  console.log('【Excel数据】解析dataContent成功，解析后键:', Object.keys(content));
+                  // console.log('【Excel数据】解析dataContent成功，解析后键:', Object.keys(content));
                 } catch (parseError) {
                   console.warn('【Excel数据】解析dataContent为JSON失败:', parseError.message);
                 }
@@ -810,13 +888,13 @@ const fetchExcelData = async (type = 'row') => {
               
               // 检查解析后的content是否有dataItems字段
               if (content && content.dataItems && Array.isArray(content.dataItems)) {
-                console.log('【Excel数据】从dataContent.dataItems获取数据');
+                // console.log('【Excel数据】从dataContent.dataItems获取数据');
                 return content.dataItems;
               }
               
               // 检查是否content本身就是一个数组
               if (Array.isArray(content)) {
-                console.log('【Excel数据】dataContent本身是数组');
+                // console.log('【Excel数据】dataContent本身是数组');
                 return content;
               }
               
@@ -824,7 +902,7 @@ const fetchExcelData = async (type = 'row') => {
               if (typeof content === 'object') {
                 for (const key in content) {
                   if (Array.isArray(content[key]) && content[key].length > 0) {
-                    console.log(`【Excel数据】从dataContent.${key}获取数组数据`);
+                    // console.log(`【Excel数据】从dataContent.${key}获取数组数据`);
                     return content[key];
                   }
                 }
@@ -837,7 +915,7 @@ const fetchExcelData = async (type = 'row') => {
           // 检查对象数据中是否有任何数组字段
           for (const key in objectData) {
             if (Array.isArray(objectData[key]) && objectData[key].length > 0) {
-              console.log(`【Excel数据】从objectData.${key}获取数组数据`);
+              // console.log(`【Excel数据】从objectData.${key}获取数组数据`);
               return objectData[key];
             }
           }
@@ -846,7 +924,7 @@ const fetchExcelData = async (type = 'row') => {
         // 检查原始响应中是否有任何数组字段
         for (const key in data) {
           if (Array.isArray(data[key]) && data[key].length > 0) {
-            console.log(`【Excel数据】从response.${key}获取数组数据`);
+            // console.log(`【Excel数据】从response.${key}获取数组数据`);
             return data[key];
           }
         }
@@ -858,7 +936,7 @@ const fetchExcelData = async (type = 'row') => {
       const dataItems = extractDataItems(response.data);
       
       if (dataItems && dataItems.length > 0) {
-        console.log(`【Excel数据】成功获取${dataItems.length}条数据项:`, dataItems);
+        // console.log(`【Excel数据】成功获取${dataItems.length}条数据项:`, dataItems);
         
         if (type === 'row') {
           // 将获取到的数据存储到rowExcelData中
@@ -870,11 +948,11 @@ const fetchExcelData = async (type = 'row') => {
             for (let i = 0; i < difference; i++) {
               rowGrades.value.push(defaultValue);
             }
-            console.log('已为行分级值数组补充默认值，当前数组:', rowGrades.value);
+            // console.log('已为行分级值数组补充默认值，当前数组:', rowGrades.value);
           } else if (rowGrades.value.length > dataItems.length) {
             // 如果rowGrades数组比数据项多，截取需要的部分
             rowGrades.value = rowGrades.value.slice(0, dataItems.length);
-            console.log('已截取行分级值数组，当前数组:', rowGrades.value);
+            // console.log('已截取行分级值数组，当前数组:', rowGrades.value);
           }
           
           // 将行分级值直接添加到每行数据中
@@ -885,7 +963,7 @@ const fetchExcelData = async (type = 'row') => {
             };
           });
           
-          console.log('行数据已处理，添加了行分级值:', rowExcelData.value);
+          // console.log('行数据已处理，添加了行分级值:', rowExcelData.value);
         } else {
           columnExcelData.value = dataItems;
           
@@ -898,11 +976,11 @@ const fetchExcelData = async (type = 'row') => {
             for (let i = 0; i < difference; i++) {
               columnGrades.value.push(defaultValue);
             }
-            console.log('已为列分级值数组补充默认值，当前数组:', columnGrades.value);
+            // console.log('已为列分级值数组补充默认值，当前数组:', columnGrades.value);
           } else if (columnGrades.value.length > columnKeys.length) {
             // 如果columnGrades数组比列多，截取需要的部分
             columnGrades.value = columnGrades.value.slice(0, columnKeys.length);
-            console.log('已截取列分级值数组，当前数组:', columnGrades.value);
+            // console.log('已截取列分级值数组，当前数组:', columnGrades.value);
           }
           
           // 添加一个额外的记录作为最后一行，用于显示列分级值
@@ -915,7 +993,7 @@ const fetchExcelData = async (type = 'row') => {
             // 添加一个特殊标记字段，用于在表格中区分这是分级值行
             gradeRow['_isGradeRow'] = true;
             columnExcelData.value.push(gradeRow);
-            console.log('列数据已处理，添加了列分级值行:', gradeRow);
+            // console.log('列数据已处理，添加了列分级值行:', gradeRow);
           }
         }
         
@@ -955,7 +1033,7 @@ const fetchExcelData = async (type = 'row') => {
       }
     ];
     
-    console.log('【Excel数据】使用模拟数据:', mockData);
+    // console.log('【Excel数据】使用模拟数据:', mockData);
     
     if (type === 'row') {
       rowExcelData.value = mockData;
@@ -986,7 +1064,7 @@ const getObjectKeys = (dataArray) => {
   const allKeys = [...new Set(keySets.flat())];
   // 过滤掉 rowGradeValue 键
   const filteredKeys = allKeys.filter(key => key !== 'rowGradeValue');
-  console.log('【Excel数据】获取到的所有键:', filteredKeys);
+  // console.log('【Excel数据】获取到的所有键:', filteredKeys);
   
   return filteredKeys;
 }
