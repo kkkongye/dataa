@@ -3,11 +3,15 @@ package cn.hdu.liu.controller;
 import cn.hdu.liu.blockchain.yuan.contract.Yuan;
 import cn.hdu.liu.mapper.UserMapper;
 import cn.hdu.liu.obj.*;
+
 import cn.hdu.liu.service.DataObjectService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hdu.Entity.DataCapsule;
+
 import com.hdu.bswabe.BswabePub;
+import com.hdu.service.DBService;
 import com.hdu.service.DPService;
+import com.hdu.service.Impl.DBServiceImpl;
 import com.hdu.service.Impl.DPServiceImpl;
 import com.thanos.web3j.abi.datatypes.Utf8String;
 import com.thanos.web3j.config.SystemConfig;
@@ -16,7 +20,7 @@ import com.thanos.web3j.model.ThanosTransactionReceipt;
 import com.thanos.web3j.protocol.Web3j;
 import com.thanos.web3j.protocol.manage.Web3Manager;
 import com.thanos.web3j.utils.ConfigResourceUtil;
-//import com.thanos.common.crypto.key.asymmetric.SecureKey;
+import com.thanos.common.crypto.key.asymmetric.SecureKey;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +93,8 @@ public class SourceController {
 
  **/
     DPService dpService = new DPServiceImpl();
+
+    DBService dbService = new DBServiceImpl();
 
     @Autowired
     private DataObjectService dataObjectService;
@@ -287,6 +293,9 @@ public class SourceController {
             byte[] plainText = objectMapper.writeValueAsBytes(resultList);
 
             BswabePub bswabePub = new BswabePub();
+
+            dbService.setup(bswabePub);
+
 
             // 4. 设置过期时间
             Calendar calendar = Calendar.getInstance();

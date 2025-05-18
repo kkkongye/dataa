@@ -39,6 +39,7 @@ public interface DataMapper {
             "CONVERT(propagation_control_json USING utf8) as propagation_control_json, " +
             "CONVERT(audit_info_json USING utf8) as audit_info_json, " +
             "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value, " +
+            "industry_category, processing_time_category, data_source_category, " +
             "created_at, updated_at " +
             "FROM data_objects WHERE id = #{id}")
     @Results({
@@ -94,6 +95,7 @@ public interface DataMapper {
             "CONVERT(propagation_control_json USING utf8) as propagation_control_json, " +
             "CONVERT(audit_info_json USING utf8) as audit_info_json, " +
             "db_grade, table_grade, row_grades, column_grades, total_category_value, total_grade_value, " +
+            "industry_category, processing_time_category, data_source_category, " +
             "created_at, updated_at " +
             "FROM data_objects")
     @Results({

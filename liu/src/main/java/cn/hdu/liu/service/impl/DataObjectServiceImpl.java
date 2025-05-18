@@ -88,6 +88,7 @@ public class DataObjectServiceImpl implements DataObjectService {
                 dataObject.setPropagationControl(objectMapper.readValue(dataObject.getPropagationControlJson(), PropagationControl.class));
                 dataObject.setAuditInfo(objectMapper.readValue(dataObject.getAuditInfoJson(), AuditInfo.class));
 
+
                 // 反序列化新增分级字段
                 if (dataObject.getDataEntity() != null) {
                     dataObject.setRowGrades(dataObject.getRowGradesJson());
