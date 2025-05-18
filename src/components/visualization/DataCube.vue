@@ -54,6 +54,7 @@
 import { ref, onMounted, onUnmounted, nextTick, defineExpose } from 'vue';
 import * as echarts from 'echarts';
 import 'echarts-gl';
+import axios from 'axios';
 
 const chartContainer = ref(null);
 let chart = null;
@@ -63,8 +64,9 @@ const errorMessage = ref('');
 const autoRotate = ref(false);
 const pointSize = ref(10);
 let initAttempts = 0;
-const MAX_INIT_ATTEMPTS = 10; // 增加尝试次数
-const RETRY_DELAY = 500; // 减少重试间隔，增加频率
+const MAX_INIT_ATTEMPTS = 10;
+const RETRY_DELAY = 500;
+const apiUrl = 'http://localhost:8080/api/objects/list';
 
 // 行业分类映射值
 const industryValues = {
@@ -79,7 +81,206 @@ const industryValues = {
   '个人组织': 30
 };
 
-// 生成模拟数据
+// 从后端获取数据
+const fetchDataFromBackend = async () => {
+  try {
+    const response = await axios.get(apiUrl);
+    console.log('后端返回的原始数据:', JSON.stringify(response.data, null, 2));
+    return response.data;
+  } catch (err) {
+    console.error('获取后端数据失败:', err);
+    error.value = true;
+    errorMessage.value = `无法从API获取数据: ${err.message}`;
+    return null;
+  }
+};
+
+// 处理后端数据并生成图表数据
+const processBackendData = async () => {
+  try {
+    const backendData = await fetchDataFromBackend();
+    if (!backendData) {
+      // 如果获取数据失败，返回空对象
+      console.warn('未能获取后端数据');
+      return { data: [], industries: Object.keys(industryValues) };
+    }
+    
+    // 检查后端数据结构
+    let dataArray = backendData;
+    
+    // 检查数据是否包含在特定字段中（常见的API响应格式）
+    if (!Array.isArray(dataArray)) {
+      if (backendData.data && Array.isArray(backendData.data)) {
+        dataArray = backendData.data;
+        console.log('数据在data字段中');
+      } else if (backendData.results && Array.isArray(backendData.results)) {
+        dataArray = backendData.results;
+        console.log('数据在results字段中');
+      } else if (backendData.items && Array.isArray(backendData.items)) {
+        dataArray = backendData.items;
+        console.log('数据在items字段中');
+      } else if (backendData.list && Array.isArray(backendData.list)) {
+        dataArray = backendData.list;
+        console.log('数据在list字段中');
+      } else if (backendData.content && Array.isArray(backendData.content)) {
+        dataArray = backendData.content;
+        console.log('数据在content字段中');
+      } else {
+        console.error('无法识别的数据结构:', backendData);
+        return { data: [], industries: Object.keys(industryValues) };
+      }
+    }
+    
+    console.log('处理的数据数组长度:', dataArray.length);
+    if (dataArray.length > 0) {
+      console.log('第一个数据项示例:', JSON.stringify(dataArray[0], null, 2));
+    }
+    
+    // 提取所有唯一的行业分类
+    const industries = [...new Set(dataArray.map(item => {
+      // 行业分类位于顶层的industryCategory字段
+      return item.industryCategory || '未分类';
+    }))];
+    
+    console.log('提取的行业分类:', industries);
+    
+    // 处理数据
+    const data = dataArray.map((item, index) => {
+      try {
+        // 从数据结构中直接提取必要信息
+        // 解析时间戳
+        const timeValue = item.updatedAt ? new Date(item.updatedAt).getTime() : new Date().getTime();
+        
+        // 解析分类值
+        const categoryValue = parseFloat(item.totalCategoryValue || 0);
+        
+        // 获取行业索引
+        const industry = item.industryCategory || '未分类';
+        const industryIndex = industries.indexOf(industry);
+        
+        // 确定安全级别（基于分类值）
+        const securityLevels = ['低', '中', '高'];
+        const securityColors = ['#91cc75', '#fac858', '#ee6666'];
+        
+        // 基于分类值决定安全等级
+        let securityIndex = 0;
+        const safeValue = isNaN(categoryValue) ? 0 : categoryValue;
+        if (safeValue > 30 && safeValue <= 70) {
+          securityIndex = 1;
+        } else if (safeValue > 70) {
+          securityIndex = 2;
+        }
+        
+        // 使用统一大小，基于滑块值
+        const dataSize = pointSize.value;
+        
+        // 使用固定的透明度
+        const completeness = 0.8;
+        
+        // 从dataEntity嵌套对象中提取实体、状态和元数据
+        // 检查dataEntity是否存在
+        let entityName = `数据${index+1}`;
+        let statusInfo = '未知';
+        let metadata = {
+          dataName: '未知',
+          sourceUnit: '未知',
+          contactPerson: '未知',
+          contactPhone: '未知',
+          resourceSummary: '未知',
+          fieldClassification: '未知'
+        };
+        
+        if (item.dataEntity) {
+          // 提取实体名称
+          entityName = item.dataEntity.entity || entityName;
+          
+          // 提取状态
+          statusInfo = item.dataEntity.status || statusInfo;
+          
+          // 提取元数据
+          if (item.dataEntity.metadata) {
+            metadata = {
+              dataName: item.dataEntity.metadata.dataName || '未知',
+              sourceUnit: item.dataEntity.metadata.sourceUnit || '未知',
+              contactPerson: item.dataEntity.metadata.contactPerson || '未知',
+              contactPhone: item.dataEntity.metadata.contactPhone || '未知',
+              resourceSummary: item.dataEntity.metadata.resourceSummary || '未知',
+              fieldClassification: item.dataEntity.metadata.fieldClassification || '未知'
+            };
+          }
+        }
+        
+        // 记录日志，确认数据已正确提取
+        if (index === 0) {
+          console.log('处理后的第一个数据项:', {
+            entity: entityName,
+            status: statusInfo,
+            metadata: metadata
+          });
+        }
+        
+        return {
+          name: entityName,
+          value: [
+            timeValue,              // X轴: 时间
+            industryIndex,          // Y轴: 行业索引
+            safeValue               // Z轴: 分类值
+          ],
+          industry: industry,
+          securityLevel: securityLevels[securityIndex],
+          securityColor: securityColors[securityIndex],
+          completeness: completeness,
+          symbolSize: dataSize,
+          itemStyle: {
+            color: securityColors[securityIndex],
+            opacity: completeness
+          },
+          // 添加额外字段，用于悬浮提示
+          entity: entityName,
+          status: statusInfo,
+          metadata: metadata
+        };
+      } catch (err) {
+        console.error('处理数据项时出错:', err, item);
+        // 返回一个默认数据点
+        return {
+          name: `错误数据${index+1}`,
+          value: [
+            new Date().getTime(),  // X轴: 当前时间
+            0,                    // Y轴: 默认行业索引
+            0                     // Z轴: 默认分类值
+          ],
+          industry: '未知',
+          securityLevel: '低',
+          securityColor: '#91cc75',
+          completeness: 0.8,
+          symbolSize: pointSize.value,
+          itemStyle: {
+            color: '#91cc75',
+            opacity: 0.8
+          },
+          entity: `错误数据${index+1}`,
+          status: '未知',
+          metadata: {
+            dataName: '未知',
+            sourceUnit: '未知',
+            contactPerson: '未知',
+            contactPhone: '未知',
+            resourceSummary: '未知',
+            fieldClassification: '未知'
+          }
+        };
+      }
+    });
+    
+    return { data, industries };
+  } catch (err) {
+    console.error('处理数据时发生错误:', err);
+    return { data: [], industries: Object.keys(industryValues) };
+  }
+};
+
+// 原始模拟数据生成函数保留为备用方案
 const generateMockData = () => {
   const data = [];
   const industries = Object.keys(industryValues);
@@ -98,11 +299,11 @@ const generateMockData = () => {
     date.setDate(date.getDate() - Math.floor(Math.random() * 30));
     const timeValue = date.getTime();
     
-    // 随机生成数据规模(散点大小)
-    const dataSize = Math.random() * (pointSize.value - 3) + 3;
+    // 使用统一大小，基于滑块值
+    const dataSize = pointSize.value;
     
-    // 随机生成数据完整度(透明度)
-    const completeness = Math.random() * 0.5 + 0.5;
+    // 使用固定的透明度
+    const completeness = 0.8;
     
     data.push({
       name: `数据${i+1}`,
@@ -119,6 +320,16 @@ const generateMockData = () => {
       itemStyle: {
         color: securityColors[securityIndex],
         opacity: completeness
+      },
+      entity: `数据${i+1}`,
+      status: '未知',
+      metadata: {
+        dataName: '未知',
+        sourceUnit: '未知',
+        contactPerson: '未知',
+        contactPhone: '未知',
+        resourceSummary: '未知',
+        fieldClassification: '未知'
       }
     });
   }
@@ -133,12 +344,13 @@ const forceRender = async () => {
   // 重置所有状态
   loading.value = true;
   error.value = false;
+  errorMessage.value = '';
   
   // 等待下一个tick确保UI更新
   await nextTick();
   
   // 延迟一点时间确保DOM完成更新
-  setTimeout(() => {
+  setTimeout(async () => {
     if (!chartContainer.value) {
       console.error('即使强制渲染也找不到容器');
       error.value = true;
@@ -170,9 +382,15 @@ const forceRender = async () => {
       // 创建新的echarts实例
       chart = echarts.init(chartContainer.value);
       
-      // 应用数据和选项
-      const data = generateMockData();
-      const industries = Object.keys(industryValues);
+      // 获取后端数据
+      const { data, industries } = await processBackendData();
+      
+      if (data.length === 0) {
+        // 如果没有数据，使用模拟数据作为备选方案
+        console.warn('未能获取后端数据，使用模拟数据作为备选');
+        const mockData = generateMockData();
+        data = mockData;
+      }
       
       // 设置图表选项
       const option = {
@@ -189,12 +407,18 @@ const forceRender = async () => {
           formatter: (params) => {
             const item = params.data;
             const date = new Date(item.value[0]);
-            return `<div style="font-weight:bold;margin-bottom:5px;">${item.name}</div>
+            return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
                     <div>编辑时间: ${date.toLocaleDateString()}</div>
-                    <div>行业分类: ${item.industry}</div>
-                    <div>分类值: ${item.value[2]}</div>
-                    <div>安全级别: ${item.securityLevel}</div>
-                    <div>数据完整度: ${Math.round(item.completeness * 100)}%</div>`;
+                    <div>行业分类: ${item.industry || '未分类'}</div>
+                    <div>分类值: ${item.value[2] || 0}</div>
+                    <div>状态: ${item.status || '未知'}</div>
+                    <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
+                    <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
+                    <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
+                    <div>联系人: ${item.metadata?.contactPerson || '未知'}</div>
+                    <div>联系电话: ${item.metadata?.contactPhone || '未知'}</div>
+                    <div>资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
+                    <div>字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
           }
         },
         visualMap: {
@@ -409,7 +633,10 @@ const forceRender = async () => {
             securityColor: item.securityColor,
             completeness: item.completeness,
             symbolSize: item.symbolSize,
-            itemStyle: item.itemStyle
+            itemStyle: item.itemStyle,
+            entity: item.entity,
+            status: item.status,
+            metadata: item.metadata
           })),
           emphasis: {
             itemStyle: {
@@ -442,6 +669,7 @@ const forceRender = async () => {
 const initChart = async () => {
   loading.value = true;
   error.value = false;
+  errorMessage.value = '';
   initAttempts++;
   
   try {
@@ -509,11 +737,16 @@ const initChart = async () => {
     chart = echarts.init(chartContainer.value);
     console.log('ECharts实例创建成功');
     
-    // 生成模拟数据
-    const data = generateMockData();
+    // 获取后端数据
+    const { data, industries } = await processBackendData();
     
-    // 准备Y轴标签(行业类别)
-    const industries = Object.keys(industryValues);
+    // 如果没有数据，使用模拟数据作为备选方案
+    if (data.length === 0) {
+      console.warn('未能获取后端数据，使用模拟数据作为备选');
+      const mockData = generateMockData();
+      data = mockData.data;
+      industries = Object.keys(industryValues);
+    }
     
     // 设置图表选项
     const option = {
@@ -530,12 +763,18 @@ const initChart = async () => {
         formatter: (params) => {
           const item = params.data;
           const date = new Date(item.value[0]);
-          return `<div style="font-weight:bold;margin-bottom:5px;">${item.name}</div>
+          return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
                   <div>编辑时间: ${date.toLocaleDateString()}</div>
-                  <div>行业分类: ${item.industry}</div>
-                  <div>分类值: ${item.value[2]}</div>
-                  <div>安全级别: ${item.securityLevel}</div>
-                  <div>数据完整度: ${Math.round(item.completeness * 100)}%</div>`;
+                  <div>行业分类: ${item.industry || '未分类'}</div>
+                  <div>分类值: ${item.value[2] || 0}</div>
+                  <div>状态: ${item.status || '未知'}</div>
+                  <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
+                  <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
+                  <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
+                  <div>联系人: ${item.metadata?.contactPerson || '未知'}</div>
+                  <div>联系电话: ${item.metadata?.contactPhone || '未知'}</div>
+                  <div>资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
+                  <div>字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
         }
       },
       visualMap: {
@@ -750,7 +989,10 @@ const initChart = async () => {
           securityColor: item.securityColor,
           completeness: item.completeness,
           symbolSize: item.symbolSize,
-          itemStyle: item.itemStyle
+          itemStyle: item.itemStyle,
+          entity: item.entity,
+          status: item.status,
+          metadata: item.metadata
         })),
         emphasis: {
           itemStyle: {
@@ -829,24 +1071,22 @@ const updateChartOption = () => {
 };
 
 // 更新点大小
-const updatePointSize = () => {
+const updatePointSize = async () => {
   if (!chart) return;
   
-  // 重新生成数据并更新图表
-  const data = generateMockData();
+  // 更新图表中所有点的大小
+  const option = chart.getOption();
+  const seriesData = option.series[0].data;
+  
+  // 更新每个数据点的大小为当前滑块值
+  const updatedData = seriesData.map(item => {
+    item.symbolSize = pointSize.value;
+    return item;
+  });
   
   chart.setOption({
     series: [{
-      data: data.map(item => ({
-        name: item.name,
-        value: item.value,
-        industry: item.industry,
-        securityLevel: item.securityLevel,
-        securityColor: item.securityColor,
-        completeness: item.completeness,
-        symbolSize: item.symbolSize,
-        itemStyle: item.itemStyle
-      }))
+      data: updatedData
     }]
   });
 };
