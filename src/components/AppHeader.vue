@@ -1,6 +1,6 @@
 <template>
   <div class="header">
-    <div class="title">个人可信数据空间</div>
+    <div class="title">政务可信数据空间</div>
     <div class="user-info">
       <el-icon class="setting-icon"><Setting /></el-icon>
       <el-dropdown trigger="click">

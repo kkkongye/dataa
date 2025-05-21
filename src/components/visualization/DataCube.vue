@@ -130,6 +130,14 @@ const processBackendData = async () => {
       return item.industryCategory || '未分类';
     }))];
     
+    // 添加调试日志，查看第一个数据项中的totalGradeValue
+    if (dataArray.length > 0) {
+      console.log('第一个数据项的分级值:', {
+        原始值: dataArray[0].totalGradeValue,
+        解析后: parseFloat(dataArray[0].totalGradeValue || 0)
+      });
+    }
+    
     // 处理数据
     const data = dataArray.map((item, index) => {
       try {
@@ -139,6 +147,9 @@ const processBackendData = async () => {
         
         // 解析分类值
         const categoryValue = parseFloat(item.totalCategoryValue || 0);
+        
+        // 解析分级值（新增）- 确保正确解析字符串值
+        const gradeValue = parseFloat(item.totalGradeValue || 0);
         
         // 获取行业索引
         const industry = item.industryCategory || '未分类';
@@ -196,6 +207,11 @@ const processBackendData = async () => {
           }
         }
         
+        // 在返回数据前验证分级值
+        if (index === 0) {
+          console.log('处理后的第一个数据点分级值:', gradeValue);
+        }
+        
         return {
           name: entityName,
           value: [
@@ -215,7 +231,8 @@ const processBackendData = async () => {
           // 添加额外字段，用于悬浮提示
           entity: entityName,
           status: statusInfo,
-          metadata: metadata
+          metadata: metadata,
+          gradeValue: gradeValue   // 添加分级值字段
         };
       } catch (err) {
         console.error('处理数据项时出错:', err);
@@ -245,7 +262,8 @@ const processBackendData = async () => {
             contactPhone: '未知',
             resourceSummary: '未知',
             fieldClassification: '未知'
-          }
+          },
+          gradeValue: 0   // 默认分级值
         };
       }
     });
@@ -255,6 +273,25 @@ const processBackendData = async () => {
     console.error('处理数据时发生错误:', err);
     return { data: [], industries: Object.keys(industryValues) };
   }
+};
+
+// 修改tooltip格式，添加分级值
+const tooltipFormatter = (params) => {
+  const item = params.data;
+  const date = new Date(item.value[0]);
+  return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
+          <div>编辑时间: ${date.toLocaleDateString()}</div>
+          <div>行业分类: ${item.industry || '未分类'}</div>
+          <div>分类值: ${item.value[2] || 0}</div>
+          <div>分级值: ${item.gradeValue || 0}</div>
+          <div>状态: ${item.status || '未知'}</div>
+          <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
+          <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
+          <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
+          <div>联系人: ${item.metadata?.contactPerson || '未知'}</div>
+          <div>联系电话: ${item.metadata?.contactPhone || '未知'}</div>
+          <div>资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
+          <div>字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
 };
 
 // 原始模拟数据生成函数保留为备用方案
@@ -282,6 +319,9 @@ const generateMockData = () => {
     // 使用固定的透明度
     const completeness = 0.8;
     
+    // 生成随机分级值（新增）
+    const gradeValue = Math.random() * 20;
+    
     data.push({
       name: `数据${i+1}`,
       value: [
@@ -307,7 +347,8 @@ const generateMockData = () => {
         contactPhone: '未知',
         resourceSummary: '未知',
         fieldClassification: '未知'
-      }
+      },
+      gradeValue: gradeValue  // 添加分级值
     });
   }
   
@@ -377,22 +418,7 @@ const forceRender = async () => {
           }
         },
         tooltip: {
-          formatter: (params) => {
-            const item = params.data;
-            const date = new Date(item.value[0]);
-            return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
-                    <div>编辑时间: ${date.toLocaleDateString()}</div>
-                    <div>行业分类: ${item.industry || '未分类'}</div>
-                    <div>分类值: ${item.value[2] || 0}</div>
-                    <div>状态: ${item.status || '未知'}</div>
-                    <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
-                    <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
-                    <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
-                    <div>联系人: ${item.metadata?.contactPerson || '未知'}</div>
-                    <div>联系电话: ${item.metadata?.contactPhone || '未知'}</div>
-                    <div>资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
-                    <div>字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
-          }
+          formatter: tooltipFormatter
         },
         visualMap: {
           min: 0,
@@ -609,7 +635,8 @@ const forceRender = async () => {
             itemStyle: item.itemStyle,
             entity: item.entity,
             status: item.status,
-            metadata: item.metadata
+            metadata: item.metadata,
+            gradeValue: item.gradeValue
           })),
           emphasis: {
             itemStyle: {
@@ -711,22 +738,7 @@ const initChart = async () => {
         }
       },
       tooltip: {
-        formatter: (params) => {
-          const item = params.data;
-          const date = new Date(item.value[0]);
-          return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
-                  <div>编辑时间: ${date.toLocaleDateString()}</div>
-                  <div>行业分类: ${item.industry || '未分类'}</div>
-                  <div>分类值: ${item.value[2] || 0}</div>
-                  <div>状态: ${item.status || '未知'}</div>
-                  <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
-                  <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
-                  <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
-                  <div>联系人: ${item.metadata?.contactPerson || '未知'}</div>
-                  <div>联系电话: ${item.metadata?.contactPhone || '未知'}</div>
-                  <div>资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
-                  <div>字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
-        }
+        formatter: tooltipFormatter
       },
       visualMap: {
         min: 0,
@@ -943,7 +955,8 @@ const initChart = async () => {
           itemStyle: item.itemStyle,
           entity: item.entity,
           status: item.status,
-          metadata: item.metadata
+          metadata: item.metadata,
+          gradeValue: item.gradeValue
         })),
         emphasis: {
           itemStyle: {
