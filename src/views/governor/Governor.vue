@@ -150,17 +150,17 @@
                 <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待检验'" prop="feedback" label="反馈意见" min-width="160" align="center">
                   <template #default="scope">
                     <!-- 优先使用row.feedback -->
-                    <span v-if="scope.row.feedback" class="feedback-text">
+                    <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
                       {{ scope.row.feedback }}
                     </span>
                     
                     <!-- 其次尝试从dataContent中提取 -->
-                    <span v-else-if="scope.row.dataContent" class="feedback-text">
+                    <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
                       {{ extractFeedback(scope.row.dataContent) }}
                     </span>
                     
                     <!-- 如果是客户反馈实体且状态为不合格，强制显示 -->
-                    <span v-else-if="scope.row.entity === '客户反馈' && scope.row.status === '不合格'" class="feedback-text">
+                    <span v-else-if="scope.row.entity === '客户反馈' && scope.row.status === '不合格'" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
                       数据格式错误
                     </span>
                     
@@ -1288,6 +1288,16 @@ const reportDialogVisible = ref(false)
 const showReportDialog = () => {
   reportDialogVisible.value = true
 }
+
+// 添加根据状态获取反馈意见类名的方法
+const getFeedbackClass = (status) => {
+  switch (status) {
+    case '已合格': return 'status-success'
+    case '不合格': return 'status-error'
+    case '待检验': return 'status-pending'
+    default: return ''
+  }
+}
 </script>
 
 <style scoped>
@@ -1753,13 +1763,27 @@ const showReportDialog = () => {
 
 /* 反馈意见样式 */
 .feedback-text {
-  color: #f56c6c;
   font-weight: 500;
   font-size: 13px;
   display: inline-block;
   padding: 2px 6px;
-  background-color: #fef0f0;
   border-radius: 4px;
+}
+
+/* 反馈意见状态样式 */
+.feedback-text.status-success {
+  color: #67c23a;
+  background-color: #f0f9eb;
+}
+
+.feedback-text.status-error {
+  color: #f56c6c;
+  background-color: #fef0f0;
+}
+
+.feedback-text.status-pending {
+  color: #e6a23c;
+  background-color: #fdf6ec;
 }
 
 /* ID列样式 */

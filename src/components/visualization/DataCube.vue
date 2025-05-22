@@ -2,12 +2,12 @@
   <div class="data-cube-container">
     <!-- 始终渲染图表容器，但通过CSS控制可见性 -->
     <div ref="chartContainer" class="chart-container" :class="{ 'hidden': loading || error }"></div>
-    
+
     <div v-if="loading" class="loading-container">
       <el-skeleton :rows="5" animated />
       <div class="loading-text">正在加载图表数据...</div>
     </div>
-    
+
     <div v-if="error" class="error-container">
       <el-result
         icon="error"
@@ -20,7 +20,7 @@
         </template>
       </el-result>
     </div>
-    
+
     <div class="chart-controls">
       <el-divider>图表控制</el-divider>
       <div class="control-items">
@@ -32,7 +32,7 @@
             @change="updateChartOption"
           />
         </div>
-        
+
         <div class="control-group">
           <span>点大小:</span>
           <el-slider 
@@ -406,11 +406,11 @@ const forceRender = async () => {
         chartData = mockData;
       }
       
-      // 数据按状态分组
-      const qualifiedData = chartData.filter(item => item.status === '已合格');
-      const unqualifiedData = chartData.filter(item => item.status === '不合格');
-      const pendingData = chartData.filter(item => item.status !== '已合格' && item.status !== '不合格');
-      
+
+
+
+
+
       // 设置图表选项
       const option = {
         title: {
@@ -425,41 +425,41 @@ const forceRender = async () => {
         tooltip: {
           formatter: tooltipFormatter
         },
-        // 替换visualMap为legend
-        legend: {
-          data: [
-            {
-              name: '已合格', 
-              itemStyle: {
-                color: '#91cc75'  // 绿色
-              }
-            },
-            {
-              name: '不合格', 
-              itemStyle: {
-                color: '#ee6666'  // 红色
-              }
-            },
-            {
-              name: '待检验', 
-              itemStyle: {
-                color: '#999999'  // 灰色
-              }
-            }
-          ],
-          orient: 'vertical',
-          left: 10,
-          top: 'center',
-          textStyle: {
-            fontSize: 12
-          },
-          selectedMode: true, // 允许通过图例筛选数据
-          show: true, // 确保图例显示
-          z: 100,  // 提高图例层级
-          itemWidth: 15,
-          itemHeight: 15,
-          textStyle: {
-            color: '#333'
+        visualMap: {
+          min: 0,
+          max: 100,
+          dimension: 2,
+          inRange: {
+            color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           }
         },
         xAxis3D: {
@@ -656,86 +656,86 @@ const forceRender = async () => {
             enable: true
           }
         },
-        series: [
-          {
-            name: '已合格',
-            type: 'scatter3D',
-            data: qualifiedData.map(item => ({
-              name: item.name,
-              value: item.value,
-              industry: item.industry,
-              status: item.status,
-              statusColor: item.statusColor,
-              completeness: item.completeness,
-              symbolSize: item.symbolSize,
-              itemStyle: {
-                color: '#91cc75',
-                opacity: 0.8
-              },
-              entity: item.entity,
-              metadata: item.metadata,
-              gradeValue: item.gradeValue
-            })),
-            emphasis: {
-              itemStyle: {
-                borderWidth: 1,
-                borderColor: '#fff'
-              }
-            }
-          },
-          {
-            name: '不合格',
-            type: 'scatter3D',
-            data: unqualifiedData.map(item => ({
-              name: item.name,
-              value: item.value,
-              industry: item.industry,
-              status: item.status,
-              statusColor: item.statusColor,
-              completeness: item.completeness,
-              symbolSize: item.symbolSize,
-              itemStyle: {
-                color: '#ee6666',
-                opacity: 0.8
-              },
-              entity: item.entity,
-              metadata: item.metadata,
-              gradeValue: item.gradeValue
-            })),
-            emphasis: {
-              itemStyle: {
-                borderWidth: 1,
-                borderColor: '#fff'
-              }
-            }
-          },
-          {
-            name: '待检验',
-            type: 'scatter3D',
-            data: pendingData.map(item => ({
-              name: item.name,
-              value: item.value,
-              industry: item.industry,
-              status: item.status,
-              statusColor: item.statusColor,
-              completeness: item.completeness,
-              symbolSize: item.symbolSize,
-              itemStyle: {
-                color: '#999999',
-                opacity: 0.8
-              },
-              entity: item.entity,
-              metadata: item.metadata,
-              gradeValue: item.gradeValue
-            })),
-            emphasis: {
-              itemStyle: {
-                borderWidth: 1,
-                borderColor: '#fff'
-              }
+        series: [{
+          type: 'scatter3D',
+          data: chartData.map(item => ({
+            name: item.name,
+            value: item.value,
+            industry: item.industry,
+            securityLevel: item.securityLevel,
+            securityColor: item.securityColor,
+            completeness: item.completeness,
+            symbolSize: item.symbolSize,
+            itemStyle: item.itemStyle,
+            entity: item.entity,
+            status: item.status,
+            metadata: item.metadata,
+            gradeValue: item.gradeValue
+          })),
+          emphasis: {
+            itemStyle: {
+              borderWidth: 1,
+              borderColor: '#fff'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             }
           }
-        ]
+        }]
       };
       
       // 应用选项
@@ -817,11 +817,11 @@ const initChart = async () => {
       chartData = mockData;
     }
     
-    // 数据按状态分组
-    const qualifiedData = chartData.filter(item => item.status === '已合格');
-    const unqualifiedData = chartData.filter(item => item.status === '不合格');
-    const pendingData = chartData.filter(item => item.status !== '已合格' && item.status !== '不合格');
-    
+
+
+
+
+
     // 设置图表选项
     const option = {
       title: {
@@ -836,41 +836,41 @@ const initChart = async () => {
       tooltip: {
         formatter: tooltipFormatter
       },
-      // 替换visualMap为legend
-      legend: {
-        data: [
-          {
-            name: '已合格', 
-            itemStyle: {
-              color: '#91cc75'  // 绿色
-            }
-          },
-          {
-            name: '不合格', 
-            itemStyle: {
-              color: '#ee6666'  // 红色
-            }
-          },
-          {
-            name: '待检验', 
-            itemStyle: {
-              color: '#999999'  // 灰色
-            }
-          }
-        ],
-        orient: 'vertical',
-        left: 10,
-        top: 'center',
-        textStyle: {
-          fontSize: 12
-        },
-        selectedMode: true, // 允许通过图例筛选数据
-        show: true, // 确保图例显示
-        z: 100,  // 提高图例层级
-        itemWidth: 15,
-        itemHeight: 15,
-        textStyle: {
-          color: '#333'
+      visualMap: {
+        min: 0,
+        max: 100,
+        dimension: 2,
+        inRange: {
+          color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         }
       },
       xAxis3D: {
@@ -1067,86 +1067,86 @@ const initChart = async () => {
           enable: true
         }
       },
-      series: [
-        {
-          name: '已合格',
-          type: 'scatter3D',
-          data: qualifiedData.map(item => ({
-            name: item.name,
-            value: item.value,
-            industry: item.industry,
-            status: item.status,
-            statusColor: item.statusColor,
-            completeness: item.completeness,
-            symbolSize: item.symbolSize,
-            itemStyle: {
-              color: '#91cc75',
-              opacity: 0.8
-            },
-            entity: item.entity,
-            metadata: item.metadata,
-            gradeValue: item.gradeValue
-          })),
-          emphasis: {
-            itemStyle: {
-              borderWidth: 1,
-              borderColor: '#fff'
-            }
-          }
-        },
-        {
-          name: '不合格',
-          type: 'scatter3D',
-          data: unqualifiedData.map(item => ({
-            name: item.name,
-            value: item.value,
-            industry: item.industry,
-            status: item.status,
-            statusColor: item.statusColor,
-            completeness: item.completeness,
-            symbolSize: item.symbolSize,
-            itemStyle: {
-              color: '#ee6666',
-              opacity: 0.8
-            },
-            entity: item.entity,
-            metadata: item.metadata,
-            gradeValue: item.gradeValue
-          })),
-          emphasis: {
-            itemStyle: {
-              borderWidth: 1,
-              borderColor: '#fff'
-            }
-          }
-        },
-        {
-          name: '待检验',
-          type: 'scatter3D',
-          data: pendingData.map(item => ({
-            name: item.name,
-            value: item.value,
-            industry: item.industry,
-            status: item.status,
-            statusColor: item.statusColor,
-            completeness: item.completeness,
-            symbolSize: item.symbolSize,
-            itemStyle: {
-              color: '#999999',
-              opacity: 0.8
-            },
-            entity: item.entity,
-            metadata: item.metadata,
-            gradeValue: item.gradeValue
-          })),
-          emphasis: {
-            itemStyle: {
-              borderWidth: 1,
-              borderColor: '#fff'
-            }
+      series: [{
+        type: 'scatter3D',
+        data: chartData.map(item => ({
+          name: item.name,
+          value: item.value,
+          industry: item.industry,
+          securityLevel: item.securityLevel,
+          securityColor: item.securityColor,
+          completeness: item.completeness,
+          symbolSize: item.symbolSize,
+          itemStyle: item.itemStyle,
+          entity: item.entity,
+          status: item.status,
+          metadata: item.metadata,
+          gradeValue: item.gradeValue
+        })),
+        emphasis: {
+          itemStyle: {
+            borderWidth: 1,
+            borderColor: '#fff'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           }
         }
-      ]
+      }]
     };
     
     // 设置图表选项
@@ -1213,17 +1213,20 @@ const updatePointSize = async () => {
   
   // 更新图表中所有点的大小
   const option = chart.getOption();
+  const seriesData = option.series[0].data;
   
-  // 对每个系列更新数据点大小
-  option.series.forEach(series => {
-    series.data = series.data.map(item => {
-      item.symbolSize = pointSize.value;
-      return item;
-    });
+  // 更新每个数据点的大小为当前滑块值
+  const updatedData = seriesData.map(item => {
+    item.symbolSize = pointSize.value;
+    return item;
+
+
   });
   
   chart.setOption({
-    series: option.series
+    series: [{
+      data: updatedData
+    }]
   });
 };
 
@@ -1367,4 +1370,4 @@ defineExpose({
   align-items: center;
   gap: 10px;
 }
-</style> 
+</style>

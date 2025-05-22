@@ -3,7 +3,7 @@
     <div class="login-box">
       <div class="login-title">
         <span class="system-icon">🔄</span>
-        个人可信数据空间
+        政务可信数据空间
       </div>
       <el-form :model="loginForm" class="login-form" ref="loginFormRef">
         <el-form-item>

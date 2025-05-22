@@ -204,17 +204,17 @@
         <el-table-column prop="feedback" label="反馈意见" min-width="150" align="center">
           <template #default="scope">
             <!-- 优先使用row.feedback -->
-            <span v-if="scope.row.feedback" class="feedback-text">
+            <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
               {{ scope.row.feedback }}
             </span>
             
             <!-- 其次尝试从dataContent中提取 -->
-            <span v-else-if="scope.row.dataContent" class="feedback-text">
+            <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
               {{ extractFeedback(scope.row.dataContent) }}
             </span>
             
             <!-- 如果是客户反馈实体且状态为不合格，强制显示 -->
-            <span v-else-if="scope.row.entity === '客户反馈' && scope.row.status === '不合格'" class="feedback-text">
+            <span v-else-if="scope.row.entity === '客户反馈' && scope.row.status === '不合格'" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
               数据格式错误
             </span>
             
@@ -705,6 +705,16 @@ const handleClassificationLevelConfirm = async (data) => {
     ElMessage.error(`更新分类分级值失败：${error.message}`);
   }
 };
+
+// 获取反馈文本的类名
+const getFeedbackClass = (status) => {
+  switch (status) {
+    case '已合格': return 'feedback-success'
+    case '不合格': return 'feedback-error'
+    case '待检验': return 'feedback-pending'
+    default: return ''
+  }
+}
 </script>
 
 <style scoped>
@@ -840,13 +850,27 @@ const handleClassificationLevelConfirm = async (data) => {
 
 /* 反馈意见样式 */
 .feedback-text {
-  color: #f56c6c;
   font-weight: 500;
   font-size: 13px;
   display: inline-block;
   padding: 2px 6px;
-  background-color: #fef0f0;
   border-radius: 4px;
+}
+
+/* 反馈状态样式类 */
+.feedback-text.feedback-success {
+  color: #67c23a;
+  background-color: #f0f9eb;
+}
+
+.feedback-text.feedback-error {
+  color: #f56c6c;
+  background-color: #fef0f0;
+}
+
+.feedback-text.feedback-pending {
+  color: #e6a23c;
+  background-color: #fdf6ec;
 }
 
 /* ID列样式 */
