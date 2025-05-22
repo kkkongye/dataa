@@ -81,6 +81,13 @@ const industryValues = {
   '个人组织': 30
 };
 
+// 修改状态颜色映射
+const statusColors = {
+  '已合格': '#91cc75',  // 绿色
+  '不合格': '#ee6666',  // 红色
+  '待检验': '#909399'   // 灰色
+};
+
 // 从后端获取数据
 const fetchDataFromBackend = async () => {
   try {
@@ -99,14 +106,12 @@ const processBackendData = async () => {
   try {
     const backendData = await fetchDataFromBackend();
     if (!backendData) {
-      // 如果获取数据失败，返回空对象
       return { data: [], industries: Object.keys(industryValues) };
     }
     
-    // 检查后端数据结构
     let dataArray = backendData;
     
-    // 检查数据是否包含在特定字段中（常见的API响应格式）
+    // 检查数据结构
     if (!Array.isArray(dataArray)) {
       if (backendData.data && Array.isArray(backendData.data)) {
         dataArray = backendData.data;
@@ -124,60 +129,37 @@ const processBackendData = async () => {
       }
     }
     
-    // 提取所有唯一的行业分类
-    const industries = [...new Set(dataArray.map(item => {
-      // 行业分类位于顶层的industryCategory字段
-      return item.industryCategory || '未分类';
-    }))];
+    const industries = [...new Set(dataArray.map(item => item.industryCategory || '未分类'))];
     
-    // 添加调试日志，查看第一个数据项中的totalGradeValue
-    if (dataArray.length > 0) {
-      console.log('第一个数据项的分级值:', {
-        原始值: dataArray[0].totalGradeValue,
-        解析后: parseFloat(dataArray[0].totalGradeValue || 0)
-      });
-    }
-    
-    // 处理数据
     const data = dataArray.map((item, index) => {
       try {
-        // 从数据结构中直接提取必要信息
-        // 解析时间戳
         const timeValue = item.updatedAt ? new Date(item.updatedAt).getTime() : new Date().getTime();
-        
-        // 解析分类值
         const categoryValue = parseFloat(item.totalCategoryValue || 0);
-        
-        // 解析分级值（新增）- 确保正确解析字符串值
         const gradeValue = parseFloat(item.totalGradeValue || 0);
-        
-        // 获取行业索引
         const industry = item.industryCategory || '未分类';
         const industryIndex = industries.indexOf(industry);
         
-        // 确定安全级别（基于分类值）
-        const securityLevels = ['低', '中', '高'];
-        const securityColors = ['#91cc75', '#fac858', '#ee6666'];
-        
-        // 基于分类值决定安全等级
-        let securityIndex = 0;
-        const safeValue = isNaN(categoryValue) ? 0 : categoryValue;
-        if (safeValue > 30 && safeValue <= 70) {
-          securityIndex = 1;
-        } else if (safeValue > 70) {
-          securityIndex = 2;
+        // 从dataEntity中获取状态
+        let status = '待检验';
+        if (item.dataEntity && item.dataEntity.status) {
+          status = item.dataEntity.status;
+        } else if (item.dataContent) {
+          try {
+            const dataContent = JSON.parse(item.dataContent);
+            if (dataContent.status) {
+              status = dataContent.status;
+            }
+          } catch (e) {
+            console.error('解析dataContent失败:', e);
+          }
         }
         
-        // 使用统一大小，基于滑块值
-        const dataSize = pointSize.value;
+        const statusColor = statusColors[status] || statusColors['待检验'];
         
-        // 使用固定的透明度
+        const dataSize = pointSize.value;
         const completeness = 0.8;
         
-        // 从dataEntity嵌套对象中提取实体、状态和元数据
-        // 检查dataEntity是否存在
         let entityName = `数据${index+1}`;
-        let statusInfo = '未知';
         let metadata = {
           dataName: '未知',
           sourceUnit: '未知',
@@ -187,14 +169,10 @@ const processBackendData = async () => {
           fieldClassification: '未知'
         };
         
+        // 从dataEntity中获取实体名称和元数据
         if (item.dataEntity) {
-          // 提取实体名称
           entityName = item.dataEntity.entity || entityName;
           
-          // 提取状态
-          statusInfo = item.dataEntity.status || statusInfo;
-          
-          // 提取元数据
           if (item.dataEntity.metadata) {
             metadata = {
               dataName: item.dataEntity.metadata.dataName || '未知',
@@ -207,54 +185,47 @@ const processBackendData = async () => {
           }
         }
         
-        // 在返回数据前验证分级值
-        if (index === 0) {
-          console.log('处理后的第一个数据点分级值:', gradeValue);
-        }
-        
         return {
           name: entityName,
           value: [
-            timeValue,              // X轴: 时间
-            industryIndex,          // Y轴: 行业索引
-            safeValue               // Z轴: 分类值
+            timeValue,
+            industryIndex,
+            categoryValue
           ],
           industry: industry,
-          securityLevel: securityLevels[securityIndex],
-          securityColor: securityColors[securityIndex],
+          status: status,
+          statusColor: statusColor,
           completeness: completeness,
           symbolSize: dataSize,
           itemStyle: {
-            color: securityColors[securityIndex],
+            color: statusColor,
             opacity: completeness
           },
-          // 添加额外字段，用于悬浮提示
           entity: entityName,
-          status: statusInfo,
+          statusInfo: status,
           metadata: metadata,
-          gradeValue: gradeValue   // 添加分级值字段
+          gradeValue: gradeValue
         };
       } catch (err) {
         console.error('处理数据项时出错:', err);
-        // 返回一个默认数据点
         return {
           name: `错误数据${index+1}`,
           value: [
-            new Date().getTime(),  // X轴: 当前时间
-            0,                    // Y轴: 默认行业索引
-            0                     // Z轴: 默认分类值
+            new Date().getTime(),
+            0,
+            0
           ],
           industry: '未知',
-          securityLevel: '低',
-          securityColor: '#91cc75',
+          status: '待检验',
+          statusColor: statusColors['待检验'],
           completeness: 0.8,
           symbolSize: pointSize.value,
           itemStyle: {
-            color: '#91cc75',
+            color: statusColors['待检验'],
             opacity: 0.8
           },
           entity: `错误数据${index+1}`,
-          status: '未知',
+          statusInfo: '待检验',
           metadata: {
             dataName: '未知',
             sourceUnit: '未知',
@@ -263,7 +234,7 @@ const processBackendData = async () => {
             resourceSummary: '未知',
             fieldClassification: '未知'
           },
-          gradeValue: 0   // 默认分级值
+          gradeValue: 0
         };
       }
     });
@@ -275,7 +246,7 @@ const processBackendData = async () => {
   }
 };
 
-// 修改tooltip格式，添加分级值
+// 修改tooltip格式
 const tooltipFormatter = (params) => {
   const item = params.data;
   const date = new Date(item.value[0]);
@@ -284,7 +255,7 @@ const tooltipFormatter = (params) => {
           <div>行业分类: ${item.industry || '未分类'}</div>
           <div>分类值: ${item.value[2] || 0}</div>
           <div>分级值: ${item.gradeValue || 0}</div>
-          <div>状态: ${item.status || '未知'}</div>
+          <div>状态: <span style="color:${item.statusColor}">${item.status || '未知'}</span></div>
           <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
           <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
           <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
@@ -426,40 +397,19 @@ const forceRender = async () => {
           formatter: tooltipFormatter
         },
         visualMap: {
-          min: 0,
-          max: 100,
+          show: true,
+          type: 'piecewise',
           dimension: 2,
-          inRange: {
-            color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+          pieces: [
+            { value: 0, label: '待检验', color: statusColors['待检验'] },
+            { value: 1, label: '已合格', color: statusColors['已合格'] },
+            { value: 2, label: '不合格', color: statusColors['不合格'] }
+          ],
+          left: 'left',
+          top: 'middle',
+          orient: 'vertical',
+          textStyle: {
+            color: '#333'
           }
         },
         xAxis3D: {
@@ -662,13 +612,13 @@ const forceRender = async () => {
             name: item.name,
             value: item.value,
             industry: item.industry,
-            securityLevel: item.securityLevel,
-            securityColor: item.securityColor,
+            status: item.status,
+            statusColor: item.statusColor,
             completeness: item.completeness,
             symbolSize: item.symbolSize,
             itemStyle: item.itemStyle,
             entity: item.entity,
-            status: item.status,
+            statusInfo: item.statusInfo,
             metadata: item.metadata,
             gradeValue: item.gradeValue
           })),
@@ -837,40 +787,19 @@ const initChart = async () => {
         formatter: tooltipFormatter
       },
       visualMap: {
-        min: 0,
-        max: 100,
+        show: true,
+        type: 'piecewise',
         dimension: 2,
-        inRange: {
-          color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        pieces: [
+          { value: 0, label: '待检验', color: statusColors['待检验'] },
+          { value: 1, label: '已合格', color: statusColors['已合格'] },
+          { value: 2, label: '不合格', color: statusColors['不合格'] }
+        ],
+        left: 'left',
+        top: 'middle',
+        orient: 'vertical',
+        textStyle: {
+          color: '#333'
         }
       },
       xAxis3D: {
@@ -1073,13 +1002,13 @@ const initChart = async () => {
           name: item.name,
           value: item.value,
           industry: item.industry,
-          securityLevel: item.securityLevel,
-          securityColor: item.securityColor,
+          status: item.status,
+          statusColor: item.statusColor,
           completeness: item.completeness,
           symbolSize: item.symbolSize,
           itemStyle: item.itemStyle,
           entity: item.entity,
-          status: item.status,
+          statusInfo: item.statusInfo,
           metadata: item.metadata,
           gradeValue: item.gradeValue
         })),
