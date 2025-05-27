@@ -44,6 +44,7 @@
                   </el-input>
               </div>
               <div class="action-buttons">
+          
                 <el-button type="primary" plain @click="showDecryptDialog">解密</el-button>
                 <!-- <el-button type="primary">导出检验</el-button> -->
               </div>
@@ -75,8 +76,8 @@
                     <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
                   </template>
                 </el-table-column>
-                <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center" />
-                <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
+                <el-table-column prop="locationInfo" label="定位信息" width="120" align="center" />
+                <el-table-column prop="constraint" label="约束条件" min-width="450" align="center">
                   <template #default="scope">
                     <div class="constraint-container">
                       <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -98,11 +99,10 @@
                           </div>
                         </div>
                       </template>
-                      <template v-else>-</template>
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column prop="transferControl" label="传输控制操作" min-width="180" align="center">
+                <el-table-column prop="transferControl" label="传输控制操作" min-width="150" align="center">
                   <template #default="scope">
                     <div class="control-container">
                       <template v-if="scope.row.transferControl && scope.row.transferControl.length">
@@ -117,7 +117,6 @@
                           {{ item }}
                         </el-tag>
                       </template>
-                      <template v-else>-</template>
                     </div>
                   </template>
                 </el-table-column>
@@ -159,13 +158,7 @@
                       {{ extractFeedback(scope.row.dataContent) }}
                     </span>
                     
-                    <!-- 如果是客户反馈实体且状态为不合格，强制显示 -->
-                    <span v-else-if="scope.row.entity === '客户反馈' && scope.row.status === '不合格'" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
-                      数据格式错误
-                    </span>
-                    
-                    <!-- 没有反馈信息 -->
-                    <span v-else>-</span>
+
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="210" align="center">
@@ -217,7 +210,7 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button type="info" plain @click="handleRequestToken">申请token</el-button>
-        <el-button type="primary" @click="handleDecrypt">确定</el-button>
+        <el-button type="primary" @click="handleGenerateCapsule" :disabled="!decryptForm.token">生成数据胶囊</el-button>
         <el-button @click="decryptDialogVisible = false">取消</el-button>
       </span>
     </template>
@@ -589,15 +582,29 @@ const handleRequestToken = () => {
   // 显示申请中信息
   ElMessage.info('正在申请token，请稍候...')
   
-  // 直接使用完整的URL确保能够正确连接
-  const apiUrl = 'http://localhost:8080/api/getToken'
-  console.log('正在请求token，URL:', apiUrl)
+  // 这里模拟申请token的过程，实际项目中需要调用真实的token申请接口
+  setTimeout(() => {
+    const mockToken = 'mock_token_' + Date.now()
+    decryptForm.token = mockToken
+    ElMessage.success('成功获取token')
+  }, 1000)
+}
+
+// 处理生成数据胶囊
+const handleGenerateCapsule = () => {
+  if (!decryptForm.token) {
+    ElMessage.warning('请先输入token')
+    return
+  }
+
+  // 调用生成数据胶囊的API
+  const apiUrl = 'http://localhost:8080/api/objects/list/de'
   
-  // 简单直接的fetch请求
   fetch(apiUrl, {
     method: 'GET',
     headers: {
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${decryptForm.token}` // 如果后端需要token
     }
   })
   .then(response => {
@@ -607,59 +614,117 @@ const handleRequestToken = () => {
     return response.json()
   })
   .then(data => {
-    console.log('收到API响应:', data)
-    
-    // 验证响应格式并提取token
-    if (data && data.code === 1 && data.msg === 'success' && data.data) {
-      // 提取token值
-      const token = data.data
-      console.log('成功获取token:', token)
+    if (data && data.code === 1 && data.data) {
+      // 保存数据胶囊到localStorage
+      localStorage.setItem('dataCapsule', JSON.stringify(data.data))
       
-      // 将token填入输入框
-      decryptForm.token = token
-      
-      // 保存token到localStorage用于验证
-      localStorage.setItem('receivedToken', token)
-      
-      ElMessage.success('成功获取token')
+      // 显示解密确认对话框
+      ElMessageBox.confirm('已获取数据胶囊，是否进行解密?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }).then(() => {
+        // 调用解密API
+        decryptDataCapsule(data.data)
+      }).catch(() => {
+        ElMessage.info('已取消解密操作')
+      })
     } else {
       throw new Error('返回数据格式不符合预期')
     }
   })
   .catch(error => {
-    console.error('获取token失败:', error)
-    ElMessage.error(`获取token失败: ${error.message}`)
+    console.error('获取数据胶囊失败:', error)
+    ElMessage.error(`获取数据胶囊失败: ${error.message}`)
   })
 }
 
-// 处理解密操作
-const handleDecrypt = () => {
-  decryptFormRef.value.validate((valid) => {
-    if (valid) {
-      // 获取之前从后端接收到的token
-      const receivedToken = localStorage.getItem('receivedToken')
+// 解密数据胶囊
+const decryptDataCapsule = (dataCapsule) => {
+  const apiUrl = 'http://localhost:8080/api/decrypt'
+  
+  fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${decryptForm.token}` // 如果后端需要token
+    },
+    body: JSON.stringify({ dataCapsule })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data && data.code === 1 && data.data) {
+      // 处理解密后的数据
+      const decryptedData = data.data.map(item => ({
+        id: item.id,
+        entity: item.dataEntity?.entity || '',
+        locationInfo: formatLocationInfo(item.locationInfo),
+        constraint: formatConstraints(item.constraintSet?.constraints),
+        transferControl: formatTransferControl(item.propagationControl),
+        auditInfo: '查看日志',
+        status: item.dataEntity?.status || '',
+        feedback: item.dataEntity?.feedback || '',
+        totalCategoryValue: item.totalCategoryValue,
+        totalGradeValue: item.totalGradeValue,
+        metadata: item.dataEntity?.metadata,
+        dataContent: item.dataContent
+      }))
       
-      if (!receivedToken) {
-        ElMessage.error('未找到有效token，请先申请token')
-        return false
-      }
-      
-      // 比对输入的token与接收到的token是否一致
-      if (decryptForm.token === receivedToken) {
-        // token一致，解密成功
-        isDecrypted.value = true
-        decryptDialogVisible.value = false
-        localStorage.removeItem('receivedToken') // 清除已使用的token
-        ElMessage.success('解密成功')
-      } else {
-        // token不一致，解密失败
-        ElMessage.error('解密失败：token无效')
-      }
+      // 更新表格数据
+      tableData.value = decryptedData
+      isDecrypted.value = true
+      decryptDialogVisible.value = false // 关闭解密对话框
+      ElMessage.success('解密成功')
     } else {
-      ElMessage.error('请填写完整的解密信息')
-      return false
+      throw new Error('解密失败或数据格式错误')
     }
   })
+  .catch(error => {
+    console.error('解密失败:', error)
+    ElMessage.error(`解密失败: ${error.message}`)
+  })
+}
+
+// 格式化定位信息
+const formatLocationInfo = (locationInfo) => {
+  if (!locationInfo || !locationInfo.locations || !locationInfo.locations.length) {
+    return ''
+  }
+  
+  return locationInfo.locations.map(loc => 
+    `(${loc.sheet || '默认'}, ${loc.startRow || '1'}-${loc.endRow || '*'}, ${loc.startColumn || 'A'}-${loc.endColumn || '*'})`
+  ).join('; ')
+}
+
+// 格式化约束条件
+const formatConstraints = (constraints) => {
+  if (!constraints || !constraints.length) {
+    return []
+  }
+  
+  return constraints.map(c => [
+    `格式约束: ${c.formatConstraint}`,
+    `访问约束: ${c.accessConstraint}`,
+    `路径约束: ${c.pathConstraint}`,
+    `区域约束: ${c.regionConstraint}`,
+    `共享约束: ${c.shareConstraint}`
+  ]).flat()
+}
+
+// 格式化传输控制
+const formatTransferControl = (control) => {
+  if (!control || !control.selectedOperations) {
+    return []
+  }
+  
+  const operations = []
+  if (control.canRead) operations.push('可读')
+  if (control.canModify) operations.push('可修改')
+  if (control.canShare) operations.push('可共享')
+  if (control.canDelegate) operations.push('可委托')
+  if (control.canDestroy) operations.push('可销毁')
+  
+  return operations
 }
 
 // Excel预览相关
@@ -1298,6 +1363,9 @@ const getFeedbackClass = (status) => {
     default: return ''
   }
 }
+
+// 在script setup部分添加
+const hasToken = ref(false)
 </script>
 
 <style scoped>
@@ -1768,6 +1836,8 @@ const getFeedbackClass = (status) => {
   display: inline-block;
   padding: 2px 6px;
   border-radius: 4px;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* 反馈意见状态样式 */
@@ -1784,6 +1854,10 @@ const getFeedbackClass = (status) => {
 .feedback-text.status-pending {
   color: #e6a23c;
   background-color: #fdf6ec;
+}
+
+.feedback-text:empty {
+  display: none;
 }
 
 /* ID列样式 */
