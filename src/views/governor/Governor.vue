@@ -1275,10 +1275,10 @@ const extractFeedback = (dataContent) => {
       }
     }
     
-    // 没有找到任何反馈信息
-    return '-';
+    // 没有找到任何反馈信息，返回空字符串
+    return '';
   } catch (e) {
-    return '提取失败';
+    return ''; // 提取失败时也返回空字符串
   }
 }
 
