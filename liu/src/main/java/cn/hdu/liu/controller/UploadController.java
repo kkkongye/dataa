@@ -1,6 +1,6 @@
 package cn.hdu.liu.controller;
 
-import com.hdu.service.DUService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import cn.hdu.liu.obj.Result;

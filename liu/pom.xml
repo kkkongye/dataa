@@ -74,12 +74,12 @@
         </dependency>
 
         <dependency>
-            <groupId>com.hdu</groupId>
-            <artifactId>dcbds-sdk</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/dcbds-sdk-1.0.jar</systemPath>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-json</artifactId>
+            <version>5.8.20</version>
         </dependency>
+
+
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter-test</artifactId>
@@ -98,7 +98,6 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
             <version>1.77</version>
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>

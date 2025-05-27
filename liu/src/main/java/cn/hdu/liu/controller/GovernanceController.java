@@ -69,7 +69,7 @@ public class GovernanceController {
         }
     }
 
-    @PostMapping("/decrypt")
+    @PostMapping("/decrypt1")
     public Result decryptData() {
         try {
             if (!StringUtils.hasText(currentEncryptedData)) {
