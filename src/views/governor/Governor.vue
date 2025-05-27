@@ -466,27 +466,23 @@ const handleDelete = (row) => {
 // 更新数字对象状态
 const updateStatus = async (row, newStatus) => {
   // 本地模式标志，改为false以启用调用后端API
-  const localModeOnly = false; // 设置为false表示将更新发送到后端数据库
+  const localModeOnly = false;
   
   // 特殊处理"库存管理"实体的审查功能
   if (newStatus === '审查中' && row.entity === '库存管理') {
     try {
-      // 直接打开报告对话框，不显示加载提示
       reportDialogVisible.value = true;
       
-      // 更新UI中的状态
       const index = tableData.value.findIndex(item => item.id === row.id);
       if (index !== -1) {
-        // 保存原始状态，仅在UI中短暂显示"审查中"状态
         const originalStatus = tableData.value[index].status;
         tableData.value[index].status = '审查中';
         
-        // 延迟后恢复原始状态，以避免数据不一致
         setTimeout(() => {
           if (tableData.value[index]) {
             tableData.value[index].status = originalStatus;
           }
-        }, 5000); // 5秒后恢复状态
+        }, 5000);
       }
     } catch (error) {
       console.error('审查过程出错:', error);
@@ -498,7 +494,9 @@ const updateStatus = async (row, newStatus) => {
     try {
       const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, '', localModeOnly)
       if (result) {
-        ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态${localModeOnly ? '（本地模式）' : '，并已保存到后端数据库'}`)
+        ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态`)
+        // 调用API更新数据列表
+        await refreshDataList();
       } else {
         ElMessage.warning(`${row.entity} 状态更新失败`)
       }
@@ -523,7 +521,9 @@ const updateStatus = async (row, newStatus) => {
       try {
         const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, value, localModeOnly)
         if (result) {
-          ElMessage.success(`${row.entity} 已更新为"不合格"状态${localModeOnly ? '（本地模式）' : '，并已保存到后端数据库'}`)
+          ElMessage.success(`${row.entity} 已更新为"不合格"状态`)
+          // 调用API更新数据列表
+          await refreshDataList();
         } else {
           ElMessage.warning(`${row.entity} 状态更新失败`)
         }
@@ -535,19 +535,49 @@ const updateStatus = async (row, newStatus) => {
       ElMessage.info('已取消状态更新')
     })
   }
-  // 其他情况，如普通的审查状态更新（非库存管理实体）
-  else if (newStatus === '审查中') {
-    try {
-      const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, '审查进行中', localModeOnly)
-      if (result) {
-        ElMessage.success(`${row.entity} 已更新为"审查中"状态${localModeOnly ? '（本地模式）' : '，并已保存到后端数据库'}`)
-      } else {
-        ElMessage.warning(`${row.entity} 状态更新失败`)
+}
+
+// 添加刷新数据列表的函数
+const refreshDataList = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/objects/list', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${decryptForm.token}`
       }
-    } catch (error) {
-      console.error('更新状态时出错:', error)
-      ElMessage.error(`更新 ${row.entity} 状态失败: ${error.message || '未知错误'}`)
+    });
+
+    if (!response.ok) {
+      throw new Error(`请求失败: ${response.status}`);
     }
+
+    const data = await response.json();
+    if (data && data.code === 1 && data.data) {
+      // 更新表格数据
+      const updatedData = data.data.map(item => ({
+        id: item.id,
+        entity: item.dataEntity?.entity || '',
+        locationInfo: formatLocationInfo(item.locationInfo),
+        constraint: formatConstraints(item.constraintSet?.constraints),
+        transferControl: formatTransferControl(item.propagationControl),
+        auditInfo: '查看日志',
+        status: item.dataEntity?.status || '',
+        feedback: item.dataEntity?.feedback || '',
+        totalCategoryValue: item.totalCategoryValue,
+        totalGradeValue: item.totalGradeValue,
+        metadata: item.dataEntity?.metadata,
+        dataContent: item.dataContent
+      }));
+      
+      tableData.value = updatedData;
+      ElMessage.success('数据列表已更新');
+    } else {
+      throw new Error('返回数据格式不符合预期');
+    }
+  } catch (error) {
+    console.error('获取数据列表失败:', error);
+    ElMessage.error(`获取数据列表失败: ${error.message}`);
   }
 }
 

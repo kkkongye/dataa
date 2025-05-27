@@ -414,7 +414,7 @@ const forceRender = async () => {
         },
         xAxis3D: {
           type: 'time',
-          name: '编辑时间',
+          name: '最近编辑时间',
           nameGap: 60,
           nameTextStyle: {
             fontSize: 15,
@@ -431,22 +431,25 @@ const forceRender = async () => {
           axisLine: {
             lineStyle: { 
               width: 3,
-              color: '#666666' // 将轴线颜色改为深灰色
+              color: '#666666'
             }
           },
           axisLabel: {
             formatter: function (value) {
               const date = new Date(value);
-              if (date.getDate() === 1) {
-                return (date.getMonth() + 1) + '月';
-              }
-              return '';
+              const month = date.getMonth() + 1;
+              const day = date.getDate();
+              const hours = date.getHours().toString().padStart(2, '0');
+              const minutes = date.getMinutes().toString().padStart(2, '0');
+              return `${month}月${day}日 ${hours}:${minutes}`;
             },
             margin: 8,
-            fontSize: 12
+            fontSize: 12,
+            interval: 'auto'
           },
-          minInterval: 24 * 3600 * 1000,
-          maxInterval: 30 * 24 * 3600 * 1000
+          minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
+          maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
+          splitNumber: 8 // 设置分割段数
         },
         yAxis3D: {
           type: 'category',
@@ -804,7 +807,7 @@ const initChart = async () => {
       },
       xAxis3D: {
         type: 'time',
-        name: '编辑时间',
+        name: '最近编辑时间',
         nameGap: 60,
         nameTextStyle: {
           fontSize: 15,
@@ -821,22 +824,25 @@ const initChart = async () => {
         axisLine: {
           lineStyle: { 
             width: 3,
-            color: '#666666' // 将轴线颜色改为深灰色
+            color: '#666666'
           }
         },
         axisLabel: {
           formatter: function (value) {
             const date = new Date(value);
-            if (date.getDate() === 1) {
-              return (date.getMonth() + 1) + '月';
-            }
-            return '';
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${month}月${day}日 ${hours}:${minutes}`;
           },
           margin: 8,
-          fontSize: 12
+          fontSize: 12,
+          interval: 'auto'
         },
-        minInterval: 24 * 3600 * 1000,
-        maxInterval: 30 * 24 * 3600 * 1000
+        minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
+        maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
+        splitNumber: 8 // 设置分割段数
       },
       yAxis3D: {
         type: 'category',
