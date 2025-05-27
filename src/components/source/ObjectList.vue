@@ -39,7 +39,6 @@
           <el-icon><DataAnalysis /></el-icon>
           三维数据可视化
         </el-button>
-        <el-button type="primary" plain @click="$emit('export')">导出检验</el-button>
         <el-button type="primary" @click="$emit('create')">新建数字对象</el-button>
       </div>
     </div>

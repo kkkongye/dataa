@@ -46,7 +46,6 @@
               <div class="action-buttons">
           
                 <el-button type="primary" plain @click="showDecryptDialog">解密</el-button>
-                <!-- <el-button type="primary">导出检验</el-button> -->
               </div>
             </div>
             
@@ -206,11 +205,13 @@
       <el-form-item label="token:" prop="token">
         <el-input v-model="decryptForm.token" placeholder="请输入token"></el-input>
       </el-form-item>
+
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button type="info" plain @click="handleRequestToken">申请token</el-button>
-        <el-button type="primary" @click="handleGenerateCapsule" :disabled="!decryptForm.token">生成数据胶囊</el-button>
+        <el-button type="info" plain @click="handleRequestToken" :loading="isRequestingToken">申请token</el-button>
+        <el-button type="primary" @click="handleGenerateCapsule" :loading="isGeneratingCapsule" :disabled="!decryptForm.token">生成数据胶囊</el-button>
+        <el-button type="primary" @click="handleDecrypt" :disabled="!decryptForm.dataCapsule || isGeneratingCapsule">确定</el-button>
         <el-button @click="decryptDialogVisible = false">取消</el-button>
       </span>
     </template>
@@ -566,7 +567,8 @@ const handleSizeChange = (val) => {
 const decryptDialogVisible = ref(false)
 const decryptFormRef = ref(null)
 const decryptForm = reactive({
-  token: ''
+  token: '',
+  dataCapsule: ''  // 添加数据胶囊字段
 })
 const decryptFormRules = {
   token: [{ required: true, message: '请输入token', trigger: 'blur' }]
@@ -597,14 +599,14 @@ const handleGenerateCapsule = () => {
     return
   }
 
-  // 调用生成数据胶囊的API
+  isGeneratingCapsule.value = true
   const apiUrl = 'http://localhost:8080/api/objects/list/de'
   
   fetch(apiUrl, {
     method: 'GET',
     headers: {
       'Accept': 'application/json',
-      'Authorization': `Bearer ${decryptForm.token}` // 如果后端需要token
+      'Authorization': `Bearer ${decryptForm.token}`
     }
   })
   .then(response => {
@@ -615,20 +617,9 @@ const handleGenerateCapsule = () => {
   })
   .then(data => {
     if (data && data.code === 1 && data.data) {
-      // 保存数据胶囊到localStorage
-      localStorage.setItem('dataCapsule', JSON.stringify(data.data))
-      
-      // 显示解密确认对话框
-      ElMessageBox.confirm('已获取数据胶囊，是否进行解密?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }).then(() => {
-        // 调用解密API
-        decryptDataCapsule(data.data)
-      }).catch(() => {
-        ElMessage.info('已取消解密操作')
-      })
+      // 保存数据胶囊到表单
+      decryptForm.dataCapsule = JSON.stringify(data.data)
+      ElMessage.success('成功生成数据胶囊')
     } else {
       throw new Error('返回数据格式不符合预期')
     }
@@ -637,51 +628,68 @@ const handleGenerateCapsule = () => {
     console.error('获取数据胶囊失败:', error)
     ElMessage.error(`获取数据胶囊失败: ${error.message}`)
   })
+  .finally(() => {
+    isGeneratingCapsule.value = false
+  })
 }
 
-// 解密数据胶囊
-const decryptDataCapsule = (dataCapsule) => {
-  const apiUrl = 'http://localhost:8080/api/decrypt'
-  
-  fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${decryptForm.token}` // 如果后端需要token
-    },
-    body: JSON.stringify({ dataCapsule })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data && data.code === 1 && data.data) {
-      // 处理解密后的数据
-      const decryptedData = data.data.map(item => ({
-        id: item.id,
-        entity: item.dataEntity?.entity || '',
-        locationInfo: formatLocationInfo(item.locationInfo),
-        constraint: formatConstraints(item.constraintSet?.constraints),
-        transferControl: formatTransferControl(item.propagationControl),
-        auditInfo: '查看日志',
-        status: item.dataEntity?.status || '',
-        feedback: item.dataEntity?.feedback || '',
-        totalCategoryValue: item.totalCategoryValue,
-        totalGradeValue: item.totalGradeValue,
-        metadata: item.dataEntity?.metadata,
-        dataContent: item.dataContent
-      }))
-      
-      // 更新表格数据
-      tableData.value = decryptedData
-      isDecrypted.value = true
-      decryptDialogVisible.value = false // 关闭解密对话框
-      ElMessage.success('解密成功')
-    } else {
-      throw new Error('解密失败或数据格式错误')
-    }
-  })
-  .catch(error => {
-    console.error('解密失败:', error)
-    ElMessage.error(`解密失败: ${error.message}`)
+// 添加 handleDecrypt 函数
+const handleDecrypt = () => {
+  if (!decryptForm.dataCapsule) {
+    ElMessage.warning('请先生成数据胶囊')
+    return
+  }
+
+  ElMessageBox.confirm('确认要解密数据吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'info'
+  }).then(() => {
+    // 调用解密API
+    const apiUrl = 'http://localhost:8080/api/decrypt'
+    
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${decryptForm.token}`
+      },
+      body: JSON.stringify({ dataCapsule: JSON.parse(decryptForm.dataCapsule) })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.code === 1 && data.data) {
+        // 处理解密后的数据
+        const decryptedData = data.data.map(item => ({
+          id: item.id,
+          entity: item.dataEntity?.entity || '',
+          locationInfo: formatLocationInfo(item.locationInfo),
+          constraint: formatConstraints(item.constraintSet?.constraints),
+          transferControl: formatTransferControl(item.propagationControl),
+          auditInfo: '查看日志',
+          status: item.dataEntity?.status || '',
+          feedback: item.dataEntity?.feedback || '',
+          totalCategoryValue: item.totalCategoryValue,
+          totalGradeValue: item.totalGradeValue,
+          metadata: item.dataEntity?.metadata,
+          dataContent: item.dataContent
+        }))
+        
+        // 更新表格数据
+        tableData.value = decryptedData
+        isDecrypted.value = true
+        decryptDialogVisible.value = false // 关闭解密对话框
+        ElMessage.success('解密成功')
+      } else {
+        throw new Error('解密失败或数据格式错误')
+      }
+    })
+    .catch(error => {
+      console.error('解密失败:', error)
+      ElMessage.error(`解密失败: ${error.message}`)
+    })
+  }).catch(() => {
+    ElMessage.info('已取消解密操作')
   })
 }
 
@@ -1366,6 +1374,10 @@ const getFeedbackClass = (status) => {
 
 // 在script setup部分添加
 const hasToken = ref(false)
+
+// 在 script setup 部分添加新的响应式变量
+const isRequestingToken = ref(false)
+const isGeneratingCapsule = ref(false)
 </script>
 
 <style scoped>
