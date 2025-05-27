@@ -35,7 +35,7 @@
           </el-radio-group>
         </div>
         <el-form-item>
-          <el-button type="primary" class="login-btn" @click="handleLogin">登录系统</el-button>
+          <el-button type="primary" class="login-btn" @click="handleLogin" :loading="loading">登录系统</el-button>
         </el-form-item>
         <div class="login-footer">
           <span class="register-link" @click="goToRegister">注册账号</span>
@@ -50,9 +50,11 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
+import axios from 'axios'
 
 const router = useRouter()
 const loginFormRef = ref(null)
+const loading = ref(false)
 
 const loginForm = reactive({
   username: '',
@@ -60,38 +62,61 @@ const loginForm = reactive({
   role: 'datasource' // 默认选中数源方
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!loginForm.username || !loginForm.password) {
     ElMessage.warning('请输入用户名和密码')
     return
   }
   
-  // 模拟登录成功，根据角色跳转到不同页面
-  localStorage.setItem('role', loginForm.role)
-  
-  console.log('登录成功，角色:', loginForm.role)
+  loading.value = true
   
   try {
-    switch (loginForm.role) {
-      case 'datasource':
-        console.log('跳转到数源方页面')
-        router.push('/datasource')
-        break
-      case 'governor':
-        console.log('跳转到治理方页面')
-        router.push('/governor')
-        break
-      case 'user':
-        console.log('跳转到使用方页面')
-        router.push('/user')
-        break
-      default:
-        console.log('默认跳转到数源方页面')
-        router.push('/datasource')
+    // 调用后端接口验证用户
+    const response = await axios.get('http://localhost:8080/api/users/list')
+    
+    if (response.data && response.data.code === 1) {
+      const users = response.data.data
+      
+      // 查找匹配的用户 - 注意这里使用 roll 而不是 role
+      const user = users.find(u => 
+        u.username === loginForm.username && 
+        u.password === loginForm.password &&
+        u.roll === loginForm.role  // 修改这里匹配 roll 字段
+      )
+      
+      if (user) {
+        // 登录成功，保存用户信息和角色
+        localStorage.setItem('role', loginForm.role)
+        localStorage.setItem('username', loginForm.username)
+        localStorage.setItem('userId', user.id.toString())
+        
+        ElMessage.success('登录成功')
+        
+        // 根据角色跳转到不同页面
+        switch (loginForm.role) {
+          case 'datasource':
+            router.push('/datasource')
+            break
+          case 'governor':
+            router.push('/governor')
+            break
+          case 'user':
+            router.push('/user')
+            break
+          default:
+            router.push('/datasource')
+        }
+      } else {
+        ElMessage.error('用户名、密码或角色不正确')
+      }
+    } else {
+      throw new Error(response.data.msg || '获取用户列表失败')  // 修改这里使用 msg 而不是 message
     }
   } catch (error) {
-    console.error('路由跳转错误:', error)
-    ElMessage.error('页面跳转失败，请查看控制台错误信息')
+    console.error('登录失败:', error)
+    ElMessage.error(error.message || '登录失败，请重试')
+  } finally {
+    loading.value = false
   }
 }
 
