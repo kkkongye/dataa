@@ -7,174 +7,170 @@
     <div class="main-content">
       <!-- 标签页 -->
       <div class="content-card">
-        <el-tabs v-model="activeTab">
-          <el-tab-pane label="数字对象列表" name="objectList">
-            
-            <!-- 状态筛选按钮 -->
-            <div class="status-filter">
-              <el-button :class="['status-btn', { active: currentStatus === '' }]" @click="setStatus('')">全部数据对象</el-button>
-              <el-button :class="['status-btn', { active: currentStatus === '待校验' }]" @click="setStatus('待校验')">待校验</el-button>
-              <el-button :class="['status-btn', { active: currentStatus === '已合格' }]" @click="setStatus('已合格')">已合格</el-button>
-              <el-button :class="['status-btn', { active: currentStatus === '不合格' }]" @click="setStatus('不合格')">不合格</el-button>
-            </div>
-            
-            <!-- 搜索和操作区 -->
-            <div class="action-bar">
-              <div class="search-area">
-                  <el-input
-                    v-model="searchKeyword"
-                    placeholder="搜索实体名、约束条件、传输控制操作"
-                    class="search-input"
-                  >
-                    <template #suffix>
-                      <el-icon><Search /></el-icon>
-                    </template>
-                  </el-input>
-              </div>
-              <div class="action-buttons">
-          
-                <el-button type="primary" plain @click="showDecryptDialog">解密</el-button>
-              </div>
-            </div>
-            
-            <!-- 数据表格 -->
-            <div class="table-container">
-              <div v-if="!isDecrypted" class="data-locked-placeholder">
-                <el-icon class="locked-icon"><Lock /></el-icon>
-                <p>数据已加密，请点击"解密"按钮进行解密操作</p>
-              </div>
-              <el-table
-                v-else
-                :data="filteredTableData"
-                style="width: 100%"
-                :cell-style="{ padding: '8px 0', textAlign: 'center' }"
-                :header-cell-style="{ padding: '10px 0', background: '#f5f7fa', color: '#606266', fontWeight: 'bold', textAlign: 'center' }"
-                border
-                height="100%"
-                fit
+        <div class="table-title">数据对象列表</div>
+        <!-- 状态筛选按钮 -->
+        <div class="status-filter">
+          <el-button :class="['status-btn', { active: currentStatus === '' }]" @click="setStatus('')">全部数据对象</el-button>
+          <el-button :class="['status-btn', { active: currentStatus === '待校验' }]" @click="setStatus('待校验')">待校验</el-button>
+          <el-button :class="['status-btn', { active: currentStatus === '已合格' }]" @click="setStatus('已合格')">已合格</el-button>
+          <el-button :class="['status-btn', { active: currentStatus === '不合格' }]" @click="setStatus('不合格')">不合格</el-button>
+        </div>
+        
+        <!-- 搜索和操作区 -->
+        <div class="action-bar">
+          <div class="search-area">
+              <el-input
+                v-model="searchKeyword"
+                placeholder="搜索实体名、约束条件、传输控制操作"
+                class="search-input"
               >
-                <el-table-column prop="id" label="ID" width="240" align="center">
-                  <template #default="scope">
-                    <div class="id-cell">{{ scope.row.id }}</div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="entity" label="实体" width="100" align="center">
-                  <template #default="scope">
-                    <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="locationInfo" label="定位信息" width="120" align="center" />
-                <el-table-column prop="constraint" label="约束条件" min-width="450" align="center">
-                  <template #default="scope">
-                    <div class="constraint-container">
-                      <template v-if="scope.row.constraint && scope.row.constraint.length">
-                        <div 
-                          v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint]).length / 2)" 
-                          :key="rowIndex"
-                          class="constraint-row"
-                        >
-                          <!-- 第一项 -->
-                          <div class="constraint-item-pair">
-                            <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2]" 
-                                  v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2])"></span>
-                          </div>
-                          
-                          <!-- 第二项 -->
-                          <div class="constraint-item-pair">
-                            <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1]" 
-                                  v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1])"></span>
-                          </div>
-                        </div>
-                      </template>
-                    </div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="transferControl" label="传输控制操作" min-width="150" align="center">
-                  <template #default="scope">
-                    <div class="control-container">
-                      <template v-if="scope.row.transferControl && scope.row.transferControl.length">
-                        <el-tag
-                          v-for="(item, index) in (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])"
-                          :key="index"
-                          size="small"
-                          type="primary"
-                          effect="plain"
-                          class="control-tag"
-                        >
-                          {{ item }}
-                        </el-tag>
-                      </template>
-                    </div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="auditInfo" label="审计控制信息" width="130" align="center">
-                  <template #default="scope">
-                    <el-link type="primary">{{ scope.row.auditInfo }}</el-link>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
-                  <template #default="scope">
-                    <div class="classification-level-container">
-                      <div class="classification-level-item">
-                        <span class="label">分类值：</span>
-                        <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
+                <template #suffix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
+          </div>
+          <div class="action-buttons">
+      
+            <el-button type="primary" plain @click="showDecryptDialog">解密</el-button>
+          </div>
+        </div>
+        
+        <!-- 数据表格 -->
+        <div class="table-container">
+          <div v-if="!isDecrypted" class="data-locked-placeholder">
+            <el-icon class="locked-icon"><Lock /></el-icon>
+            <p>数据已加密，请点击"解密"按钮进行解密操作</p>
+          </div>
+          <el-table
+            v-else
+            :data="filteredTableData"
+            style="width: 100%"
+            :cell-style="{ padding: '8px 0', textAlign: 'center' }"
+            :header-cell-style="{ padding: '10px 0', background: '#f5f7fa', color: '#606266', fontWeight: 'bold', textAlign: 'center' }"
+            border
+            height="100%"
+            fit
+          >
+            <el-table-column prop="id" label="ID" width="240" align="center">
+              <template #default="scope">
+                <div class="id-cell">{{ scope.row.id }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="entity" label="实体" width="100" align="center">
+              <template #default="scope">
+                <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="locationInfo" label="定位信息" width="120" align="center" />
+            <el-table-column prop="constraint" label="约束条件" min-width="450" align="center">
+              <template #default="scope">
+                <div class="constraint-container">
+                  <template v-if="scope.row.constraint && scope.row.constraint.length">
+                    <div 
+                      v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint]).length / 2)" 
+                      :key="rowIndex"
+                      class="constraint-row"
+                    >
+                      <!-- 第一项 -->
+                      <div class="constraint-item-pair">
+                        <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2]" 
+                              v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2])"></span>
                       </div>
-                      <div class="classification-level-item">
-                        <span class="label">分级值：</span>
-                        <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
+                      
+                      <!-- 第二项 -->
+                      <div class="constraint-item-pair">
+                        <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1]" 
+                              v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1])"></span>
                       </div>
                     </div>
                   </template>
-                </el-table-column>
-                <el-table-column prop="status" label="状态" width="100" align="center">
-                  <template #default="scope">
-                    <span :class="['status-tag', getStatusClass(scope.row.status)]">
-                      {{ (scope.row.status === '待检验' || scope.row.status === '待校验') ? '待校验' : scope.row.status }}
-                    </span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="transferControl" label="传输控制操作" min-width="150" align="center">
+              <template #default="scope">
+                <div class="control-container">
+                  <template v-if="scope.row.transferControl && scope.row.transferControl.length">
+                    <el-tag
+                      v-for="(item, index) in (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])"
+                      :key="index"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      {{ item }}
+                    </el-tag>
                   </template>
-                </el-table-column>
-                <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="160" align="center">
-                  <template #default="scope">
-                    <!-- 优先使用row.feedback -->
-                    <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
-                      {{ scope.row.feedback }}
-                    </span>
-                    
-                    <!-- 其次尝试从dataContent中提取 -->
-                    <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
-                      {{ extractFeedback(scope.row.dataContent) }}
-                    </span>
-                    
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="auditInfo" label="审计控制信息" width="130" align="center">
+              <template #default="scope">
+                <el-link type="primary">{{ scope.row.auditInfo }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
+              <template #default="scope">
+                <div class="classification-level-container">
+                  <div class="classification-level-item">
+                    <span class="label">分类值：</span>
+                    <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
+                  </div>
+                  <div class="classification-level-item">
+                    <span class="label">分级值：</span>
+                    <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100" align="center">
+              <template #default="scope">
+                <span :class="['status-tag', getStatusClass(scope.row.status)]">
+                  {{ (scope.row.status === '待检验' || scope.row.status === '待校验') ? '待校验' : scope.row.status }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="160" align="center">
+              <template #default="scope">
+                <!-- 优先使用row.feedback -->
+                <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
+                  {{ scope.row.feedback }}
+                </span>
+                
+                <!-- 其次尝试从dataContent中提取 -->
+                <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
+                  {{ extractFeedback(scope.row.dataContent) }}
+                </span>
+                
 
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="210" align="center">
-                  <template #default="scope">
-                    <div class="status-buttons">
-                      <el-button type="primary" size="small" plain @click="updateStatus(scope.row, '审查中')">审查</el-button>
-                      <el-button type="success" size="small" plain :disabled="scope.row.status === '已合格'" @click="updateStatus(scope.row, '已合格')">正确</el-button>
-                      <el-button type="danger" size="small" plain :disabled="scope.row.status === '不合格'" @click="updateStatus(scope.row, '不合格')">错误</el-button>
-                    </div>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-            
-            <!-- 分页 -->
-            <div class="pagination-area">
-              <CommonPagination
-                v-if="isDecrypted"
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :total-count="totalCount"
-                :page-sizes="[5, 10, 20]"
-                :disabled="!isDecrypted"
-                background
-                @size-change="handleSizeChange"
-              />
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="210" align="center">
+              <template #default="scope">
+                <div class="status-buttons">
+                  <el-button type="primary" size="small" plain @click="updateStatus(scope.row, '审查中')">审查</el-button>
+                  <el-button type="success" size="small" plain :disabled="scope.row.status === '已合格'" @click="updateStatus(scope.row, '已合格')">正确</el-button>
+                  <el-button type="danger" size="small" plain :disabled="scope.row.status === '不合格'" @click="updateStatus(scope.row, '不合格')">错误</el-button>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        
+        <!-- 分页 -->
+        <div class="pagination-area">
+          <CommonPagination
+            v-if="isDecrypted"
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total-count="totalCount"
+            :page-sizes="[5, 10, 20]"
+            :disabled="!isDecrypted"
+            background
+            @size-change="handleSizeChange"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -309,7 +305,6 @@ import { ensureArray, advancedSearch } from '../../utils/searchUtils'
 import axios from 'axios'
 
 const router = useRouter()
-const activeTab = ref('objectList')
 const currentStatus = ref('') // 默认显示全部数字对象
 const searchKeyword = ref('')
 const currentPage = ref(1)
@@ -1970,5 +1965,12 @@ const isGeneratingCapsule = ref(false)
   font-weight: bold;
 }
 
+.table-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 12px;
+  color: #222;
+}
 /* 表头信息部分样式 */
 </style> 

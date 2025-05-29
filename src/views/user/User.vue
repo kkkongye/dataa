@@ -7,145 +7,139 @@
     <div class="main-content">
       <!-- 标签页 -->
       <div class="content-card">
-        <el-tabs v-model="activeTab">
-          <el-tab-pane label="数字对象列表" name="objectList">
-            
-
-            
-            <!-- 搜索和操作区 -->
-            <div class="action-bar">
-              <div class="search-area">
-                <el-input
-                  v-model="searchKeyword"
-                  placeholder="搜索实体名、约束条件、传输控制操作"
-                  class="search-input"
-                >
-                  <template #suffix>
-                    <el-icon><Search /></el-icon>
-                  </template>
-                </el-input>
-              </div>
-              <div class="action-buttons">
-                <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
-                  <el-icon><DataAnalysis /></el-icon>
-                  三维数据可视化
-                </el-button>
-                <el-button type="primary" :disabled="selectedRows.length === 0" @click="handleDownload">下载数字对象</el-button>
-                <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
-                <el-button v-if="!isDecrypted" type="primary" plain @click="showDecryptDialog">解密</el-button>
-                <el-button v-else type="warning" plain @click="resetDecryption">重新解密</el-button>
-              </div>
-            </div>
-            
-            <!-- 数据表格 -->
-            <div class="table-container">
-              <div v-if="!isDecrypted" class="data-locked-placeholder">
-                <el-icon class="locked-icon"><Lock /></el-icon>
-                <p>数据已加密，请点击右上角"解密"按钮并输入正确的数字对象ID和Token进行解密</p>
-                <p class="locked-subtitle">解密后将显示所有匹配ID的数字对象数据</p>
-              </div>
-              <el-table
-                v-else
-                :data="filteredTableData"
-                style="width: 100%"
-                @selection-change="handleSelectionChange"
-                border
-                height="100%"
-                fit
-                :row-style="{ height: '45px' }"
-                :header-row-style="{ height: '45px' }"
-              >
-                <el-table-column type="selection" width="55" align="center" fixed />
-                <el-table-column prop="id" label="ID" width="400" align="center" fixed>
-                  <template #default="scope">
-                    <div class="id-cell">{{ scope.row.id }}</div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="entity" label="实体" width="120" align="center">
-                  <template #default="scope">
-                    <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center" />
-                <el-table-column prop="constraint" label="约束条件" min-width="250" align="center">
-                  <template #default="scope">
-                    <div class="constraint-container">
-                      <template v-if="scope.row.constraint && scope.row.constraint.length">
-                        <div 
-                          v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint]).length / 2)" 
-                          :key="rowIndex"
-                          class="constraint-row"
-                        >
-                          <!-- 第一项 -->
-                          <div class="constraint-item-pair">
-                            <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2]" 
-                                  v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2])"></span>
-                          </div>
-                          
-                          <!-- 第二项 -->
-                          <div class="constraint-item-pair">
-                            <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1]" 
-                                  v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1])"></span>
-                          </div>
-                        </div>
-                      </template>
-                      <template v-else>-</template>
-                    </div>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="transferControl" label="传输控制操作" min-width="180" align="center">
-                  <template #default="scope">
-                    <div class="control-container">
-                      <template v-if="scope.row.transferControl && scope.row.transferControl.length">
-                        <el-tag
-                          v-for="(item, index) in (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])"
-                          :key="index"
-                          size="small"
-                          type="primary"
-                          effect="plain"
-                          class="control-tag"
-                        >
-                          {{ item }}
-                        </el-tag>
-                      </template>
-                      <template v-else>-</template>
-                    </div>
-                  </template>
-                </el-table-column>
-                
-                <!-- 添加分类分级值列 -->
-                <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
-                  <template #default="scope">
-                    <div class="classification-level-container">
-                      <div class="classification-level-item">
-                        <span class="label">分类值：</span>
-                        <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
+        <div class="table-title">数据对象列表</div>
+        <!-- 搜索和操作区 -->
+        <div class="action-bar">
+          <div class="search-area">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索实体名、约束条件、传输控制操作"
+              class="search-input"
+            >
+              <template #suffix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
+          <div class="action-buttons">
+            <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
+              <el-icon><DataAnalysis /></el-icon>
+              三维数据可视化
+            </el-button>
+            <el-button type="primary" :disabled="selectedRows.length === 0" @click="handleDownload">下载数据对象</el-button>
+            <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
+            <el-button v-if="!isDecrypted" type="primary" plain @click="showDecryptDialog">解密</el-button>
+            <el-button v-else type="warning" plain @click="resetDecryption">重新解密</el-button>
+          </div>
+        </div>
+        
+        <!-- 数据表格 -->
+        <div class="table-container">
+          <div v-if="!isDecrypted" class="data-locked-placeholder">
+            <el-icon class="locked-icon"><Lock /></el-icon>
+            <p>数据已加密，请点击右上角"解密"按钮并输入正确的数据对象ID和Token进行解密</p>
+            <p class="locked-subtitle">解密后将显示所有匹配ID的数据对象数据</p>
+          </div>
+          <el-table
+            v-else
+            :data="filteredTableData"
+            style="width: 100%"
+            @selection-change="handleSelectionChange"
+            border
+            height="100%"
+            fit
+            :row-style="{ height: '45px' }"
+            :header-row-style="{ height: '45px' }"
+          >
+            <el-table-column type="selection" width="55" align="center" fixed />
+            <el-table-column prop="id" label="ID" width="400" align="center" fixed>
+              <template #default="scope">
+                <div class="id-cell">{{ scope.row.id }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="entity" label="实体" width="120" align="center">
+              <template #default="scope">
+                <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center" />
+            <el-table-column prop="constraint" label="约束条件" min-width="250" align="center">
+              <template #default="scope">
+                <div class="constraint-container">
+                  <template v-if="scope.row.constraint && scope.row.constraint.length">
+                    <div 
+                      v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint]).length / 2)" 
+                      :key="rowIndex"
+                      class="constraint-row"
+                    >
+                      <!-- 第一项 -->
+                      <div class="constraint-item-pair">
+                        <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2]" 
+                              v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2])"></span>
                       </div>
-                      <div class="classification-level-item">
-                        <span class="label">分级值：</span>
-                        <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
+                      
+                      <!-- 第二项 -->
+                      <div class="constraint-item-pair">
+                        <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1]" 
+                              v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1])"></span>
                       </div>
                     </div>
                   </template>
-                </el-table-column>
-              </el-table>
-            </div>
+                  <template v-else>-</template>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="transferControl" label="传输控制操作" min-width="180" align="center">
+              <template #default="scope">
+                <div class="control-container">
+                  <template v-if="scope.row.transferControl && scope.row.transferControl.length">
+                    <el-tag
+                      v-for="(item, index) in (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])"
+                      :key="index"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      {{ item }}
+                    </el-tag>
+                  </template>
+                  <template v-else>-</template>
+                </div>
+              </template>
+            </el-table-column>
             
-            <!-- 分页 -->
-            <div class="pagination-area">
-              <CommonPagination
-                v-if="isDecrypted"
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :total-count="totalCount"
-                :page-sizes="[5, 10, 20]"
-                :disabled="!isDecrypted"
-                background
-                @size-change="handleSizeChange"
-              />
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+            <!-- 添加分类分级值列 -->
+            <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
+              <template #default="scope">
+                <div class="classification-level-container">
+                  <div class="classification-level-item">
+                    <span class="label">分类值：</span>
+                    <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
+                  </div>
+                  <div class="classification-level-item">
+                    <span class="label">分级值：</span>
+                    <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        
+        <!-- 分页 -->
+        <div class="pagination-area">
+          <CommonPagination
+            v-if="isDecrypted"
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total-count="totalCount"
+            :page-sizes="[5, 10, 20]"
+            :disabled="!isDecrypted"
+            background
+            @size-change="handleSizeChange"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -164,7 +158,7 @@
     class="decrypt-dialog"
   >
     <el-form :model="decryptForm" label-width="120px" ref="decryptFormRef" :rules="decryptFormRules">
-      <el-form-item label="数字对象ID:" prop="objectId">
+      <el-form-item label="数据对象ID:" prop="objectId">
         <el-input 
           v-model="decryptForm.objectId" 
           placeholder="请输入ID，多个ID请用逗号分隔"
@@ -493,7 +487,7 @@ const decryptForm = reactive({
   dataCapsule: ''
 })
 const decryptFormRules = {
-  objectId: [{ required: true, message: '请输入数字对象ID', trigger: 'blur' }],
+  objectId: [{ required: true, message: '请输入数据对象ID', trigger: 'blur' }],
   token: [{ required: true, message: '请输入token', trigger: 'blur' }]
 }
 // 存储解密后的对象ID列表
@@ -573,7 +567,7 @@ const handleDecrypt = async () => {
 const handleRequestToken = async () => {
   // 检查是否已填写数字对象ID
   if (!decryptForm.objectId) {
-    ElMessage.warning('请先填写数字对象ID')
+    ElMessage.warning('请先填写数据对象ID')
     return
   }
   
@@ -619,7 +613,7 @@ const handleGenerateCapsule = async () => {
   }
   
   if (!decryptForm.objectId) {
-    ElMessage.warning('请输入数字对象ID')
+    ElMessage.warning('请输入数据对象ID')
     return
   }
   
@@ -1290,7 +1284,7 @@ const formatConstraintText = (text) => {
 // 处理下载数字对象
 const handleDownload = () => {
   if (selectedRows.value.length === 0) {
-    ElMessage.warning('请选择要下载的数字对象');
+    ElMessage.warning('请选择要下载的数据对象');
     return;
   }
 
@@ -1936,4 +1930,11 @@ const showVisualization = () => {
 }
 
 /* 表头信息部分样式 */
+.table-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 12px;
+  color: #222;
+}
 </style> 
