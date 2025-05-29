@@ -400,7 +400,9 @@ const filteredTableData = computed(() => {
   let result = tableData.value
 
   // 状态过滤
-  if (currentStatus.value) {
+  if (currentStatus.value === '待校验') {
+    result = result.filter(item => item.status === '待校验' || item.status === '待检验')
+  } else if (currentStatus.value) {
     result = result.filter(item => item.status === currentStatus.value)
   }
 
@@ -954,7 +956,7 @@ const showCreateDialog = () => {
     createForm.regionConstraint = ''
     createForm.shareConstraint = ''
     createForm.transferControl = []
-    createForm.status = '待检验'
+    createForm.status = '待校验'
     createForm.auditInfo = ''
   }, 100)
 }
@@ -973,7 +975,7 @@ const createForm = reactive({
   regionConstraint: '',
   shareConstraint: '',
   transferControl: [],
-  status: '待检验',
+  status: '待校验',
   auditInfo: '',
   excelData: null 
 })
@@ -1906,7 +1908,7 @@ const resetCreateForm = () => {
   createForm.regionConstraint = ''
   createForm.shareConstraint = ''
   createForm.transferControl = []
-  createForm.status = '待检验'
+  createForm.status = '待校验'
   createForm.auditInfo = ''
   
   if (createFormRef.value) {
@@ -2021,10 +2023,10 @@ const saveCreateObject = async (newObject) => {
     console.log('添加原始元数据副本:', newObject.originalMetadata);
   }
   
-  // 确保状态为"待检验"
-  if (newObject.status !== '待检验') {
-    console.log('修正状态值从', newObject.status, '到"待检验"');
-    newObject.status = '待检验';
+  // 确保状态为"待校验"
+  if (newObject.status !== '待校验') {
+    console.log('修正状态值从', newObject.status, '到"待校验"');
+    newObject.status = '待校验';
   }
   
   // 检查是否有excelFileId（从服务器上传时获取）
@@ -2073,7 +2075,7 @@ const saveCreateObject = async (newObject) => {
       // 创建一个最简单的dataContent，确保不会导致解析错误
       newObject.dataContent = JSON.stringify({
         entity: newObject.entity,
-        status: '待检验',
+        status: '待校验',
         metadata: {
           dataName: newObject.entity || '未命名数据',
           sourceUnit: '数据部',
@@ -2098,7 +2100,7 @@ const saveCreateObject = async (newObject) => {
         // 如果现有dataContent无效，重新创建一个
         dataContentObj = {
           entity: newObject.entity,
-          status: newObject.status || '待检验'
+          status: newObject.status || '待校验'
         };
       }
       
@@ -2136,7 +2138,7 @@ const saveCreateObject = async (newObject) => {
       // 出错时创建一个新的简单dataContent
       newObject.dataContent = JSON.stringify({
         entity: newObject.entity,
-        status: newObject.status || '待检验',
+        status: newObject.status || '待校验',
         excelFileId: newObject.excelFileId
       });
     }
@@ -2606,7 +2608,7 @@ const getDefaultEditForm = () => {
     regionConstraint: '',
     shareConstraint: '',
     transferControl: [],
-    status: '待检验',
+    status: '待校验',
     metadata: {
       dataName: '',
       sourceUnit: '',
@@ -2807,12 +2809,6 @@ const showVisualization = () => {
   font-size: 12px;
 }
 
-/* 移除按钮点击后的黑色边框 */
-.el-button:focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
 .status-success {
   background-color: #e1f3d8;
   color: #67c23a;
@@ -2826,6 +2822,12 @@ const showVisualization = () => {
 .status-pending {
   background-color: #f4f4f5;
   color: #909399;
+}
+
+/* 移除按钮点击后的黑色边框 */
+.el-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* 分页区域 */

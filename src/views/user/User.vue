@@ -26,6 +26,10 @@
                 </el-input>
               </div>
               <div class="action-buttons">
+                <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
+                  <el-icon><DataAnalysis /></el-icon>
+                  三维数据可视化
+                </el-button>
                 <el-button type="primary" :disabled="selectedRows.length === 0" @click="handleDownload">下载数字对象</el-button>
                 <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
                 <el-button v-if="!isDecrypted" type="primary" plain @click="showDecryptDialog">解密</el-button>
@@ -287,13 +291,16 @@
       @view-detail="handleViewDirectoryItem"
     />
   </el-dialog>
+
+  <!-- 添加三维可视化对话框组件 -->
+  <VisualizationDialog v-model:visible="visualizationVisible" />
 </template>
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Lock, Document } from '@element-plus/icons-vue'
+import { Search, Lock, Document, DataAnalysis } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '@/components/ExcelPreview.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -302,6 +309,7 @@ import DirectoryTable from '@/components/user/DirectoryTable.vue'
 import dataObjectService from '@/services/dataObjectService'
 import { ensureArray, advancedSearch } from '@/utils/searchUtils';
 import axios from 'axios'
+import VisualizationDialog from '@/components/visualization/VisualizationDialog.vue'
 
 const router = useRouter()
 const activeTab = ref('objectList')
@@ -408,7 +416,7 @@ const getStatusClass = (status) => {
   switch (status) {
     case '已合格': return 'status-success'
     case '不合格': return 'status-error'
-    case '待检验': return 'status-pending'
+    case '待校验': return 'status-pending'
     default: return ''
   }
 }
@@ -1405,6 +1413,12 @@ const handleViewDirectoryItem = (item) => {
   // 预览选中的实体
   previewEntity(item)
 }
+
+// 添加三维可视化相关
+const visualizationVisible = ref(false)
+const showVisualization = () => {
+  visualizationVisible.value = true
+}
 </script>
 
 <style scoped>
@@ -1574,8 +1588,8 @@ const handleViewDirectoryItem = (item) => {
 }
 
 .status-pending {
-  background-color: #f5f5f5;
-  color: #8c8c8c;
+  background-color: #f4f4f5;
+  color: #909399;
 }
 
 /* 分页区域 */

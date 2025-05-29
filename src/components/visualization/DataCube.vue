@@ -85,7 +85,7 @@ const industryValues = {
 const statusColors = {
   '已合格': '#91cc75',  // 绿色
   '不合格': '#ee6666',  // 红色
-  '待检验': '#909399'   // 灰色
+  '待校验': '#909399'   // 灰色
 };
 
 // 从后端获取数据
@@ -140,21 +140,21 @@ const processBackendData = async () => {
         const industryIndex = industries.indexOf(industry);
         
         // 从dataEntity中获取状态
-        let status = '待检验';
+        let status = '待校验';
         if (item.dataEntity && item.dataEntity.status) {
-          status = item.dataEntity.status;
+          status = item.dataEntity.status === '待检验' ? '待校验' : item.dataEntity.status;
         } else if (item.dataContent) {
           try {
             const dataContent = JSON.parse(item.dataContent);
             if (dataContent.status) {
-              status = dataContent.status;
+              status = dataContent.status === '待检验' ? '待校验' : dataContent.status;
             }
           } catch (e) {
             console.error('解析dataContent失败:', e);
           }
         }
         
-        const statusColor = statusColors[status] || statusColors['待检验'];
+        const statusColor = statusColors[status] || statusColors['待校验'];
         
         const dataSize = pointSize.value;
         const completeness = 0.8;
@@ -216,16 +216,16 @@ const processBackendData = async () => {
             0
           ],
           industry: '未知',
-          status: '待检验',
-          statusColor: statusColors['待检验'],
+          status: '待校验',
+          statusColor: statusColors['待校验'],
           completeness: 0.8,
           symbolSize: pointSize.value,
           itemStyle: {
-            color: statusColors['待检验'],
+            color: statusColors['待校验'],
             opacity: 0.8
           },
           entity: `错误数据${index+1}`,
-          statusInfo: '待检验',
+          statusInfo: '待校验',
           metadata: {
             dataName: '未知',
             sourceUnit: '未知',
@@ -401,7 +401,7 @@ const forceRender = async () => {
           type: 'piecewise',
           dimension: 2,
           pieces: [
-            { value: 0, label: '待检验', color: statusColors['待检验'] },
+            { value: 0, label: '待校验', color: statusColors['待校验'] },
             { value: 1, label: '已合格', color: statusColors['已合格'] },
             { value: 2, label: '不合格', color: statusColors['不合格'] }
           ],
@@ -449,7 +449,7 @@ const forceRender = async () => {
           },
           minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
           maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
-          splitNumber: 8 // 设置分割段数
+          splitNumber: 5 // 设置分割段数，减少为5条
         },
         yAxis3D: {
           type: 'category',
@@ -630,62 +630,6 @@ const forceRender = async () => {
               borderWidth: 1,
               borderColor: '#fff'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             }
           }
         }]
@@ -794,7 +738,7 @@ const initChart = async () => {
         type: 'piecewise',
         dimension: 2,
         pieces: [
-          { value: 0, label: '待检验', color: statusColors['待检验'] },
+          { value: 0, label: '待校验', color: statusColors['待校验'] },
           { value: 1, label: '已合格', color: statusColors['已合格'] },
           { value: 2, label: '不合格', color: statusColors['不合格'] }
         ],
@@ -842,7 +786,7 @@ const initChart = async () => {
         },
         minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
         maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
-        splitNumber: 8 // 设置分割段数
+        splitNumber: 5 // 设置分割段数，减少为5条
       },
       yAxis3D: {
         type: 'category',

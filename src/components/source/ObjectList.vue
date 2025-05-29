@@ -5,11 +5,11 @@
       <el-button 
         :class="['status-btn', { active: currentStatus === '' }]" 
         @click="setStatus('')"
-      >全部数字对象</el-button>
+      >全部数据对象</el-button>
       <el-button 
-        :class="['status-btn', { active: currentStatus === '待检验' }]" 
-        @click="setStatus('待检验')"
-      >待检验</el-button>
+        :class="['status-btn', { active: currentStatus === '待校验' }]" 
+        @click="setStatus('待校验')"
+      >待校验</el-button>
       <el-button 
         :class="['status-btn', { active: currentStatus === '已合格' }]" 
         @click="setStatus('已合格')"
@@ -196,7 +196,7 @@
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="scope">
             <span :class="['status-tag', getStatusClass(scope.row.status)]">
-              {{ scope.row.status }}
+              {{ (scope.row.status === '待检验' || scope.row.status === '待校验') ? '待校验' : scope.row.status }}
             </span>
           </template>
         </el-table-column>
@@ -342,13 +342,15 @@ const classificationLevelData = ref({
 // 组件内计算属性和方法
 const tableData = computed(() => {
   if (!props.data) return []
-  
-  // 在组件内部进行分页
+  let filtered = props.data
+  if (props.currentStatus === '待校验') {
+    filtered = filtered.filter(item => item.status === '待校验' || item.status === '待检验')
+  } else if (props.currentStatus) {
+    filtered = filtered.filter(item => item.status === props.currentStatus)
+  }
   const startIndex = (props.currentPage - 1) * props.pageSize
   const endIndex = startIndex + props.pageSize
-  
-  // 确保不超出数组范围
-  return props.data.slice(startIndex, Math.min(endIndex, props.data.length))
+  return filtered.slice(startIndex, Math.min(endIndex, filtered.length))
 })
 
 // 监听props变化
@@ -427,12 +429,10 @@ const handleSortChange = (column) => {
 
 // 获取状态对应的样式类名
 const getStatusClass = (status) => {
-  switch (status) {
-    case '已合格': return 'status-success'
-    case '不合格': return 'status-error'
-    case '待检验': return 'status-pending'
-    default: return ''
-  }
+  if (status === '待校验' || status === '待检验') return 'status-pending'
+  if (status === '已合格') return 'status-success'
+  if (status === '不合格') return 'status-error'
+  return ''
 }
 
 // 格式化约束条件文本
@@ -707,12 +707,10 @@ const handleClassificationLevelConfirm = async (data) => {
 
 // 获取反馈文本的类名
 const getFeedbackClass = (status) => {
-  switch (status) {
-    case '已合格': return 'feedback-success'
-    case '不合格': return 'feedback-error'
-    case '待检验': return 'feedback-pending'
-    default: return ''
-  }
+  if (status === '待校验' || status === '待检验') return 'feedback-pending'
+  if (status === '已合格') return 'feedback-success'
+  if (status === '不合格') return 'feedback-error'
+  return ''
 }
 </script>
 

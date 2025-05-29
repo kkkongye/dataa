@@ -12,22 +12,10 @@
             
             <!-- 状态筛选按钮 -->
             <div class="status-filter">
-              <el-button 
-                :class="['status-btn', { active: currentStatus === '' }]" 
-                @click="setStatus('')"
-              >全部数字对象</el-button>
-              <el-button 
-                :class="['status-btn', { active: currentStatus === '待检验' }]" 
-                @click="setStatus('待检验')"
-              >待检验</el-button>
-              <el-button 
-                :class="['status-btn', { active: currentStatus === '已合格' }]" 
-                @click="setStatus('已合格')"
-              >已合格</el-button>
-              <el-button 
-                :class="['status-btn', { active: currentStatus === '不合格' }]" 
-                @click="setStatus('不合格')"
-              >不合格</el-button>
+              <el-button :class="['status-btn', { active: currentStatus === '' }]" @click="setStatus('')">全部数据对象</el-button>
+              <el-button :class="['status-btn', { active: currentStatus === '待校验' }]" @click="setStatus('待校验')">待校验</el-button>
+              <el-button :class="['status-btn', { active: currentStatus === '已合格' }]" @click="setStatus('已合格')">已合格</el-button>
+              <el-button :class="['status-btn', { active: currentStatus === '不合格' }]" @click="setStatus('不合格')">不合格</el-button>
             </div>
             
             <!-- 搜索和操作区 -->
@@ -141,11 +129,11 @@
                 <el-table-column prop="status" label="状态" width="100" align="center">
                   <template #default="scope">
                     <span :class="['status-tag', getStatusClass(scope.row.status)]">
-                      {{ scope.row.status }}
+                      {{ (scope.row.status === '待检验' || scope.row.status === '待校验') ? '待校验' : scope.row.status }}
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待检验'" prop="feedback" label="反馈意见" min-width="160" align="center">
+                <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="160" align="center">
                   <template #default="scope">
                     <!-- 优先使用row.feedback -->
                     <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
@@ -375,17 +363,14 @@ const totalCount = computed(() => {
 // 根据状态和搜索条件过滤数据
 const filteredTableData = computed(() => {
   let result = tableData.value;
-
-  // 状态过滤
-  if (currentStatus.value) {
+  if (currentStatus.value === '待校验') {
+    result = result.filter(item => item.status === '待校验' || item.status === '待检验');
+  } else if (currentStatus.value) {
     result = result.filter(item => item.status === currentStatus.value);
   }
-
-  // 关键字搜索
   if (searchKeyword.value) {
     result = advancedSearch(result, searchKeyword.value);
   }
-
   // 分页处理
   const startIndex = (currentPage.value - 1) * pageSize.value;
   const endIndex = startIndex + pageSize.value;
@@ -404,12 +389,10 @@ const handleSelectionChange = (rows) => {
 
 // 获取状态对应的样式类名
 const getStatusClass = (status) => {
-  switch (status) {
-    case '已合格': return 'status-success'
-    case '不合格': return 'status-error'
-    case '待检验': return 'status-pending'
-    default: return ''
-  }
+  if (status === '待校验' || status === '待检验') return 'status-pending'
+  if (status === '已合格') return 'status-success'
+  if (status === '不合格') return 'status-error'
+  return ''
 }
 
 // 编辑对象
@@ -489,8 +472,8 @@ const updateStatus = async (row, newStatus) => {
       ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
     }
   }
-  // 处理已合格或待检验状态
-  else if (newStatus === '已合格' || newStatus === '待检验') {
+  // 处理已合格或待校验状态
+  else if (newStatus === '已合格' || newStatus === '待校验') {
     try {
       const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, '', localModeOnly)
       if (result) {
@@ -1394,12 +1377,10 @@ const showReportDialog = () => {
 
 // 添加根据状态获取反馈意见类名的方法
 const getFeedbackClass = (status) => {
-  switch (status) {
-    case '已合格': return 'status-success'
-    case '不合格': return 'status-error'
-    case '待检验': return 'status-pending'
-    default: return ''
-  }
+  if (status === '待校验' || status === '待检验') return 'status-pending'
+  if (status === '已合格') return 'status-success'
+  if (status === '不合格') return 'status-error'
+  return ''
 }
 
 // 在script setup部分添加
@@ -1515,6 +1496,11 @@ const isGeneratingCapsule = ref(false)
 .status-pending {
   background-color: #f4f4f5;
   color: #909399;
+}
+
+.feedback-text.status-pending {
+  color: #909399;
+  background-color: #f4f4f5;
 }
 
 /* 分页区域 */
