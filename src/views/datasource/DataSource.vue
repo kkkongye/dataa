@@ -30,32 +30,27 @@
     
     <!-- 主内容区域 -->
     <div class="main-content">
-      <!-- 标签页 -->
       <div class="content-card">
-        <!-- 删除可视化按钮容器和按钮 -->
-        <el-tabs v-model="activeTab">
-          <el-tab-pane label="数据对象列表" name="objectList">
-            <!-- 使用ObjectList组件代替原有的列表内容 -->
-            <ObjectList 
-              :data="filteredTableData"
-              v-model:current-status="currentStatus"
-              v-model:search-keyword="searchKeyword"
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :total-count="totalCount"
-              :is-qualified-status="isQualifiedStatus"
-              @selection-change="handleSelectionChange"
-              @sort-change="handleSortChange"
-              @edit="handleEdit"
-              @delete="handleDelete"
-              @preview="previewEntity"
-              @create="showCreateDialog"
-              @export="handleExport"
-              @update:data="handleDataUpdate"
-              @visualization="showVisualization"
-            />
-          </el-tab-pane>
-        </el-tabs>
+        <div class="table-title">数据对象列表</div>
+        <!-- ObjectList组件紧跟标题下方 -->
+        <ObjectList 
+          :data="filteredTableData"
+          v-model:current-status="currentStatus"
+          v-model:search-keyword="searchKeyword"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total-count="totalCount"
+          :is-qualified-status="isQualifiedStatus"
+          @selection-change="handleSelectionChange"
+          @sort-change="handleSortChange"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @preview="previewEntity"
+          @create="showCreateDialog"
+          @export="handleExport"
+          @update:data="handleDataUpdate"
+          @visualization="showVisualization"
+        />
       </div>
     </div>
   </div>
@@ -2756,7 +2751,6 @@ const showVisualization = () => {
   border-radius: 4px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  height: calc(100vh - 92px);
   width: 100%;
   box-sizing: border-box;
   overflow: auto;
@@ -2797,8 +2791,11 @@ const showVisualization = () => {
 /* 表格容器区域 */
 .table-container {
   margin-bottom: 16px;
-  height: calc(100vh - 340px);
-  overflow: hidden;
+  min-height: 320px;
+  max-height: 60vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 状态标签样式 */
@@ -3285,5 +3282,13 @@ pre {
 
 .visualization-btn {
   display: none;
+}
+
+.table-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 5px;
+  color: #222;
 }
 </style> 
