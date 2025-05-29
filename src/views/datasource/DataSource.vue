@@ -34,7 +34,7 @@
       <div class="content-card">
         <!-- 删除可视化按钮容器和按钮 -->
         <el-tabs v-model="activeTab">
-          <el-tab-pane label="数字对象列表" name="objectList">
+          <el-tab-pane label="数据对象列表" name="objectList">
             <!-- 使用ObjectList组件代替原有的列表内容 -->
             <ObjectList 
               :data="filteredTableData"
@@ -2185,7 +2185,7 @@ const saveCreateObject = async (newObject) => {
     const result = await dataObjectService.addDataObjectViaApi(newObject, requestParams);
     
     if (result.success) {
-      ElMessage.success('数字对象添加成功');
+      ElMessage.success('数据对象添加成功');
       
       // 刷新表格数据
       loadDataFromBackend();
@@ -2193,7 +2193,7 @@ const saveCreateObject = async (newObject) => {
       // 关闭对话框
       createDialogVisible.value = false;
     } else {
-      console.error('添加数字对象失败:', result.message, result);
+      console.error('添加数据对象失败:', result.message, result);
       
       // 捕获具体错误提示
       let errorDetail = '';
@@ -2218,7 +2218,7 @@ const saveCreateObject = async (newObject) => {
       createDialogVisible.value = false;
     }
   } catch (error) {
-    console.error('添加数字对象时发生异常:', error);
+    console.error('添加数据对象时发生异常:', error);
     ElMessage.error(`添加过程中发生错误: ${error.message || '未知错误'}`);
     
     // 如果异常，尝试添加到本地数据
