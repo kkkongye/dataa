@@ -31,18 +31,12 @@
           </div>
           <div class="action-buttons">
       
-            <el-button type="primary" plain @click="showDecryptDialog">解密</el-button>
           </div>
         </div>
         
         <!-- 数据表格 -->
         <div class="table-container">
-          <div v-if="!isDecrypted" class="data-locked-placeholder">
-            <el-icon class="locked-icon"><Lock /></el-icon>
-            <p>数据已加密，请点击"解密"按钮进行解密操作</p>
-          </div>
           <el-table
-            v-else
             :data="filteredTableData"
             style="width: 100%"
             :cell-style="{ padding: '8px 0', textAlign: 'center' }"
@@ -161,12 +155,10 @@
         <!-- 分页 -->
         <div class="pagination-area">
           <CommonPagination
-            v-if="isDecrypted"
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
             :total-count="totalCount"
             :page-sizes="[5, 10, 20]"
-            :disabled="!isDecrypted"
             background
             @size-change="handleSizeChange"
           />
@@ -175,32 +167,6 @@
     </div>
   </div>
   
-  <!-- 解密对话框 -->
-  <el-dialog
-    v-model="decryptDialogVisible"
-    title="解密"
-    width="30%"
-    :close-on-click-modal="false"
-    :show-close="true"
-    draggable
-    class="decrypt-dialog"
-  >
-    <el-form :model="decryptForm" label-width="120px" ref="decryptFormRef" :rules="decryptFormRules">
-      <el-form-item label="token:" prop="token">
-        <el-input v-model="decryptForm.token" placeholder="请输入token"></el-input>
-      </el-form-item>
-
-    </el-form>
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button type="info" plain @click="handleRequestToken" :loading="isRequestingToken">申请token</el-button>
-        <el-button type="primary" @click="handleGenerateCapsule" :loading="isGeneratingCapsule" :disabled="!decryptForm.token">生成数据胶囊</el-button>
-        <el-button type="primary" @click="handleDecrypt" :disabled="!decryptForm.dataCapsule || isGeneratingCapsule">确定</el-button>
-        <el-button @click="decryptDialogVisible = false">取消</el-button>
-      </span>
-    </template>
-  </el-dialog>
-
   <!-- Excel预览对话框 -->
   <el-dialog
     v-model="previewDialogVisible"
@@ -309,8 +275,6 @@ const currentStatus = ref('') // 默认显示全部数字对象
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(5) // 改为默认显示5条
-const isDecrypted = ref(false)
-const selectedRows = ref([])
 
 // 添加计算属性判断是否为已合格状态
 const isQualifiedStatus = computed(() => currentStatus.value === '已合格')
@@ -330,15 +294,129 @@ const editForm = reactive({
 const editingIndex = ref(-1)
 
 // 表格数据 - 从共享服务获取
-const tableData = ref(dataObjectService.getAllDataObjects())
+const tableData = ref([])
 
-// 监听共享服务数据变化
+// 适配后端数据到前端格式（复制自dataObjectService.js）
+function adaptBackendData(backendItem) {
+  if (!backendItem) {
+    return {
+      id: '',
+      entity: '',
+      locationInfo: '',
+      constraint: [],
+      transferControl: [],
+      auditInfo: '',
+      status: '',
+      feedback: '',
+      totalCategoryValue: '',
+      totalGradeValue: '',
+      metadata: null,
+      dataContent: ''
+    }
+  }
+  // 解析locationInfoJson
+  let parsedLocation = null
+  if (backendItem.locationInfoJson) {
+    try {
+      parsedLocation = JSON.parse(backendItem.locationInfoJson)
+    } catch (e) {}
+  }
+  // 约束条件
+  const constraintArray = backendItem.constraintSet && backendItem.constraintSet.constraints
+    ? backendItem.constraintSet.constraints.map(c => [
+        `格式约束: ${c.formatConstraint}`,
+        `访问约束: ${c.accessConstraint}`,
+        `路径约束: ${c.pathConstraint}`,
+        `区域约束: ${c.regionConstraint}`,
+        `共享约束: ${c.shareConstraint}`
+      ]).flat()
+    : []
+  // 传输控制
+  const control = backendItem.propagationControlJson
+    ? (typeof backendItem.propagationControlJson === 'string'
+        ? JSON.parse(backendItem.propagationControlJson)
+        : backendItem.propagationControlJson)
+    : backendItem.propagationControl
+  const transferControlArray = control ? [
+    control.canRead ? '可读' : null,
+    control.canModify ? '可修改' : null,
+    control.canShare ? '可共享' : null,
+    control.canDelegate ? '可委托' : null,
+    control.canDestroy ? '可销毁' : null
+  ].filter(Boolean) : []
+  // 审计信息
+  const auditInfo = backendItem.auditInfo ? '查看日志' : ''
+  // 位置信息
+  let locationInfo = ''
+  if (parsedLocation && parsedLocation.locations) {
+    locationInfo = parsedLocation.locations.map(loc =>
+      `(${loc.sheet || '默认'}, ${loc.startRow || '1'}-${loc.endRow || '*'}, ${loc.startColumn || 'A'}-${loc.endColumn || '*'})`
+    ).join('; ')
+  }
+  // 反馈
+  let feedback = ''
+  if (backendItem.dataEntity && backendItem.dataEntity.feedback) {
+    feedback = backendItem.dataEntity.feedback
+  } else if (backendItem.feedback) {
+    feedback = backendItem.feedback
+  }
+  // 元数据
+  let metadata = null
+  if (backendItem.dataEntity && backendItem.dataEntity.metadata) {
+    metadata = backendItem.dataEntity.metadata
+  } else if (backendItem.metadataJson) {
+    try {
+      metadata = JSON.parse(backendItem.metadataJson)
+    } catch (e) {}
+  }
+  // 状态
+  const status = backendItem.dataEntity && backendItem.dataEntity.status
+    ? backendItem.dataEntity.status
+    : backendItem.status || ''
+  // 分类分级
+  const totalCategoryValue = backendItem.totalCategoryValue || backendItem.classificationValue || ''
+  const totalGradeValue = backendItem.totalGradeValue || backendItem.levelValue || ''
+  // 实体名
+  const entity = backendItem.dataEntity && backendItem.dataEntity.entity
+    ? backendItem.dataEntity.entity
+    : backendItem.entity || ''
+  return {
+    id: backendItem.id || '',
+    entity,
+    locationInfo,
+    constraint: constraintArray,
+    transferControl: transferControlArray,
+    auditInfo,
+    status,
+    feedback,
+    totalCategoryValue,
+    totalGradeValue,
+    metadata,
+    dataContent: backendItem.dataContent || ''
+  }
+}
+
+// 页面加载时从后端获取数据并适配
+const loadDataFromBackend = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/api/objects/list')
+    let dataArray = []
+    if (Array.isArray(response.data)) {
+      dataArray = response.data
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      dataArray = response.data.data
+    } else if (response.data.list && Array.isArray(response.data.list)) {
+      dataArray = response.data.list
+    }
+    // 适配后端数据结构
+    tableData.value = dataArray.map(item => adaptBackendData(item))
+  } catch (error) {
+    ElMessage.error('获取数据失败: ' + (error.message || '未知错误'))
+  }
+}
+
 onMounted(() => {
-  // 添加数据变化监听器
-  dataObjectService.addChangeListener((newData) => {
-    console.log('治理方收到数据变化:', newData)
-    // 无需手动更新tableData，因为是响应式引用
-  })
+  loadDataFromBackend()
 })
 
 // 计算实际数据量
@@ -569,136 +647,6 @@ const logout = () => {
 const handleSizeChange = (val) => {
   pageSize.value = val
   currentPage.value = 1
-}
-
-// 解密状态和表单
-const decryptDialogVisible = ref(false)
-const decryptFormRef = ref(null)
-const decryptForm = reactive({
-  token: '',
-  dataCapsule: ''  // 添加数据胶囊字段
-})
-const decryptFormRules = {
-  token: [{ required: true, message: '请输入token', trigger: 'blur' }]
-}
-
-// 显示解密对话框
-const showDecryptDialog = () => {
-  decryptDialogVisible.value = true
-}
-
-// 处理申请token操作
-const handleRequestToken = () => {
-  // 显示申请中信息
-  ElMessage.info('正在申请token，请稍候...')
-  
-  // 这里模拟申请token的过程，实际项目中需要调用真实的token申请接口
-  setTimeout(() => {
-    const mockToken = 'mock_token_' + Date.now()
-    decryptForm.token = mockToken
-    ElMessage.success('成功获取token')
-  }, 1000)
-}
-
-// 处理生成数据胶囊
-const handleGenerateCapsule = () => {
-  if (!decryptForm.token) {
-    ElMessage.warning('请先输入token')
-    return
-  }
-
-  isGeneratingCapsule.value = true
-  const apiUrl = 'http://localhost:8080/api/objects/list/de'
-  
-  fetch(apiUrl, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${decryptForm.token}`
-    }
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status}`)
-    }
-    return response.json()
-  })
-  .then(data => {
-    if (data && data.code === 1 && data.data) {
-      // 保存数据胶囊到表单
-      decryptForm.dataCapsule = JSON.stringify(data.data)
-      ElMessage.success('成功生成数据胶囊')
-    } else {
-      throw new Error('返回数据格式不符合预期')
-    }
-  })
-  .catch(error => {
-    console.error('获取数据胶囊失败:', error)
-    ElMessage.error(`获取数据胶囊失败: ${error.message}`)
-  })
-  .finally(() => {
-    isGeneratingCapsule.value = false
-  })
-}
-
-// 添加 handleDecrypt 函数
-const handleDecrypt = () => {
-  if (!decryptForm.dataCapsule) {
-    ElMessage.warning('请先生成数据胶囊')
-    return
-  }
-
-  ElMessageBox.confirm('确认要解密数据吗?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'info'
-  }).then(() => {
-    // 调用解密API
-    const apiUrl = 'http://localhost:8080/api/decrypt'
-    
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${decryptForm.token}`
-      },
-      body: JSON.stringify({ dataCapsule: JSON.parse(decryptForm.dataCapsule) })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data && data.code === 1 && data.data) {
-        // 处理解密后的数据
-        const decryptedData = data.data.map(item => ({
-          id: item.id,
-          entity: item.dataEntity?.entity || '',
-          locationInfo: formatLocationInfo(item.locationInfo),
-          constraint: formatConstraints(item.constraintSet?.constraints),
-          transferControl: formatTransferControl(item.propagationControl),
-          auditInfo: '查看日志',
-          status: item.dataEntity?.status || '',
-          feedback: item.dataEntity?.feedback || '',
-          totalCategoryValue: item.totalCategoryValue,
-          totalGradeValue: item.totalGradeValue,
-          metadata: item.dataEntity?.metadata,
-          dataContent: item.dataContent
-        }))
-        
-        // 更新表格数据
-        tableData.value = decryptedData
-        isDecrypted.value = true
-        decryptDialogVisible.value = false // 关闭解密对话框
-        ElMessage.success('解密成功')
-      } else {
-        throw new Error('解密失败或数据格式错误')
-      }
-    })
-    .catch(error => {
-      console.error('解密失败:', error)
-      ElMessage.error(`解密失败: ${error.message}`)
-    })
-  }).catch(() => {
-    ElMessage.info('已取消解密操作')
-  })
 }
 
 // 格式化定位信息
