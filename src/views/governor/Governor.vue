@@ -7,7 +7,7 @@
     <div class="main-content">
       <!-- 标签页 -->
       <div class="content-card">
-        <div class="table-title">数据对象列表</div>
+        <div class="table-title">我的数据对象列表</div>
         <!-- 状态筛选按钮 -->
         <div class="status-filter">
           <el-button :class="['status-btn', { active: currentStatus === '' }]" @click="setStatus('')">全部数据对象</el-button>
@@ -1969,10 +1969,10 @@ const headerCellStyle = ({ column }) => {
 }
 
 .table-title {
-  font-size: 24px;
+  font-size: 33px;
   font-weight: bold;
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 5px;
   color: #222;
 }
 /* 表头信息部分样式 */

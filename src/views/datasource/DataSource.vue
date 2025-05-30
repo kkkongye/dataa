@@ -31,7 +31,7 @@
     <!-- 主内容区域 -->
     <div class="main-content">
       <div class="content-card">
-        <div class="table-title">数据对象列表</div>
+        <div class="table-title">我的数据对象列表</div>
         <!-- ObjectList组件紧跟标题下方 -->
         <ObjectList 
           :data="filteredTableData"
@@ -3285,7 +3285,7 @@ pre {
 }
 
 .table-title {
-  font-size: 24px;
+  font-size: 33px;
   font-weight: bold;
   text-align: center;
   margin-bottom: 5px;

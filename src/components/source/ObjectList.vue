@@ -57,12 +57,6 @@
         fit
       >
         <el-table-column 
-          type="selection" 
-          width="50" 
-          align="center"
-          :selectable="(row) => row.status !== '已合格'"
-        />
-        <el-table-column 
           prop="id" 
           label="ID" 
           width="240" 
@@ -70,7 +64,7 @@
           sortable
         >
           <template #default="scope">
-            <div class="id-cell">{{ scope.row.id }}</div>
+            <div class="id-cell highlight-blue">{{ scope.row.id }}</div>
           </template>
         </el-table-column>
         <el-table-column prop="entity" label="实体" width="120" align="center">

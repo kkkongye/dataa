@@ -7,7 +7,7 @@
     <div class="main-content">
       <!-- 标签页 -->
       <div class="content-card">
-        <div class="table-title">数据对象列表</div>
+        <div class="table-title">我的数据对象列表</div>
         <!-- 搜索和操作区 -->
         <div class="action-bar">
           <div class="search-area">
@@ -1964,7 +1964,7 @@ const headerCellStyle = ({ column }) => {
 
 /* 表头信息部分样式 */
 .table-title {
-  font-size: 24px;
+  font-size: 33px;
   font-weight: bold;
   text-align: center;
   margin-bottom: 12px;
