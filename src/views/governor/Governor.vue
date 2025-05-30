@@ -40,7 +40,7 @@
             :data="filteredTableData"
             style="width: 100%"
             :cell-style="{ padding: '8px 0', textAlign: 'center' }"
-            :header-cell-style="{ padding: '10px 0', background: '#f5f7fa', color: '#606266', fontWeight: 'bold', textAlign: 'center' }"
+            :header-cell-style="headerCellStyle"
             border
             height="100%"
             fit
@@ -101,7 +101,7 @@
             </el-table-column>
             <el-table-column prop="auditInfo" label="审计控制信息" width="130" align="center">
               <template #default="scope">
-                <el-link type="primary">{{ scope.row.auditInfo }}</el-link>
+                <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
               </template>
             </el-table-column>
             <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
@@ -253,6 +253,8 @@
 
   <!-- 审核报告弹窗 -->
   <ReviewReport v-model:visible="reportDialogVisible" />
+
+  <AuditLogDialog :visible="auditLogVisible" @close="auditLogVisible = false" />
 </template>
 
 <script setup>
@@ -269,6 +271,7 @@ import dataObjectService from '../../services/dataObjectService'
 import reportService from '../../services/reportService'
 import { ensureArray, advancedSearch } from '../../utils/searchUtils'
 import axios from 'axios'
+import AuditLogDialog from '@/components/source/AuditLogDialog.vue'
 
 const router = useRouter()
 const currentStatus = ref('') // 默认显示全部数字对象
@@ -1346,6 +1349,44 @@ const hasToken = ref(false)
 // 在 script setup 部分添加新的响应式变量
 const isRequestingToken = ref(false)
 const isGeneratingCapsule = ref(false)
+
+const auditLogVisible = ref(false)
+const showAuditLogDialog = (row) => {
+  auditLogVisible.value = true
+}
+
+// 表头自定义样式方法
+const headerCellStyle = ({ column }) => {
+  // 需要淡蓝色的列prop
+  const blueProps = [
+    'id',
+    'entity',
+    'locationInfo',
+    'constraint',
+    'transferControl',
+    'auditInfo',
+    'classificationLevelValue'
+  ];
+  if (blueProps.includes(column.property)) {
+    return {
+      background: '#eaf6ff',
+      color: '#1677c7',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      textAlign: 'center',
+      padding: '10px 0'
+    };
+  }
+  // 其他列（如状态、反馈意见、操作）保持原灰色
+  return {
+    background: '#f5f7fa',
+    color: '#606266',
+    fontWeight: 'bold',
+    fontSize: '15px',
+    textAlign: 'center',
+    padding: '10px 0'
+  };
+};
 </script>
 
 <style scoped>
@@ -1935,4 +1976,5 @@ const isGeneratingCapsule = ref(false)
   color: #222;
 }
 /* 表头信息部分样式 */
+
 </style> 

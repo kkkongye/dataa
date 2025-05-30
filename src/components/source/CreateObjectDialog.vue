@@ -21,7 +21,7 @@
             style="margin-left: 10px;"
             :disabled="loading"
           >
-            <el-button type="primary" :loading="loading">上传Excel</el-button>
+            <el-button type="primary" :loading="loading">上传</el-button>
           </el-upload>
           <el-tag v-if="uploadSuccess" type="success" size="small">已上传</el-tag>
         </div>

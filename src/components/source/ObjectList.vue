@@ -51,7 +51,7 @@
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
         :cell-style="{ padding: '8px 4px', textAlign: 'center' }"
-        :header-cell-style="{ padding: '10px 0', background: '#f5f7fa', color: '#606266', fontWeight: 'bold', textAlign: 'center' }"
+        :header-cell-style="headerCellStyle"
         border
         height="100%"
         fit
@@ -175,7 +175,7 @@
         </el-table-column>
         <el-table-column prop="auditInfo" label="审计控制信息" width="140" align="center">
           <template #default="scope">
-            <el-link type="primary">{{ scope.row.auditInfo }}</el-link>
+            <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
           </template>
         </el-table-column>
         <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
@@ -252,6 +252,8 @@
       :apiBaseUrl="'http://localhost:8080'"
       @confirm="handleClassificationLevelConfirm"
     />
+
+    <AuditLogDialog :visible="auditLogVisible" @close="auditLogVisible = false" />
   </div>
 </template>
 
@@ -261,6 +263,7 @@ import { Search, InfoFilled, DataAnalysis } from '@element-plus/icons-vue'
 import CommonPagination from '@/components/CommonPagination.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ClassificationLevelDialog from './ClassificationLevelDialog.vue'
+import AuditLogDialog from './AuditLogDialog.vue'
 
 const props = defineProps({
   // 表格数据
@@ -338,6 +341,8 @@ const classificationLevelData = ref({
   columnGradeValue: 0.3,
   totalGradeValue: 0
 })
+
+const auditLogVisible = ref(false)
 
 // 组件内计算属性和方法
 const tableData = computed(() => {
@@ -711,6 +716,43 @@ const getFeedbackClass = (status) => {
   if (status === '已合格') return 'feedback-success'
   if (status === '不合格') return 'feedback-error'
   return ''
+}
+
+// 表头自定义样式方法
+const headerCellStyle = ({ column }) => {
+  // 需要淡蓝色的列prop
+  const blueProps = [
+    'id',
+    'entity',
+    'locationInfo',
+    'constraint',
+    'transferControl',
+    'auditInfo',
+    'classificationLevelValue'
+  ];
+  if (blueProps.includes(column.property)) {
+    return {
+      background: '#eaf6ff',
+      color: '#1677c7',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      textAlign: 'center',
+      padding: '10px 0'
+    };
+  }
+  // 其他列（如状态、反馈意见、操作）保持原灰色
+  return {
+    background: '#f5f7fa',
+    color: '#606266',
+    fontWeight: 'bold',
+    fontSize: '15px',
+    textAlign: 'center',
+    padding: '10px 0'
+  };
+};
+
+const showAuditLogDialog = (row) => {
+  auditLogVisible.value = true
 }
 </script>
 

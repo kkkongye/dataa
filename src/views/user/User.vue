@@ -48,7 +48,7 @@
             height="100%"
             fit
             :row-style="{ height: '45px' }"
-            :header-row-style="{ height: '45px' }"
+            :header-cell-style="headerCellStyle"
           >
             <el-table-column type="selection" width="55" align="center" fixed />
             <el-table-column prop="id" label="ID" width="400" align="center" fixed>
@@ -1412,6 +1412,40 @@ const visualizationVisible = ref(false)
 const showVisualization = () => {
   visualizationVisible.value = true
 }
+
+
+// 表头自定义样式方法
+const headerCellStyle = ({ column }) => {
+  // 需要淡蓝色的列prop
+  const blueProps = [
+    'id',
+    'entity',
+    'locationInfo',
+    'constraint',
+    'transferControl',
+    'auditInfo',
+    'classificationLevelValue'
+  ];
+  if (blueProps.includes(column.property)) {
+    return {
+      background: '#eaf6ff',
+      color: '#1677c7',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      textAlign: 'center',
+      padding: '10px 0'
+    };
+  }
+  // 其他列（如状态、反馈意见、操作）保持原灰色
+  return {
+    background: '#f5f7fa',
+    color: '#606266',
+    fontWeight: 'bold',
+    fontSize: '15px',
+    textAlign: 'center',
+    padding: '10px 0'
+  };
+};
 </script>
 
 <style scoped>
