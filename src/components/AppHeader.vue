@@ -80,7 +80,13 @@ const handleLogout = () => {
 }
 
 .user-role {
-  font-size: 14px;
-  color: #333;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1677c7;
+  background: rgba(24, 144, 255, 0.08);
+  padding: 6px 16px;
+  border-radius: 10px;
+  margin-left: 6px;
+  transition: background 0.2s;
 }
 </style> 

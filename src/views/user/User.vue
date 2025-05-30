@@ -26,7 +26,6 @@
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
             </el-button>
-            <el-button type="primary" :disabled="selectedRows.length === 0" @click="handleDownload">下载数据对象</el-button>
             <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
             <el-button v-if="!isDecrypted" type="primary" plain @click="showDecryptDialog">解密</el-button>
             <el-button v-else type="warning" plain @click="resetDecryption">重新解密</el-button>

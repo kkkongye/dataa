@@ -449,7 +449,7 @@ const forceRender = async () => {
           },
           minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
           maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
-          splitNumber: 5 // 设置分割段数，减少为5条
+          splitNumber: 3 // 设置分割段数，减少为3条
         },
         yAxis3D: {
           type: 'category',
@@ -786,7 +786,7 @@ const initChart = async () => {
         },
         minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
         maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
-        splitNumber: 5 // 设置分割段数，减少为5条
+        splitNumber: 3 // 设置分割段数，减少为3条
       },
       yAxis3D: {
         type: 'category',

@@ -305,6 +305,7 @@ function adaptBackendData(backendItem) {
       locationInfo: '',
       constraint: [],
       transferControl: [],
+      propagationControl: null,
       auditInfo: '',
       status: '',
       feedback: '',
@@ -331,19 +332,31 @@ function adaptBackendData(backendItem) {
         `共享约束: ${c.shareConstraint}`
       ]).flat()
     : []
-  // 传输控制
-  const control = backendItem.propagationControlJson
-    ? (typeof backendItem.propagationControlJson === 'string'
+  // 传输控制和传播控制
+  let transferControlArray = [];
+  let propagationControlObj = null;
+  if (backendItem.propagationControl) {
+    propagationControlObj = backendItem.propagationControl;
+  } else if (backendItem.propagationControlJson) {
+    try {
+      propagationControlObj = typeof backendItem.propagationControlJson === 'string'
         ? JSON.parse(backendItem.propagationControlJson)
-        : backendItem.propagationControlJson)
-    : backendItem.propagationControl
-  const transferControlArray = control ? [
-    control.canRead ? '可读' : null,
-    control.canModify ? '可修改' : null,
-    control.canShare ? '可共享' : null,
-    control.canDelegate ? '可委托' : null,
-    control.canDestroy ? '可销毁' : null
-  ].filter(Boolean) : []
+        : backendItem.propagationControlJson;
+    } catch (e) {}
+  }
+  if (propagationControlObj) {
+    if (propagationControlObj.canRead) transferControlArray.push('可读');
+    if (propagationControlObj.canModify) transferControlArray.push('可修改');
+    if (propagationControlObj.canShare) transferControlArray.push('可共享');
+    if (propagationControlObj.canDelegate) transferControlArray.push('可委托');
+    if (propagationControlObj.canDestroy) transferControlArray.push('可销毁');
+  } else if (backendItem.constraintSet && backendItem.constraintSet.constraints) {
+    // 兼容后端只返回constraintSet的情况
+    const constraints = backendItem.constraintSet.constraints[0] || {};
+    if (constraints.accessConstraint && constraints.accessConstraint.includes('允许')) transferControlArray.push('可读');
+    if (constraints.shareConstraint && constraints.shareConstraint.includes('允许')) transferControlArray.push('可共享');
+    if (constraints.pathConstraint && constraints.pathConstraint.includes('点对点')) transferControlArray.push('可委托');
+  }
   // 审计信息
   const auditInfo = backendItem.auditInfo ? '查看日志' : ''
   // 位置信息
@@ -386,6 +399,7 @@ function adaptBackendData(backendItem) {
     locationInfo,
     constraint: constraintArray,
     transferControl: transferControlArray,
+    propagationControl: propagationControlObj,
     auditInfo,
     status,
     feedback,
