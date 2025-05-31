@@ -15,6 +15,9 @@
     </div>
     
     <div class="directory-table">
+      <div class="directory-table-header" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+        <el-button type="primary" plain @click="emit('show-decrypt')">解密</el-button>
+      </div>
       <div v-if="loading" class="loading-container">
         <el-loading :fullscreen="false" text="加载数据中..." />
       </div>
@@ -25,7 +28,11 @@
           stripe 
           style="width: 100%"
           max-height="400px"
+          @selection-change="handleSelectionChange"
+          ref="directoryTableRef"
+          :row-key="row => row.id"
         >
+          <el-table-column type="selection" width="55" :selectable="isRowSelectable" />
           <el-table-column prop="id" label="ID" min-width="350" width="350" show-overflow-tooltip>
             <template #default="scope">
               <div class="id-cell">{{ scope.row.id }}</div>
@@ -67,6 +74,16 @@
               <el-tag type="success" effect="plain">{{ scope.row.status }}</el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="申请" width="100">
+            <template #default="scope">
+              <el-button type="primary" size="small" @click="handleApply(scope.row)">申请</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="申请状态" width="200">
+            <template #default="scope">
+              <el-tag :type="getApplyStatusTagType(scope.row.applyStatus)">{{ scope.row.applyStatus }}</el-tag>
+            </template>
+          </el-table-column>
         </el-table>
         
         <div class="pagination-area">
@@ -100,7 +117,7 @@ const props = defineProps({
 })
 
 // 事件定义
-const emit = defineEmits(['close', 'view-detail'])
+const emit = defineEmits(['close', 'view-detail', 'show-decrypt'])
 
 // 数据状态
 const tableData = ref([])
@@ -108,6 +125,7 @@ const loading = ref(false)
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
+const selectedRows = ref([])
 
 // 计算属性：过滤后的表格数据
 const filteredTableData = computed(() => {
@@ -418,6 +436,7 @@ const fetchData = async () => {
         })
         
         tableData.value = dataArray
+        assignRandomApplyStatus()
         
         // 计算符合条件的数据条数
         const qualifiedCount = dataArray.filter(item => item.status === '已合格').length
@@ -438,14 +457,17 @@ const fetchData = async () => {
           
           // 确保至少有一条示例数据
           addExampleData()
+          assignRandomApplyStatus()
         }
       } else {
         ElMessage.warning('API返回数据为空，已添加示例数据')
         addExampleData()
+        assignRandomApplyStatus()
       }
     } else {
       ElMessage.warning('API返回的数据格式不正确，已添加示例数据')
       addExampleData()
+      assignRandomApplyStatus()
     }
   } catch (error) {
     console.error('获取数据失败:', error)
@@ -453,6 +475,7 @@ const fetchData = async () => {
     
     // 添加示例数据（当API请求失败时）
     addExampleData()
+    assignRandomApplyStatus()
   } finally {
     loading.value = false
   }
@@ -479,6 +502,7 @@ const addExampleData = () => {
     // 如果不存在，添加示例数据
     tableData.value.push(exampleData)
   }
+  assignRandomApplyStatus()
 }
 
 // 初始化时和visible变化时都获取数据
@@ -494,6 +518,52 @@ watch(() => props.visible, (newValue) => {
     fetchData()
   }
 })
+
+// 申请状态模拟数据
+const applyStatusOptions = [
+  '数源方同意等待治理方通过',
+  '治理方通过 请解密查看',
+  '拒绝申请'
+]
+
+// 为每条数据随机分配申请状态
+function assignRandomApplyStatus() {
+  tableData.value.forEach((item, idx) => {
+     if (idx === 0) {
+       item.applyStatus = '治理方通过 请解密查看'
+      } else if (idx === 1) {
+        item.applyStatus = '数源方同意等待治理方通过'
+      } else {
+       item.applyStatus = '拒绝申请'
+     }
+   })
+}
+
+// 获取申请状态tag类型
+function getApplyStatusTagType(status) {
+  if (status === '治理方通过 请解密查看') return 'success'
+  if (status === '数源方同意等待治理方通过') return 'warning'
+  if (status === '拒绝请求') return 'danger'
+  return 'info'
+}
+
+// 申请按钮点击事件（可后续扩展）
+function handleApply(row) {
+  // 这里只做提示，实际可扩展为发起申请逻辑
+  ElMessage.info(`已对实体【${row.entity}】发起申请（模拟）`)
+}
+
+function handleSelectionChange(val) {
+  selectedRows.value = val
+}
+
+// 只有申请状态为"治理方通过 请解密查看"时可选
+function isRowSelectable(row) {
+  const status = (row.applyStatus || '').trim();
+  const result = status === '治理方通过 请解密查看';
+  console.log('[多选可选性判断] 当前行ID:', row.id, '申请状态:', JSON.stringify(status), '可选:', result);
+  return result;
+}
 </script>
 
 <style scoped>

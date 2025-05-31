@@ -27,8 +27,7 @@
               三维数据可视化
             </el-button>
             <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
-            <el-button v-if="!isDecrypted" type="primary" plain @click="showDecryptDialog">解密</el-button>
-            <el-button v-else type="warning" plain @click="resetDecryption">重新解密</el-button>
+            <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button>
           </div>
         </div>
         
@@ -281,6 +280,7 @@
       :visible="directoryDialogVisible"
       @close="directoryDialogVisible = false"
       @view-detail="handleViewDirectoryItem"
+      @show-decrypt="showDecryptDialog"
     />
   </el-dialog>
 
