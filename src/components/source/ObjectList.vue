@@ -39,6 +39,7 @@
           <el-icon><DataAnalysis /></el-icon>
           三维数据可视化
         </el-button>
+        <el-button type="primary" plain @click="$emit('show-application-list')" style="margin-left: 8px;">申请列表</el-button>
         <el-button type="primary" @click="$emit('create')">新建数字对象</el-button>
       </div>
     </div>
@@ -310,7 +311,8 @@ const emit = defineEmits([
   'preview',
   'create',
   'export',
-  'visualization'
+  'visualization',
+  'show-application-list'
 ])
 
 // 内部状态
@@ -762,7 +764,7 @@ const cellStyle = ({ column }) => {
   const grayProps = ['status', 'feedback', 'operation'];
   if (grayProps.includes(column.property) || column.label === 'operation') {
     return {
-      background: '#f7f7f7' // 浅灰色
+      background: '#fafafa' // 浅灰色
     };
   }
   return {};

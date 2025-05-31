@@ -530,9 +530,9 @@ const applyStatusOptions = [
 function assignRandomApplyStatus() {
   tableData.value.forEach((item, idx) => {
      if (idx === 0) {
-       item.applyStatus = '治理方通过 请解密查看'
+       item.applyStatus = '治理方已同意,请解密查看'
       } else if (idx === 1) {
-        item.applyStatus = '数源方同意等待治理方通过'
+        item.applyStatus = '数源方已同意,等待治理方处理'
       } else {
        item.applyStatus = '拒绝申请'
      }
@@ -541,9 +541,9 @@ function assignRandomApplyStatus() {
 
 // 获取申请状态tag类型
 function getApplyStatusTagType(status) {
-  if (status === '治理方通过 请解密查看') return 'success'
-  if (status === '数源方同意等待治理方通过') return 'warning'
-  if (status === '拒绝请求') return 'danger'
+  if (status === '治理方已同意,请解密查看') return 'success'
+  if (status === '数源方已同意,等待治理方处理') return 'warning'
+  if (status === '拒绝申请') return 'danger'
   return 'info'
 }
 
@@ -559,10 +559,8 @@ function handleSelectionChange(val) {
 
 // 只有申请状态为"治理方通过 请解密查看"时可选
 function isRowSelectable(row) {
-  const status = (row.applyStatus || '').trim();
-  const result = status === '治理方通过 请解密查看';
-  console.log('[多选可选性判断] 当前行ID:', row.id, '申请状态:', JSON.stringify(status), '可选:', result);
-  return result;
+  const status = (row.applyStatus || '');
+  return status === '治理方已同意,请解密查看';
 }
 </script>
 

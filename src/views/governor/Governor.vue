@@ -30,7 +30,7 @@
               </el-input>
           </div>
           <div class="action-buttons">
-      
+            <el-button type="primary" plain @click="applicationListVisible = true">申请列表</el-button>
           </div>
         </div>
         
@@ -255,6 +255,8 @@
   <ReviewReport v-model:visible="reportDialogVisible" />
 
   <AuditLogDialog :visible="auditLogVisible" @close="auditLogVisible = false" />
+
+  <ApplicationListDialog v-model:visible="applicationListVisible" />
 </template>
 
 <script setup>
@@ -272,6 +274,7 @@ import reportService from '../../services/reportService'
 import { ensureArray, advancedSearch } from '../../utils/searchUtils'
 import axios from 'axios'
 import AuditLogDialog from '@/components/source/AuditLogDialog.vue'
+import ApplicationListDialog from '@/components/governor/ApplicationListDialog.vue'
 
 const router = useRouter()
 const currentStatus = ref('') // 默认显示全部数字对象
@@ -1405,11 +1408,13 @@ const cellStyle = ({ column }) => {
   const grayProps = ['status', 'feedback', 'operation'];
   if (grayProps.includes(column.property) || column.label === '操作') {
     return {
-      background: '#f7f7f7'
+      background: '#fafafa'
     };
   }
   return {};
 };
+
+const applicationListVisible = ref(false)
 </script>
 
 <style scoped>

@@ -50,6 +50,7 @@
           @export="handleExport"
           @update:data="handleDataUpdate"
           @visualization="showVisualization"
+          @show-application-list="applicationListVisible = true"
         />
       </div>
     </div>
@@ -294,6 +295,8 @@
   <!-- 在底部添加可视化对话框组件 -->
   <VisualizationDialog v-model:visible="visualizationVisible" />
 
+  <ApplicationListDialog v-model:visible="applicationListVisible" />
+
 </template>
 
 <script setup>
@@ -310,6 +313,7 @@ import dataObjectService from '@/services/dataObjectService'
 import axios from 'axios'
 import { API_URL, axiosInstance, testApiConnection } from '@/services/apiConfig'
 import VisualizationDialog from '../../components/visualization/VisualizationDialog.vue'
+import ApplicationListDialog from '@/components/source/ApplicationListDialog.vue'
 
 const router = useRouter()
 const activeTab = ref('objectList')
@@ -2720,6 +2724,8 @@ const visualizationVisible = ref(false);
 const showVisualization = () => {
   visualizationVisible.value = true;
 };
+
+const applicationListVisible = ref(false)
 </script>
 
 <style scoped>
