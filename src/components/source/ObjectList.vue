@@ -50,7 +50,7 @@
         style="width: 100%"
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
-        :cell-style="{ padding: '8px 4px', textAlign: 'center' }"
+        :cell-style="cellStyle"
         :header-cell-style="headerCellStyle"
         border
         height="100%"
@@ -215,7 +215,7 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center">
+        <el-table-column prop="operation" label="操作" width="150" align="center">
           <template #default="scope">
             <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
@@ -724,6 +724,8 @@ const headerCellStyle = ({ column }) => {
     'auditInfo',
     'classificationLevelValue'
   ];
+  // 状态、反馈意见、操作三列表头更深灰色
+  const grayProps = ['status', 'feedback', 'operation'];
   if (blueProps.includes(column.property)) {
     return {
       background: '#eaf6ff',
@@ -734,7 +736,17 @@ const headerCellStyle = ({ column }) => {
       padding: '10px 0'
     };
   }
-  // 其他列（如状态、反馈意见、操作）保持原灰色
+  if (grayProps.includes(column.property) || column.label === '操作') {
+    return {
+      background: '#e0e2e6', // 更深灰色
+      color: '#444',
+      fontWeight: 'bold',
+      fontSize: '15px',
+      textAlign: 'center',
+      padding: '10px 0'
+    };
+  }
+  // 其他列
   return {
     background: '#f5f7fa',
     color: '#606266',
@@ -743,6 +755,17 @@ const headerCellStyle = ({ column }) => {
     textAlign: 'center',
     padding: '10px 0'
   };
+};
+
+// 新增内容单元格样式方法
+const cellStyle = ({ column }) => {
+  const grayProps = ['status', 'feedback', 'operation'];
+  if (grayProps.includes(column.property) || column.label === 'operation') {
+    return {
+      background: '#f7f7f7' // 浅灰色
+    };
+  }
+  return {};
 };
 
 const showAuditLogDialog = (row) => {
@@ -817,8 +840,8 @@ const showAuditLogDialog = (row) => {
 }
 
 .status-pending {
-  background-color: #f5f5f5;
-  color: #8c8c8c;
+  background-color: #e0e2e6;
+  color: #8b8e8f;
 }
 
 /* 分页区域 */

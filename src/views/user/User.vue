@@ -50,7 +50,6 @@
             :row-style="{ height: '45px' }"
             :header-cell-style="headerCellStyle"
           >
-            <el-table-column type="selection" width="55" align="center" fixed />
             <el-table-column prop="id" label="ID" width="400" align="center" fixed>
               <template #default="scope">
                 <div class="id-cell">{{ scope.row.id }}</div>

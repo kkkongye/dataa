@@ -39,7 +39,7 @@
           <el-table
             :data="filteredTableData"
             style="width: 100%"
-            :cell-style="{ padding: '8px 0', textAlign: 'center' }"
+            :cell-style="cellStyle"
             :header-cell-style="headerCellStyle"
             border
             height="100%"
@@ -1367,6 +1367,8 @@ const headerCellStyle = ({ column }) => {
     'auditInfo',
     'classificationLevelValue'
   ];
+  // 状态、反馈意见、操作三列表头更深灰色
+  const grayProps = ['status', 'feedback', 'operation'];
   if (blueProps.includes(column.property)) {
     return {
       background: '#eaf6ff',
@@ -1377,7 +1379,17 @@ const headerCellStyle = ({ column }) => {
       padding: '10px 0'
     };
   }
-  // 其他列（如状态、反馈意见、操作）保持原灰色
+  if (grayProps.includes(column.property) || column.label === '操作') {
+    return {
+      background: '#e0e2e6',
+      color: '#000000',
+      fontWeight: 'bold',
+      fontSize: '15px',
+      textAlign: 'center',
+      padding: '10px 0'
+    };
+  }
+  // 其他列
   return {
     background: '#f5f7fa',
     color: '#606266',
@@ -1386,6 +1398,17 @@ const headerCellStyle = ({ column }) => {
     textAlign: 'center',
     padding: '10px 0'
   };
+};
+
+// 新增内容单元格样式方法
+const cellStyle = ({ column }) => {
+  const grayProps = ['status', 'feedback', 'operation'];
+  if (grayProps.includes(column.property) || column.label === '操作') {
+    return {
+      background: '#f7f7f7'
+    };
+  }
+  return {};
 };
 </script>
 
@@ -1492,13 +1515,13 @@ const headerCellStyle = ({ column }) => {
 }
 
 .status-pending {
-  background-color: #f4f4f5;
-  color: #909399;
+  background-color: #e0e2e6;
+  color: #8b8e8f;
 }
 
 .feedback-text.status-pending {
-  color: #909399;
-  background-color: #f4f4f5;
+  color: #b3b3b3;
+  background-color: #e0e2e6;
 }
 
 /* 分页区域 */
