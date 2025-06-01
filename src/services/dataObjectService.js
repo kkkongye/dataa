@@ -1683,7 +1683,6 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
         return false;
       }
     }
-    console.log('[updateObjectStatusViaApi] 获取到的currentObject:', JSON.stringify(currentObject, null, 2));
     // 2. 克隆原始对象，修改status和feedback，其他字段全部保留
     const updatedObject = JSON.parse(JSON.stringify(currentObject));
     if (updatedObject.dataEntity) {
@@ -1702,10 +1701,8 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
     }
     updatedObject.status = status;
     updatedObject.feedback = feedback;
-    console.log('[updateObjectStatusViaApi] 修改后的updatedObject:', JSON.stringify(updatedObject, null, 2));
     // 3. 用transformToBackendFormat生成后端需要的完整对象
     const backendData = transformToBackendFormat(updatedObject);
-    console.log('[updateObjectStatusViaApi] 生成的backendData:', JSON.stringify(backendData, null, 2));
     // 4. PUT到后端
     try {
       const response = await axios.put(
