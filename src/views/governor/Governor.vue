@@ -526,18 +526,6 @@ const saveEdit = () => {
   editDialogVisible.value = false
 }
 
-// 删除对象
-const handleDelete = (row) => {
-  ElMessageBox.confirm(`确定要删除"${row.entity}"吗?`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    ElMessage.success(`已删除: ${row.entity}`)
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
 
 // 更新数字对象状态
 const updateStatus = async (row, newStatus) => {
@@ -619,8 +607,7 @@ const refreshDataList = async () => {
     const response = await fetch('http://localhost:8080/api/objects/list', {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${decryptForm.token}`
+        'Accept': 'application/json'
       }
     });
 

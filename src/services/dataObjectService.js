@@ -169,8 +169,11 @@ const getLastReceivedApiData = () => {
 // 适配后端数据到前端格式
 const adaptBackendData = (backendItem) => {
   if (!backendItem) {
+    // 只保留关键警告
+    console.warn('adaptBackendData: 输入为空，返回默认对象')
     return createDefaultDataObject()
   }
+  console.log('adaptBackendData: 输入对象', JSON.stringify(backendItem, null, 2))
   
   // 如果有 locationInfoJson 字段，尝试解析
   let parsedLocation = null
@@ -302,41 +305,37 @@ const adaptBackendData = (backendItem) => {
     locationInfo: locationInfo,
     constraint: constraintArray,
     metadata: metadata,
-    // 保存原始元数据
     originalMetadata: backendItem.originalMetadata || metadata,
     transferControl: transferControlArray,
     propagationControl: extractConstraintData(backendItem).propagationControl || {},
     auditInfo: auditInfo,
     status: extractStatus(backendItem),
     feedback: feedback,
-    // 保存其他可能需要的字段
     formatConstraint: extractConstraintData(backendItem).formatConstraint || '',
     accessConstraint: extractConstraintData(backendItem).accessConstraint || '',
     pathConstraint: extractConstraintData(backendItem).pathConstraint || '',
     regionConstraint: extractConstraintData(backendItem).regionConstraint || '',
     shareConstraint: extractConstraintData(backendItem).shareConstraint || '',
-    // 保存Excel数据
     excelData: backendItem.excelData || null,
     dataItems: backendItem.dataItems || [],
-    
-    // 提取分类分级值相关字段
     classificationValue: backendItem.classificationValue || '',
     industryCategory: backendItem.industryCategory || '',
     dataTimeliness: backendItem.dataTimeliness || '',
     dataSource: backendItem.dataSource || '',
     levelValue: backendItem.levelValue || '',
-    
-    // 从后端获取totalCategoryValue和totalGradeValue字段
     totalCategoryValue: backendItem.totalCategoryValue || '',
     totalGradeValue: backendItem.totalGradeValue || '',
-    
-    // 提取分级值字段
     dbGrade: backendItem.dbGrade !== undefined ? backendItem.dbGrade : 0,
     tableGrade: backendItem.tableGrade !== undefined ? backendItem.tableGrade : 0,
     rowGrades: backendItem.rowGrades || [0, 0],
     columnGrades: backendItem.columnGrades || [0, 0]
   };
-  
+  Object.keys(backendItem).forEach(key => {
+    if (!(key in result)) {
+      result[key] = backendItem[key];
+    }
+  });
+  // 移除调试输出
   return result;
 }
 
@@ -688,17 +687,16 @@ const createDefaultDataObject = () => {
 
 // 将前端数据转换为后端所需的格式
 const transformToBackendFormat = (frontendData) => {
-  // 优先使用originalMetadata(如果存在)，否则使用metadata，确保原始用户输入被保留
-  const userMetadata = frontendData.originalMetadata || frontendData.metadata || {};
-  
-  // 构建数据实体对象 - 确保所有字段都在dataEntity内
+  // 优先从dataEntity里取字段，保证数据完整
+  const dataEntitySource = frontendData.dataEntity || frontendData;
+  const userMetadata = dataEntitySource.originalMetadata || dataEntitySource.metadata || {};
+
   const dataEntity = {
-    entity: frontendData.entity || '',
-    status: frontendData.status || '待审核', // 注意这里使用"待审核"作为默认值
-    feedback: frontendData.feedback || '',
-    // 确保使用用户提供的元数据，不使用默认值覆盖用户数据
+    entity: dataEntitySource.entity || '',
+    status: dataEntitySource.status || '待审核',
+    feedback: dataEntitySource.feedback || '',
     metadata: {
-      dataName: userMetadata.dataName || frontendData.entity || '',
+      dataName: userMetadata.dataName || dataEntitySource.entity || '',
       sourceUnit: userMetadata.sourceUnit || '',
       contactPerson: userMetadata.contactPerson || '',
       contactPhone: userMetadata.contactPhone || '',
@@ -706,16 +704,13 @@ const transformToBackendFormat = (frontendData) => {
       fieldClassification: userMetadata.fieldClassification || '',
       headers: userMetadata.headers || []
     },
-    // 添加一个标记，表示这是用户输入的元数据
     _userMetadataProcessed: true,
-    // 保留原始元数据，确保后续处理不会丢失
     originalMetadata: { ...userMetadata },
-    dataItems: frontendData.dataItems || []
-  }
-  
+    dataItems: dataEntitySource.dataItems || []
+  };
   // 添加metadataJson字段，确保后端能正确识别元数据
   const metadataJsonObj = {
-    dataName: userMetadata.dataName || frontendData.entity || '',
+    dataName: userMetadata.dataName || dataEntitySource.entity || '',
     sourceUnit: userMetadata.sourceUnit || '',
     contactPerson: userMetadata.contactPerson || '',
     contactPhone: userMetadata.contactPhone || '',
@@ -723,110 +718,81 @@ const transformToBackendFormat = (frontendData) => {
     fieldClassification: userMetadata.fieldClassification || '',
     headers: userMetadata.headers || []
   };
-  
-  // 将元数据对象转换为JSON字符串
   dataEntity.metadataJson = JSON.stringify(metadataJsonObj);
-
-  // 如果有Excel文件ID，也添加到dataEntity中
-  if (frontendData.excelFileId) {
-    dataEntity.excelFileId = frontendData.excelFileId;
+  if (dataEntitySource.excelFileId) {
+    dataEntity.excelFileId = dataEntitySource.excelFileId;
   }
-
   // 构建位置信息对象
-  const locationInfo = {
+  const locationInfo = frontendData.locationInfo || {
     locations: [
       {
-        sheet: frontendData.sheet || "Sheet1",
-        startRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[0] : "1",
-        endRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[1] || "100" : "100",
-        startColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[0] : "A",
-        endColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[1] || "Z" : "Z"
+        sheet: 'Sheet1',
+        startRow: '1',
+        endRow: '100',
+        startColumn: 'A',
+        endColumn: 'Z'
       }
     ]
-  }
-
-  // 创建约束条件字符串 - 使用完全符合要求的格式
-  const constraintSet = {
+  };
+  // 创建约束条件字符串
+  const constraintSet = frontendData.constraintSet || {
     constraints: [
       {
-        formatConstraint: frontendData.formatConstraint || "xlsx",
-        accessConstraint: frontendData.accessConstraint || "全部允许",
-        pathConstraint: frontendData.pathConstraint || "点对点",
-        regionConstraint: frontendData.regionConstraint || "内网",
-        shareConstraint: frontendData.shareConstraint || "允许共享"
+        formatConstraint: frontendData.formatConstraint || 'xlsx',
+        accessConstraint: frontendData.accessConstraint || '全部允许',
+        pathConstraint: frontendData.pathConstraint || '点对点',
+        regionConstraint: frontendData.regionConstraint || '内网',
+        shareConstraint: frontendData.shareConstraint || '允许共享'
       }
     ]
   };
-
-  // 创建传播控制对象 - 使用完全符合要求的格式
-  const hasRead = frontendData.transferControl && frontendData.transferControl.includes("可读");
-  const hasModify = frontendData.transferControl && frontendData.transferControl.includes("可修改");
-  const hasShare = frontendData.transferControl && frontendData.transferControl.includes("可共享");
-  const hasDelegate = frontendData.transferControl && frontendData.transferControl.includes("可委托");
-  const hasDestroy = frontendData.transferControl && frontendData.transferControl.includes("可销毁");
-
-  const propagationControl = {
-    selectedOperations: {
-      read: hasRead,
-      modify: hasModify,
-      share: hasShare,
-      delegate: hasDelegate,
-      destroy: hasDestroy
-    },
-    canRead: hasRead,
-    canModify: hasModify,
-    canShare: hasShare, 
-    canDelegate: hasDelegate,
-    canDestroy: hasDestroy,
+  // 创建传播控制对象
+  const propagationControl = frontendData.propagationControl || {
+    selectedOperations: {},
+    canRead: false,
+    canModify: false,
+    canShare: false,
+    canDelegate: false,
+    canDestroy: false,
     operations: {
-      read: hasRead ? 1 : 0,
-      modify: hasModify ? 1 : 0,
-      share: hasShare ? 1 : 0,
-      delegate: hasDelegate ? 1 : 0,
-      destroy: hasDestroy ? 1 : 0
+      read: 0,
+      modify: 0,
+      share: 0,
+      delegate: 0,
+      destroy: 0
     }
   };
-
   // 构建审计信息对象
-  const auditInfo = {
+  const auditInfo = frontendData.auditInfo || {
     auditRecords: [
       {
-        subject: "system",
-        object: frontendData.entity || "数据对象",
-        operationType: frontendData.id ? "更新" : "创建",
+        subject: 'system',
+        object: dataEntity.entity || '数据对象',
+        operationType: frontendData.id ? '更新' : '创建',
         timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-        blockHash: "0x" + Math.random().toString(16).substring(2, 10),
-        previousHash: "0x" + Math.random().toString(16).substring(2, 10)
+        blockHash: '0x' + Math.random().toString(16).substring(2, 10),
+        previousHash: '0x' + Math.random().toString(16).substring(2, 10)
       }
     ]
-  }
-
+  };
   // 返回后端所需的完整格式
   const result = {
-    id: frontendData.id || "",
+    id: frontendData.id || '',
     dataEntity: dataEntity,
     locationInfo: locationInfo,
     constraintSet: constraintSet,
     propagationControl: propagationControl,
     auditInfo: auditInfo,
-    // 在顶级添加元数据字段，确保后端可以直接访问
     metadata: dataEntity.metadata,
     metadataJson: dataEntity.metadataJson,
-    
-    // 添加分类分级值字段
     totalCategoryValue: frontendData.totalCategoryValue || frontendData.classificationValue || '',
     totalGradeValue: frontendData.totalGradeValue || frontendData.levelValue || '',
-    
-    // 添加分级值字段
     dbGrade: frontendData.dbGrade,
     tableGrade: frontendData.tableGrade,
     rowGrades: frontendData.rowGrades,
     columnGrades: frontendData.columnGrades,
-    
-    // 确保dataItems也被添加到顶级对象中，保持编辑时不丢失数据
-    dataItems: frontendData.dataItems || []
-  }
-
+    dataItems: dataEntity.dataItems || []
+  };
   return result;
 }
 
@@ -874,7 +840,7 @@ const prepareCsrfToken = async () => {
     } catch (firstError) {
       // 尝试备用端点
       try {
-        const backupResponse = await axiosInstance.get('/api/security/csrf');
+        const backupResponse = await axiosInstance.get('/security/csrf');
         if (backupResponse.data && (backupResponse.data.token || typeof backupResponse.data === 'string')) {
           const token = backupResponse.data.token || backupResponse.data;
           cookieService.setCookie('XSRF-TOKEN', token);
@@ -1656,176 +1622,58 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
       console.error('更新对象状态失败: ID为空')
       return false
     }
-    
-    // 如果启用本地模式，只更新本地数据
     if (localModeOnly) {
-      console.log(`本地模式：只在本地更新对象状态, ID: ${id}, 状态: ${status}, 反馈: ${feedback}`)
-      const result = updateObjectStatus(id, status, feedback)
-      return result
+      return updateObjectStatus(id, status, feedback)
     }
-    
-    // 获取CSRF令牌
-    let token = ''
-    try {
-      token = await prepareCsrfToken();
-      console.log('获取到CSRF令牌:', token ? '成功' : '失败');
-    } catch (csrfError) {
-      console.warn('获取CSRF令牌失败，将继续尝试不带令牌的请求:', csrfError)
-    }
-    
-    console.log(`准备通过API更新对象状态, ID: ${id}, 状态: ${status}, 反馈: ${feedback}`)
-    
-    // 首先获取当前对象信息
-    const currentObject = sharedTableData.find(item => compareIds(item.id, id));
-    
+    let currentObject = sharedTableData.find(item => compareIds(item.id, id));
     if (!currentObject) {
-      console.error(`找不到ID为${id}的对象，无法更新状态`);
-      return false;
+      try {
+        const resp = await axios.get(`http://localhost:8080/api/objects/${id}`);
+        if (resp.data && resp.data.data) {
+          currentObject = resp.data.data;
+        } else if (resp.data) {
+          currentObject = resp.data;
+        }
+      } catch (e) {
+        console.error('后端也找不到该对象:', e);
+        return false;
+      }
+      if (!currentObject) {
+        console.error(`找不到ID为${id}的对象，无法更新状态`);
+        return false;
+      }
     }
-
-    // 更新当前对象的状态和反馈
-    const updatedObject = { ...currentObject, status, feedback };
-    
-    // 使用完整的数据格式
+    // 移除调试输出
+    const updatedObject = JSON.parse(JSON.stringify(currentObject));
+    updatedObject.status = status;
+    updatedObject.feedback = feedback;
+    if (updatedObject.dataEntity) {
+      updatedObject.dataEntity.status = status;
+      updatedObject.dataEntity.feedback = feedback;
+    }
+    // 移除调试输出
     const backendData = transformToBackendFormat(updatedObject);
-    
-    // 确保状态和反馈在正确的位置
-    if (backendData.dataEntity) {
-      backendData.dataEntity.status = status;
-      backendData.dataEntity.feedback = feedback || '';
-    }
-    
-    // 记录发送的完整数据以便调试
-    console.log('发送到后端的完整数据:', JSON.stringify(backendData));
-    
-    // 设置请求头
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-    
-    // 如果有令牌，添加到请求头（尝试多种常见的CSRF头名称）
-    if (token) {
-      headers['X-CSRF-TOKEN'] = token;
-      headers['CSRF-Token'] = token;
-      headers['X-XSRF-TOKEN'] = token;
-      headers['X-CSRF'] = token;
-    }
-    
+    // 移除调试输出
     try {
-      // 确保使用正确的API完整路径
-      const apiUrl = `${API_URL}/objects/${id}`;
-      console.log('使用API端点:', apiUrl);
-      
-      // 发送PUT请求
-      const response = await axiosInstance.put(apiUrl, backendData, {
-        headers,
-        withCredentials: true // 确保发送cookie
-      });
-      
-      console.log('更新对象状态API响应:', response)
-      
-      // 检查响应状态
-      if (response.status === 200 || response.status === 204) {
-        console.log('对象状态更新成功')
-        
-        // 同时更新本地数据
+      const response = await axios.put(
+        `http://localhost:8080/api/objects/${id}`,
+        backendData,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      if (response.status === 200 || response.status === 204 ||
+          (response.data && (response.data.code === 200 || response.data.code === 1 || response.data.success === true))) {
         updateObjectStatus(id, status, feedback)
-        
         return true
       }
-      
-      // 处理返回的数据格式
-      if (response && response.data) {
-        if (response.data.code === 200 || response.data.success) {
-          console.log('对象状态更新成功')
-          
-          // 同时更新本地数据
-          updateObjectStatus(id, status, feedback)
-          
-          return true
-        }
-      }
-      
-      console.warn('API返回了非预期的响应格式:', response)
-    } catch (apiError) {
-      console.error('API调用失败:', apiError)
-      
-      // 尝试备用端点 - 不同的API路径格式
-      try {
-        console.log('尝试备用API端点...');
-        // 尝试不同的API路径格式
-        const backupUrls = [
-          `/api/objects/${id}`,         // 带api前缀
-          `/api/object/${id}`,          // 单数形式
-          `/objects/status/${id}`,      // 专用状态更新端点
-          `/object/status/${id}`        // 另一种可能的专用端点
-        ];
-        
-        for (const backupUrl of backupUrls) {
-          try {
-            console.log(`尝试备用端点: ${backupUrl}`);
-            const backupResponse = await axiosInstance.put(backupUrl, backendData, {
-              headers,
-              withCredentials: true
-            });
-            
-            if (backupResponse.status === 200 || backupResponse.status === 204 || 
-                (backupResponse.data && (backupResponse.data.code === 200 || backupResponse.data.success))) {
-              console.log(`备用端点 ${backupUrl} 成功更新了对象状态`);
-              updateObjectStatus(id, status, feedback);
-              return true;
-            }
-          } catch (urlError) {
-            console.warn(`备用端点 ${backupUrl} 失败:`, urlError.message);
-          }
-        }
-        
-        // 最后尝试使用简化数据结构
-        const simpleData = { 
-          id: id,
-          status: status, 
-          feedback: feedback || '' 
-        };
-        
-        console.log('尝试使用简化数据结构:', simpleData);
-        const simpleResponse = await axiosInstance.put(`${API_URL}/objects/${id}`, simpleData, {
-          headers,
-          withCredentials: true
-        });
-        
-        if (simpleResponse.status === 200 || simpleResponse.status === 204 || 
-            (simpleResponse.data && (simpleResponse.data.code === 200 || simpleResponse.data.success))) {
-          console.log('使用简化数据结构成功更新了对象状态');
-          updateObjectStatus(id, status, feedback);
-          return true;
-        }
-      } catch (backupError) {
-        console.error('所有备用请求都失败:', backupError.message);
-      }
-      
-      // 所有API请求失败，仍继续更新本地数据
+      return false
+    } catch (error) {
+      console.error('通过API更新对象状态失败:', error)
+      updateObjectStatus(id, status, feedback)
+      return true
     }
-    
-    // 即使API调用失败，我们仍然更新本地数据以保持UI一致性
-    console.log('API调用可能失败，回退到本地更新')
-    updateObjectStatus(id, status, feedback)
-    
-    // 在本地模式回退情况下，返回true以表示本地更新成功
-    return true
   } catch (error) {
-    console.error('通过API更新对象状态失败:', error)
-    
-    // 提供更详细的错误信息
-    const errorDetails = error.response 
-      ? `错误状态: ${error.response.status}, 消息: ${error.response.statusText || '未知错误'}`
-      : error.message || '网络错误';
-    console.error(`详细错误信息: ${errorDetails}`);
-    
-    // 虽然API调用失败，我们仍然更新本地数据以保持UI一致性
-    updateObjectStatus(id, status, feedback)
-    
-    // 在本地模式回退情况下，返回true以表示本地更新成功
-    return true
+    console.error('updateObjectStatusViaApi异常:', error)
+    return false
   }
 }
 
@@ -1968,3 +1816,4 @@ export default {
   cookieService  
   // 已经在前面导出的方法不需要重复导出
 } 
+

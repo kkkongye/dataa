@@ -246,7 +246,7 @@ const processBackendData = async () => {
   }
 };
 
-// 修改tooltip格式
+// tooltip格式
 const tooltipFormatter = (params) => {
   const item = params.data;
   const date = new Date(item.value[0]);
@@ -966,62 +966,6 @@ const initChart = async () => {
           itemStyle: {
             borderWidth: 1,
             borderColor: '#fff'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
           }
         }
