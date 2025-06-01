@@ -219,10 +219,13 @@
           <span class="info-item"><strong>定位信息：</strong>{{ previewForm.locationInfo }}</span>
           <span class="info-item constraint-info" :title="Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint"><strong>约束条件：</strong>{{ Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint }}</span>
           <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(previewForm.transferControl) ? previewForm.transferControl.join(', ') : previewForm.transferControl }}</span>
-          <span class="info-item"><strong>状态：</strong>{{ previewForm.status }}</span>
+          <span class="info-item"><strong>分类值：</strong>{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
+          <span class="info-item"><strong>分级值：</strong>{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
         </div>
+        
         <!-- 元数据信息显示 -->
         <div v-if="previewForm.metadata" class="metadata-section">
+          <span class="info-item"><strong>状态：</strong>{{ previewForm.status }}</span>
           <div class="metadata-items">
             <!-- 元数据项在一行显示 -->
             <div class="metadata-item">数据名称: <strong>{{ previewForm.metadata.dataName || previewForm.entity }}</strong></div>
@@ -232,19 +235,6 @@
             <div class="metadata-item">资源摘要: <strong>{{ previewForm.metadata.resourceSummary|| '无' }}</strong></div>
             <div class="metadata-item">领域分类: <strong>{{ previewForm.metadata.fieldClassification || '未分类' }}</strong></div>
             <div class="metadata-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
-          </div>
-          <!-- 添加分类分级值显示 -->
-          <div class="classification-level-section">
-            <div class="classification-level-items">
-              <div class="classification-level-item">
-                <span class="label">分类值：</span>
-                <span class="value">{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
-              </div>
-              <div class="classification-level-item">
-                <span class="label">分级值：</span>
-                <span class="value">{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
