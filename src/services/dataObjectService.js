@@ -685,18 +685,19 @@ const createDefaultDataObject = () => {
   }
 }
 
-// 将前端数据转换为后端所需的格式
+// 将前端数据转换为后端所需的格式Add commentMore actions
 const transformToBackendFormat = (frontendData) => {
-  // 优先从dataEntity里取字段，保证数据完整
-  const dataEntitySource = frontendData.dataEntity || frontendData;
-  const userMetadata = dataEntitySource.originalMetadata || dataEntitySource.metadata || {};
-
+  // 优先使用originalMetadata(如果存在)，否则使用metadata，确保原始用户输入被保留
+  const userMetadata = frontendData.originalMetadata || frontendData.metadata || {};
+  
+  // 构建数据实体对象 - 确保所有字段都在dataEntity内
   const dataEntity = {
-    entity: dataEntitySource.entity || '',
-    status: dataEntitySource.status || '待审核',
-    feedback: dataEntitySource.feedback || '',
+    entity: frontendData.entity || '',
+    status: frontendData.status || '待审核', // 注意这里使用"待审核"作为默认值
+    feedback: frontendData.feedback || '',
+    // 确保使用用户提供的元数据，不使用默认值覆盖用户数据
     metadata: {
-      dataName: userMetadata.dataName || dataEntitySource.entity || '',
+      dataName: userMetadata.dataName || frontendData.entity || '',
       sourceUnit: userMetadata.sourceUnit || '',
       contactPerson: userMetadata.contactPerson || '',
       contactPhone: userMetadata.contactPhone || '',
@@ -704,13 +705,16 @@ const transformToBackendFormat = (frontendData) => {
       fieldClassification: userMetadata.fieldClassification || '',
       headers: userMetadata.headers || []
     },
+    // 添加一个标记，表示这是用户输入的元数据
     _userMetadataProcessed: true,
+    // 保留原始元数据，确保后续处理不会丢失
     originalMetadata: { ...userMetadata },
-    dataItems: dataEntitySource.dataItems || []
-  };
+    dataItems: frontendData.dataItems || []
+  }
+  
   // 添加metadataJson字段，确保后端能正确识别元数据
   const metadataJsonObj = {
-    dataName: userMetadata.dataName || dataEntitySource.entity || '',
+    dataName: userMetadata.dataName || frontendData.entity || '',
     sourceUnit: userMetadata.sourceUnit || '',
     contactPerson: userMetadata.contactPerson || '',
     contactPhone: userMetadata.contactPhone || '',
@@ -718,81 +722,116 @@ const transformToBackendFormat = (frontendData) => {
     fieldClassification: userMetadata.fieldClassification || '',
     headers: userMetadata.headers || []
   };
+  
+  // 将元数据对象转换为JSON字符串
   dataEntity.metadataJson = JSON.stringify(metadataJsonObj);
-  if (dataEntitySource.excelFileId) {
-    dataEntity.excelFileId = dataEntitySource.excelFileId;
+
+  // 如果有Excel文件ID，也添加到dataEntity中
+  if (frontendData.excelFileId) {
+    dataEntity.excelFileId = frontendData.excelFileId;
   }
+
   // 构建位置信息对象
-  const locationInfo = frontendData.locationInfo || {
+  const locationInfo = {
     locations: [
       {
-        sheet: 'Sheet1',
-        startRow: '1',
-        endRow: '100',
-        startColumn: 'A',
-        endColumn: 'Z'
+        sheet: frontendData.sheet || "Sheet1",
+        startRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[0] : "1",
+        endRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[1] || "100" : "100",
+        startColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[0] : "A",
+        endColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[1] || "Z" : "Z"
       }
     ]
-  };
-  // 创建约束条件字符串
-  const constraintSet = frontendData.constraintSet || {
+  }
+
+  // 创建约束条件字符串 - 使用完全符合要求的格式
+  const constraintSet = {
     constraints: [
       {
-        formatConstraint: frontendData.formatConstraint || 'xlsx',
-        accessConstraint: frontendData.accessConstraint || '全部允许',
-        pathConstraint: frontendData.pathConstraint || '点对点',
-        regionConstraint: frontendData.regionConstraint || '内网',
-        shareConstraint: frontendData.shareConstraint || '允许共享'
+        formatConstraint: frontendData.formatConstraint || "xlsx",
+        accessConstraint: frontendData.accessConstraint || "全部允许",
+        pathConstraint: frontendData.pathConstraint || "点对点",
+        regionConstraint: frontendData.regionConstraint || "内网",
+        shareConstraint: frontendData.shareConstraint || "允许共享"
       }
     ]
   };
-  // 创建传播控制对象
-  const propagationControl = frontendData.propagationControl || {
-    selectedOperations: {},
-    canRead: false,
-    canModify: false,
-    canShare: false,
-    canDelegate: false,
-    canDestroy: false,
-    operations: {
-      read: 0,
-      modify: 0,
-      share: 0,
-      delegate: 0,
-      destroy: 0
-    }
-  };
+
+  // 构建传播控制对象
+  let propagationControl;
+  if (frontendData.propagationControl) {
+    // 优先用已有的
+    propagationControl = JSON.parse(JSON.stringify(frontendData.propagationControl));
+  } else {
+    // 没有就用 transferControl 构造
+    const hasRead = frontendData.transferControl && frontendData.transferControl.includes("可读");
+    const hasModify = frontendData.transferControl && frontendData.transferControl.includes("可修改");
+    const hasShare = frontendData.transferControl && frontendData.transferControl.includes("可共享");
+    const hasDelegate = frontendData.transferControl && frontendData.transferControl.includes("可委托");
+    const hasDestroy = frontendData.transferControl && frontendData.transferControl.includes("可销毁");
+    propagationControl = {
+      selectedOperations: {
+        read: hasRead,
+        modify: hasModify,
+        share: hasShare,
+        delegate: hasDelegate,
+        destroy: hasDestroy
+      },
+      canRead: hasRead,
+      canModify: hasModify,
+      canShare: hasShare,
+      canDelegate: hasDelegate,
+      canDestroy: hasDestroy,
+      operations: {
+        read: hasRead ? 1 : 0,
+        modify: hasModify ? 1 : 0,
+        share: hasShare ? 1 : 0,
+        delegate: hasDelegate ? 1 : 0,
+        destroy: hasDestroy ? 1 : 0
+      }
+    };
+  }
+
   // 构建审计信息对象
-  const auditInfo = frontendData.auditInfo || {
+  const auditInfo = {
     auditRecords: [
       {
-        subject: 'system',
-        object: dataEntity.entity || '数据对象',
-        operationType: frontendData.id ? '更新' : '创建',
+        subject: "system",
+        object: frontendData.entity || "数据对象",
+        operationType: frontendData.id ? "更新" : "创建",
         timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-        blockHash: '0x' + Math.random().toString(16).substring(2, 10),
-        previousHash: '0x' + Math.random().toString(16).substring(2, 10)
+        blockHash: "0x" + Math.random().toString(16).substring(2, 10),
+        previousHash: "0x" + Math.random().toString(16).substring(2, 10)
       }
     ]
-  };
+  }
+
   // 返回后端所需的完整格式
   const result = {
-    id: frontendData.id || '',
+    id: frontendData.id || "",
     dataEntity: dataEntity,
     locationInfo: locationInfo,
     constraintSet: constraintSet,
     propagationControl: propagationControl,
     auditInfo: auditInfo,
+    // 在顶级添加元数据字段，确保后端可以直接访问
     metadata: dataEntity.metadata,
     metadataJson: dataEntity.metadataJson,
+    
+    // 添加分类分级值字段
     totalCategoryValue: frontendData.totalCategoryValue || frontendData.classificationValue || '',
     totalGradeValue: frontendData.totalGradeValue || frontendData.levelValue || '',
+    
+    // 添加分级值字段
     dbGrade: frontendData.dbGrade,
     tableGrade: frontendData.tableGrade,
     rowGrades: frontendData.rowGrades,
     columnGrades: frontendData.columnGrades,
-    dataItems: dataEntity.dataItems || []
-  };
+    
+    // 确保dataItems也被添加到顶级对象中，保持编辑时不丢失数据
+    dataItems: frontendData.dataItems || []
+  }
+
   return result;
 }
 
@@ -1625,6 +1664,7 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
     if (localModeOnly) {
       return updateObjectStatus(id, status, feedback)
     }
+    // 1. 获取原始对象，优先本地，找不到再查后端
     let currentObject = sharedTableData.find(item => compareIds(item.id, id));
     if (!currentObject) {
       try {
@@ -1643,17 +1683,30 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
         return false;
       }
     }
-    // 移除调试输出
+    console.log('[updateObjectStatusViaApi] 获取到的currentObject:', JSON.stringify(currentObject, null, 2));
+    // 2. 克隆原始对象，修改status和feedback，其他字段全部保留
     const updatedObject = JSON.parse(JSON.stringify(currentObject));
+    if (updatedObject.dataEntity) {
+      updatedObject.entity = updatedObject.dataEntity.entity;
+      updatedObject.status = updatedObject.dataEntity.status;
+      updatedObject.feedback = updatedObject.dataEntity.feedback;
+      updatedObject.metadata = updatedObject.dataEntity.metadata;
+      updatedObject.dataItems = updatedObject.dataEntity.dataItems;
+      // 同步传播控制相关字段
+      if (currentObject.propagationControl) {
+        updatedObject.propagationControl = JSON.parse(JSON.stringify(currentObject.propagationControl));
+      }
+      if (currentObject.transferControl) {
+        updatedObject.transferControl = JSON.parse(JSON.stringify(currentObject.transferControl));
+      }
+    }
     updatedObject.status = status;
     updatedObject.feedback = feedback;
-    if (updatedObject.dataEntity) {
-      updatedObject.dataEntity.status = status;
-      updatedObject.dataEntity.feedback = feedback;
-    }
-    // 移除调试输出
+    console.log('[updateObjectStatusViaApi] 修改后的updatedObject:', JSON.stringify(updatedObject, null, 2));
+    // 3. 用transformToBackendFormat生成后端需要的完整对象
     const backendData = transformToBackendFormat(updatedObject);
-    // 移除调试输出
+    console.log('[updateObjectStatusViaApi] 生成的backendData:', JSON.stringify(backendData, null, 2));
+    // 4. PUT到后端
     try {
       const response = await axios.put(
         `http://localhost:8080/api/objects/${id}`,
