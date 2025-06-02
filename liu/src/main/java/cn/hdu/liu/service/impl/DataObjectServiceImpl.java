@@ -3,6 +3,7 @@ package cn.hdu.liu.service.impl;
 import cn.hdu.liu.controller.SourceController;
 import cn.hdu.liu.mapper.DataMapper;
 import cn.hdu.liu.obj.*;
+import cn.hdu.liu.service.ApplicationService;
 import cn.hdu.liu.service.DataObjectService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -12,6 +13,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,16 +30,21 @@ import java.util.*;
 public class DataObjectServiceImpl implements DataObjectService {
 
 
+    private final ApplicationService applicationService;
+
 
     private final DataMapper dataMapper;
     private final ObjectMapper objectMapper;
     private static final Logger log = LoggerFactory.getLogger(DataObjectServiceImpl.class);
 
-    public DataObjectServiceImpl(DataMapper dataMapper, ObjectMapper objectMapper) {
+    @Autowired
+    public DataObjectServiceImpl(DataMapper dataMapper,
+                                 ObjectMapper objectMapper,
+                                 @Lazy ApplicationService applicationService) { // 添加 @Lazy
         this.dataMapper = dataMapper;
         this.objectMapper = objectMapper;
+        this.applicationService = applicationService;
     }
-
     //---------------------- 核心方法 ----------------------
     @Override
     public boolean saveDataObject(DataObject dataObject) {
@@ -67,6 +74,7 @@ public class DataObjectServiceImpl implements DataObjectService {
             } else {
                 dataMapper.update(dataObject);
             }
+            applicationService.syncDataObjectToDisplay(dataObject);
             return true;
         } catch (Exception e) {
             throw new RuntimeException("保存数据对象失败", e);
@@ -325,19 +333,12 @@ public class DataObjectServiceImpl implements DataObjectService {
 
             // 创建一个数据对象，用于存储整个Excel的数据
             String tableId = "table-" + fileName.replaceAll("[^a-zA-Z0-9]", "-");
-
-
-
             dataObject.setId(id);
-
-
-
             // 从第二行开始读取数据（跳过表头）
             int validRowCount = 0;
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
-
                 try {
                     // 检查行是否为空
                     boolean hasData = false;
@@ -355,10 +356,8 @@ public class DataObjectServiceImpl implements DataObjectService {
                     }
 
                     // 每一行创建一个数据项
-                    Map<String, String> dataItem = new HashMap<>();
+                    Map<String, String> dataItem = new LinkedHashMap<>();
 
-                    // 为数据项添加行编号
-                    dataItem.put("rowNumber", String.valueOf(i));
 
                     // 收集每行中的所有字段数据作为键值对
                     for (String header : headerMap.keySet()) {
@@ -370,6 +369,7 @@ public class DataObjectServiceImpl implements DataObjectService {
                         }
                     }
 
+                    dataItem.put("rowNumber", String.valueOf(i));
                     // 添加数据项到数据实体中
                     dataEntity.addDataItem(dataItem);
                     validRowCount++;
@@ -492,6 +492,7 @@ public class DataObjectServiceImpl implements DataObjectService {
 
         // 4. 触发更新
         existing.setUpdatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        applicationService.syncDataObjectToDisplay(existing);
         dataMapper.update(existing);  // 更新合并后的对象
     }
 

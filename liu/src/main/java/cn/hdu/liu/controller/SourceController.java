@@ -1,30 +1,33 @@
 package cn.hdu.liu.controller;
 
-import cn.hdu.liu.blockchain.yuan.contract.Yuan;
+//import cn.hdu.liu.blockchain.yuan.contract.Yuan;
 import cn.hdu.liu.dcbds.hdu.Entity.*;
 import cn.hdu.liu.dcbds.hdu.Utils.Common;
 import cn.hdu.liu.dcbds.hdu.Utils.Sm2Utils;
 import cn.hdu.liu.dcbds.hdu.Utils.Sm3Utils;
+import cn.hdu.liu.dcbds.hdu.bswabe.BswabePub;
 import cn.hdu.liu.dcbds.hdu.service.DBService;
 import cn.hdu.liu.dcbds.hdu.service.DPService;
 import cn.hdu.liu.dcbds.hdu.service.DSService;
 import cn.hdu.liu.dcbds.hdu.service.DUService;
+import cn.hdu.liu.mapper.TokenRequestMapper;
 import cn.hdu.liu.mapper.UserMapper;
 import cn.hdu.liu.obj.*;
+import cn.hdu.liu.service.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import cn.hdu.liu.service.DataObjectService;
 import cn.hutool.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.thanos.web3j.abi.datatypes.Utf8String;
-import com.thanos.web3j.config.SystemConfig;
-import com.thanos.web3j.crypto.Credentials;
-import com.thanos.web3j.model.ThanosTransactionReceipt;
-import com.thanos.web3j.protocol.Web3j;
-import com.thanos.web3j.protocol.manage.Web3Manager;
-import com.thanos.web3j.utils.ConfigResourceUtil;
-import com.thanos.common.crypto.key.asymmetric.SecureKey;
+//import com.thanos.web3j.abi.datatypes.Utf8String;
+//import com.thanos.web3j.config.SystemConfig;
+//import com.thanos.web3j.crypto.Credentials;
+//import com.thanos.web3j.model.ThanosTransactionReceipt;
+//import com.thanos.web3j.protocol.Web3j;
+//import com.thanos.web3j.protocol.manage.Web3Manager;
+//import com.thanos.web3j.utils.ConfigResourceUtil;
+//import com.thanos.common.crypto.key.asymmetric.SecureKey;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -112,13 +115,17 @@ public class SourceController {
     @Autowired
     private DSService dsService;
 
+    @Autowired
+    private TokenRequestMapper tokenRequestMapper;
+
+
 
     private PublicKey dbPublicKey;
     private PublicKey duPublicKey;
     private PublicKey dsPublicKey;
 
     private Voucher dv;
-    private cn.hdu.liu.dcbds.hdu.bswabe.BswabePub bswabePub;
+    private BswabePub bswabePub;
 
     private JSONObject cs;
     private SCR scr_db;
@@ -134,7 +141,7 @@ public class SourceController {
     @PostConstruct
     public void init() throws Exception {
         // 1. 初始化BswabePub和基础服务
-        this.bswabePub = new cn.hdu.liu.dcbds.hdu.bswabe.BswabePub();
+        this.bswabePub = new BswabePub();
         dbService.setup(bswabePub);
         this.dbPublicKey = dbService.getPublicKey();
         this.duPublicKey = duService.getPublicKey();
@@ -194,6 +201,8 @@ public class SourceController {
 
 
 
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private DataObjectService dataObjectService;
@@ -225,8 +234,8 @@ public class SourceController {
         String uuid = UUID.randomUUID().toString();
         String newFileName = uuid + '.' + extname;
         log.info("新的文件名:()",newFileName);
-        file.transferTo(new File("J:\\za\\cun\\"+newFileName));
-        DataObject tmpObject= dataObjectService.importFromExcel("J:\\za\\cun\\"+newFileName,origin,uuid);
+        file.transferTo(new File("D:\\datasystem\\excel"+newFileName));
+        DataObject tmpObject= dataObjectService.importFromExcel("D:\\datasystem\\excel"+newFileName,origin,uuid);
         session.setAttribute("tmpDataObject", tmpObject);
         return Result.success();
     }
@@ -271,7 +280,6 @@ public class SourceController {
             session.removeAttribute("tmpDataObject");
             /**
             log.info("注册成功！"+ret);
-
             ThanosTransactionReceipt receipt = yuan.upload(new Utf8String(objectCode),(Set) null).get();
             int ret1 = receipt.hashCode();
             log.info("上传成功!"+ret1);
@@ -294,6 +302,7 @@ public class SourceController {
         **/
         return Result.success();
     }
+
     @GetMapping(value = "/objects/list", produces = MediaType.APPLICATION_JSON_VALUE)
     public Result<List<DataObject>> list() {
         log.info("查询全部数据对象信息");
@@ -342,14 +351,14 @@ public class SourceController {
     @GetMapping("/baogao1")
     public Result baogao1(){
         runPythonScript("empty_check.py");
-        log.info("成功生成审查报告1");
+        log.info("成功生成审查报告1！");
         return Result.success();
     }
 
     @GetMapping("/baogao2")
     public Result baogao2(){
         runPythonScript("cuo.py");
-        log.info("成功生成审查报告2");
+        log.info("成功生成审查报告2！");
         return Result.success();
     }
 
@@ -497,7 +506,7 @@ public class SourceController {
             User user = new User();
             user.setUsername(request.getUsername());
             user.setPassword(request.getPassword());
-            user.setRoll(request.getRoll());
+            user.setRole(request.getRole());
             userMapper.insert(user);
             return Result.success("用户注册成功");
         } catch (Exception e) {
@@ -505,9 +514,6 @@ public class SourceController {
             return Result.error("用户名已存在或数据格式错误");
         }
     }
-
-
-
 
 
     @PostMapping("/objects/{id}/total_values")
@@ -542,45 +548,20 @@ public class SourceController {
     }
 
 
-
-
-
-
-
-    @PostMapping("/objects/submit")
-    public ResponseEntity<String> sendData() {
-        if (encryptedData == null || token == null) {
-            return ResponseEntity.badRequest().body("No encrypted data available. Call /encrypt first.");
+    @PostMapping("/login")
+    public Result login(@RequestBody LoginRequest request, HttpSession session) {
+        User user = userService.authenticate(request.getUsername(), request.getPassword());
+        if (user != null) {
+            session.setAttribute("user", user);
+            return Result.success( user);
+        } else {
+            return Result.error("用户名或密码错误");
         }
-
-
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("data", encryptedData);
-        requestBody.put("token", token);
-
-        // 发送到数据治理方（假设治理方服务地址为http://localhost:8081）
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                "http://localhost:8080/governance/receive",
-                new HttpEntity<>(requestBody, headers),
-                String.class
-        );
-
-        this.encryptedData = null;
-        this.token = null;
-
-        return ResponseEntity.ok("Data sent to governance system. Response: " + response.getBody());
     }
 
-    @GetMapping("/getToken")
-    public Result<String> getToken() {
-        String token = "TOKEN_" + UUID.randomUUID().toString();
-        log.info("Generated token: {}", token);
-        return Result.success(token);
-    }
+
+
+
 }
 
 

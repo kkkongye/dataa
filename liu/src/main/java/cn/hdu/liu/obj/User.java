@@ -6,16 +6,16 @@ public class User {
     private Integer id;
     private String username;
     private String password;
-    private String roll;
+    private String role;
     private Timestamp createdAt;
 
 
-    public String getRoll(){
-        return roll;
+    public String getRole(){
+        return role;
     }
 
-    public void setRoll(String roll){
-        this.roll = roll;
+    public void setRole(String role){
+        this.role = role;
     }
 
     public Integer getId() {

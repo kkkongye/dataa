@@ -501,7 +501,7 @@ const forceRender = async () => {
         },
         zAxis3D: {
           type: 'value',
-          name: '分类值',
+          name: '分级值',
           nameGap: 60,
           nameTextStyle: {
             fontSize: 15,
@@ -838,7 +838,7 @@ const initChart = async () => {
       },
       zAxis3D: {
         type: 'value',
-        name: '分类值',
+        name: '分级值',
         nameGap: 60,
         nameTextStyle: {
           fontSize: 15,

@@ -77,11 +77,11 @@ const handleLogin = async () => {
     if (response.data && response.data.code === 1) {
       const users = response.data.data
       
-      // 查找匹配的用户 - 注意这里使用 roll 而不是 role
+      // 查找匹配的用户 - 注意这里使用 role
       const user = users.find(u => 
         u.username === loginForm.username && 
         u.password === loginForm.password &&
-        u.roll === loginForm.role  // 修改这里匹配 roll 字段
+        u.role === loginForm.role  // 这里匹配 role 字段
       )
       
       if (user) {

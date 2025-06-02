@@ -3,7 +3,7 @@ package cn.hdu.liu.obj;
 public class UserRegistrationRequest {
     private String username;
     private String password;
-    private String roll;
+    private String role;
 
     public String getUsername() {
         return username;
@@ -24,11 +24,11 @@ public class UserRegistrationRequest {
         this.password = password;
     }
 
-    public String getRoll() {
-        return roll;
+    public String getRole() {
+        return role;
     }
 
-    public void setRoll(String roll) {
-        this.roll = roll;
+    public void setRole(String role) {
+        this.role = role;
     }
 }

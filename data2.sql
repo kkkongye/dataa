@@ -113,12 +113,44 @@ ADD COLUMN processing_time_category VARCHAR(255),
 ADD COLUMN data_source_category VARCHAR(255);
 
 
-CREATE TABLE users (
+CREATE TABLE users_temp (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) UNIQUE NOT NULL,
-    PASSWORD VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT 
+    username VARCHAR(50) NOT NULL,
+    PASSWORD VARCHAR(100) NOT NULL,
+    ROLE VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 复制数据到临时表
+INSERT INTO users_temp (id, username, PASSWORD, ROLE, created_at)
+SELECT id, username, PASSWORD, ROLE, created_at FROM users;
+
+-- 删除原表
+DROP TABLE users;
+
+-- 重命名临时表为原表名
+RENAME TABLE users_temp TO users;
+
 ALTER TABLE users
-ADD COLUMN roll VARCHAR(255);
+ADD COLUMN role VARCHAR(255);
+
+CREATE TABLE digital_object_display (
+    object_id VARCHAR(255) PRIMARY KEY COMMENT '数字对象ID（关联data_objects.id）',
+    entity VARCHAR(255) NOT NULL COMMENT '数据实体名称（来自data_content）',
+    constraint_control VARCHAR(255) COMMENT '约束条件传输控制操作（来自constraint_set）',
+    STATUS VARCHAR(50) COMMENT '状态（来自data_content.status）',
+    source_agreed BOOLEAN DEFAULT FALSE COMMENT '数源方同意状态',
+    governance_agreed BOOLEAN DEFAULT FALSE COMMENT '治理方同意状态'
+) COMMENT '数字对象展示表';
+
+
+CREATE TABLE application_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键',
+    object_id VARCHAR(255) NOT NULL COMMENT '数字对象ID',
+    applicant VARCHAR(255) NOT NULL COMMENT '申请人用户名',
+    entity VARCHAR(255) NOT NULL COMMENT '数据实体名称',
+    source_agreed BOOLEAN DEFAULT FALSE COMMENT '数源方同意状态',
+    governance_agreed BOOLEAN DEFAULT FALSE COMMENT '治理方同意状态',
+    apply_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    FOREIGN KEY (object_id) REFERENCES digital_object_display(object_id)
+) COMMENT '申请记录表';

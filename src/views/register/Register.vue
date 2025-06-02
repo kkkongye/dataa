@@ -22,7 +22,7 @@
         </el-form-item>
         <div class="role-section">
           <div class="role-label">请选择您的角色</div>
-          <el-radio-group v-model="registerForm.roll" class="register-role-select">
+          <el-radio-group v-model="registerForm.role" class="register-role-select">
             <el-radio label="datasource" class="role-option">
               <div class="role-content">📊 数源方</div>
             </el-radio>
@@ -58,7 +58,7 @@ const registerFormRef = ref(null)
 const registerForm = reactive({
   username: '',
   password: '',
-  roll: 'datasource' // 默认选中数源方
+  role: 'datasource' // 默认选中数源方
 })
 
 const handleRegister = async () => {
@@ -71,7 +71,7 @@ const handleRegister = async () => {
     const response = await axios.post('http://localhost:8080/api/register', {
       username: registerForm.username,
       password: registerForm.password,
-      roll: registerForm.roll
+      role: registerForm.role
     })
     
     // 打印完整的响应信息，用于调试
