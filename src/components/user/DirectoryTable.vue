@@ -549,8 +549,22 @@ function getApplyStatusTagType(status) {
 
 // 申请按钮点击事件（可后续扩展）
 function handleApply(row) {
-  // 这里只做提示，实际可扩展为发起申请逻辑
-  ElMessage.info(`已对实体【${row.entity}】发起申请（模拟）`)
+  loading.value = true;
+  const url = `http://localhost:8080/api/applications/apply/${row.id}`;
+  axios.post(url, null, { withCredentials: true })
+    .then(res => {
+      console.log('接口返回结果:', res.data);
+      ElMessage.success(`已对实体【${row.entity}】发起申请`);
+      // 只更新当前行的申请状态
+      row.applyStatus = '数源方同意等待治理方通过';
+    })
+    .catch(err => {
+      console.error('申请接口出错:', err);
+      ElMessage.error(`申请失败: ${err.response?.data?.message || err.message}`);
+    })
+    .finally(() => {
+      loading.value = false;
+    });
 }
 
 function handleSelectionChange(val) {

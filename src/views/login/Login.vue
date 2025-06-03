@@ -67,50 +67,36 @@ const handleLogin = async () => {
     ElMessage.warning('请输入用户名和密码')
     return
   }
-  
   loading.value = true
-  
   try {
-    // 调用后端接口验证用户
-    const response = await axios.get('http://localhost:8080/api/users/list')
-    
+    // 调用后端登录接口
+    const response = await axios.post(
+      'http://localhost:8080/api/login',
+      { username: loginForm.username, password: loginForm.password },
+      { withCredentials: true }
+    )
     if (response.data && response.data.code === 1) {
-      const users = response.data.data
-      
-      // 查找匹配的用户 - 注意这里使用 role
-      const user = users.find(u => 
-        u.username === loginForm.username && 
-        u.password === loginForm.password &&
-        u.role === loginForm.role  // 这里匹配 role 字段
-      )
-      
-      if (user) {
-        // 登录成功，保存用户信息和角色
-        localStorage.setItem('role', loginForm.role)
-        localStorage.setItem('username', loginForm.username)
-        localStorage.setItem('userId', user.id.toString())
-        
-        ElMessage.success('登录成功')
-        
-        // 根据角色跳转到不同页面
-        switch (loginForm.role) {
-          case 'datasource':
-            router.push('/datasource')
-            break
-          case 'governor':
-            router.push('/governor')
-            break
-          case 'user':
-            router.push('/user')
-            break
-          default:
-            router.push('/datasource')
-        }
-      } else {
-        ElMessage.error('用户名、密码或角色不正确')
+      // 登录成功，保存用户信息和角色
+      localStorage.setItem('role', loginForm.role)
+      localStorage.setItem('username', loginForm.username)
+      localStorage.setItem('userId', response.data.data.id?.toString?.() || '')
+      ElMessage.success('登录成功')
+      // 根据角色跳转到不同页面
+      switch (loginForm.role) {
+        case 'datasource':
+          router.push('/datasource')
+          break
+        case 'governor':
+          router.push('/governor')
+          break
+        case 'user':
+          router.push('/user')
+          break
+        default:
+          router.push('/datasource')
       }
     } else {
-      throw new Error(response.data.msg || '获取用户列表失败')  // 修改这里使用 msg 而不是 message
+      ElMessage.error(response.data.msg || '用户名或密码错误')
     }
   } catch (error) {
     console.error('登录失败:', error)

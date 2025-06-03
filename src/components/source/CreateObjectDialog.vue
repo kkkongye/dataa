@@ -48,12 +48,7 @@
       </el-form-item>
       
       <el-form-item label="定位信息：" prop="locationInfo" style="margin-bottom: 22px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <el-input v-model="form.locationInfo.row" placeholder="例：0-4" style="width: 150px;"></el-input>
-          <span>行</span>
-          <el-input v-model="form.locationInfo.col" placeholder="例：A-D" style="width: 150px;"></el-input>
-          <span>列</span>
-        </div>
+        <el-input v-model="form.locationInfo.input" placeholder="请输入：库名,表名,select字符串" style="width: 350px;"></el-input>
       </el-form-item>
 
       <!-- 添加权重赋值按钮 -->
@@ -198,8 +193,7 @@ const props = defineProps({
     default: () => ({
       entity: '',
       locationInfo: {
-        row: '',
-        col: ''
+        input: ''
       },
       constraint: [],
       transferControl: [],
@@ -233,8 +227,7 @@ const criticalWeight = ref(3.0)
 const form = reactive({
   entity: '',
   locationInfo: {
-    row: '',
-    col: ''
+    input: ''
   },
   metadata: {
     dataName: '',
@@ -282,16 +275,13 @@ const formRules = {
     { required: false, message: '请输入领域分类', trigger: 'blur' }
   ],
   locationInfo: [
-    { 
+    {
       validator: (rule, value, callback) => {
-        // 只要有行或列信息就通过验证
-        if (form.locationInfo.row || form.locationInfo.col) {
+        // 只要有输入就通过
+        if (form.locationInfo.input && form.locationInfo.input.split(',').length >= 3) {
           callback()
         } else {
-          // 如果都没有提供，设置默认值
-          form.locationInfo.row = '1-100'
-          form.locationInfo.col = 'A-Z'
-          callback()
+          callback(new Error('请输入库名,表名,select字符串'))
         }
       },
       trigger: 'blur'
@@ -341,8 +331,13 @@ watch(() => props.modelValue, (newVal) => {
   // 深拷贝对象，避免直接修改props
   form.entity = newVal.entity || ''
   if (newVal.locationInfo && typeof newVal.locationInfo === 'object') {
-    form.locationInfo.row = newVal.locationInfo.row || ''
-    form.locationInfo.col = newVal.locationInfo.col || ''
+    if (newVal.locationInfo.databaseName || newVal.locationInfo.tableName || newVal.locationInfo.selectFields) {
+      form.locationInfo.input = [newVal.locationInfo.databaseName || '', newVal.locationInfo.tableName || '', newVal.locationInfo.selectFields || ''].join(',')
+    } else {
+      form.locationInfo.input = ''
+    }
+  } else {
+    form.locationInfo.input = ''
   }
   
   // 设置元数据
@@ -381,20 +376,15 @@ watch(() => props.modelValue, (newVal) => {
 
 // 监听form变化，更新v-model
 watch(form, (newVal) => {
-  // 构建约束条件数组
-  const constraintArray = []
-  if (newVal.formatConstraint) constraintArray.push(`格式约束:${newVal.formatConstraint}`)
-  if (newVal.accessConstraint) constraintArray.push(`访问权限:${newVal.accessConstraint}`)
-  if (newVal.pathConstraint) constraintArray.push(`传输路径约束:${newVal.pathConstraint}`)
-  if (newVal.regionConstraint) constraintArray.push(`地域性约束:${newVal.regionConstraint}`)
-  if (newVal.shareConstraint) constraintArray.push(`共享约束:${newVal.shareConstraint}`)
-  
+  // 解析定位信息
+  let locationInfoObj = {}
+  if (newVal.locationInfo.input && newVal.locationInfo.input.split(',').length >= 3) {
+    const [databaseName, tableName, selectFields] = newVal.locationInfo.input.split(',').map(s => s.trim())
+    locationInfoObj = { databaseName, tableName, selectFields }
+  }
   emit('update:modelValue', {
     entity: newVal.entity,
-    locationInfo: {
-      row: newVal.locationInfo.row,
-      col: newVal.locationInfo.col
-    },
+    locationInfo: locationInfoObj,
     metadata: {
       dataName: newVal.metadata.dataName,
       sourceUnit: newVal.metadata.sourceUnit,
@@ -403,7 +393,7 @@ watch(form, (newVal) => {
       resourceSummary: newVal.metadata.resourceSummary,
       fieldClassification: newVal.metadata.fieldClassification
     },
-    constraint: constraintArray,
+    constraint: Array.isArray(newVal.constraint) ? [...newVal.constraint] : (newVal.constraint ? [newVal.constraint] : []),
     formatConstraint: newVal.formatConstraint,
     accessConstraint: newVal.accessConstraint,
     pathConstraint: newVal.pathConstraint,
@@ -611,77 +601,59 @@ const handleFileChange = (file) => {
 
 // 修改保存按钮处理逻辑，确保Excel文件已上传
 const handleSave = () => {
-  console.log('【保存开始】处理保存按钮点击');
-  
+  // 只保留定位信息相关日志
+  // console.log('【保存开始】处理保存按钮点击');
   // 简单验证
   if (!form.entity) {
     ElMessage.warning('请输入实体名称或上传Excel表格文件')
     return
   }
-  
-  // 确保locationInfo有值，如果没有则设置默认值
-  if (!form.locationInfo.row) {
-    form.locationInfo.row = '1-100'
+  // 解析定位信息
+  let locationInfoObj = {}
+  if (form.locationInfo.input && form.locationInfo.input.split(',').length >= 3) {
+    const [databaseName, tableName, selectFields] = form.locationInfo.input.split(',').map(s => s.trim())
+    locationInfoObj = { databaseName, tableName, selectFields }
+    console.log('[定位信息] 解析后 locationInfoObj:', locationInfoObj)
+  } else {
+    ElMessage.warning('请输入定位信息：库名,表名,select字符串')
+    return
   }
-  if (!form.locationInfo.col) {
-    form.locationInfo.col = 'A-Z'
-  }
-  
   if (!form.excelData) {
     ElMessage.warning('请上传Excel表格文件')
     return
   }
-  
   if (!uploadSuccess.value) {
     ElMessage.warning('请确保Excel文件已成功上传到服务器')
     return
   }
-
   // 验证约束条件
   if (!form.formatConstraint) {
     ElMessage.warning('请选择格式约束')
     return
   }
-  
   if (!form.accessConstraint) {
     ElMessage.warning('请选择访问权限')
     return
   }
-  
   if (!form.pathConstraint) {
     ElMessage.warning('请选择传输路径约束')
     return
   }
-  
   if (!form.regionConstraint) {
     ElMessage.warning('请选择地域性约束')
     return
   }
-  
   if (!form.shareConstraint) {
     ElMessage.warning('请选择共享约束')
     return
   }
-  
   // 确保有excelFileId，如果没有则创建一个
   if (!form.excelFileId) {
     form.excelFileId = `autogen-${Date.now()}`
-    console.log('自动生成excelFileId:', form.excelFileId)
+    // console.log('自动生成excelFileId:', form.excelFileId)
   }
-  
-  // 【增加调试信息】记录表单中的当前元数据
-  console.log('【元数据状态】验证前表单中的元数据:');
-  console.log('- dataName:', form.metadata.dataName);
-  console.log('- sourceUnit:', form.metadata.sourceUnit);
-  console.log('- contactPerson:', form.metadata.contactPerson);
-  console.log('- contactPhone:', form.metadata.contactPhone);
-  console.log('- resourceSummary:', form.metadata.resourceSummary);
-  console.log('- fieldClassification:', form.metadata.fieldClassification);
-  
   formRef.value.validate((valid) => {
     if (valid) {
-      console.log('【表单验证】表单验证通过，准备保存数据');
-      
       // 构建约束条件数组
       const constraintArray = []
       if (form.formatConstraint) constraintArray.push(`格式约束:${form.formatConstraint}`)
@@ -689,7 +661,6 @@ const handleSave = () => {
       if (form.pathConstraint) constraintArray.push(`传输路径约束:${form.pathConstraint}`)
       if (form.regionConstraint) constraintArray.push(`地域性约束:${form.regionConstraint}`)
       if (form.shareConstraint) constraintArray.push(`共享约束:${form.shareConstraint}`)
-      
       // 构建传播控制对象，与transferControl数组对应
       const propagationControl = {
         canRead: form.transferControl.includes('可读'),
@@ -698,14 +669,12 @@ const handleSave = () => {
         canShare: form.transferControl.includes('可共享'),
         canDelegate: form.transferControl.includes('可委托')
       }
-      
       // 如果没有处理Excel数据，再次处理
       if (!form.dataItems && form.excelData) {
         const { dataItems } = processExcelData(form.excelData)
         form.dataItems = dataItems
       }
-      
-      // 【重要修改】创建用户元数据对象副本，并添加特殊标记
+      // 创建用户元数据对象副本，并添加特殊标记
       const userInputMetadata = {
         dataName: form.metadata.dataName || form.entity || '',
         sourceUnit: form.metadata.sourceUnit || '',
@@ -717,51 +686,22 @@ const handleSave = () => {
         _userInput: true, // 特殊标记，表示这是用户输入的元数据
         _inputTimestamp: Date.now() // 添加时间戳
       };
-      
-      // 记录元数据对象
-      console.log('【元数据准备】已创建用户元数据对象:', JSON.stringify(userInputMetadata));
-      
       // 将元数据转换为JSON字符串，确保格式正确
       const metadataJsonString = JSON.stringify(userInputMetadata);
-      
       // 检查JSON格式是否正确
       try {
-        // 验证JSON格式
         JSON.parse(metadataJsonString);
-        console.log('【元数据验证】元数据JSON格式正确');
       } catch (e) {
-        console.error('【元数据错误】元数据JSON格式错误:', e);
         ElMessage.error('元数据格式错误，请检查输入');
         return;
       }
-      
-      // 【新增】确保元数据格式符合后端预期
-      // 检查headers是否为数组
-      if (!Array.isArray(userInputMetadata.headers)) {
-        if (typeof userInputMetadata.headers === 'string') {
-          // 如果是字符串，尝试转换为数组
-          userInputMetadata.headers = userInputMetadata.headers.split(/[,，]/);
-          console.log('【元数据修复】将headers字符串转换为数组:', userInputMetadata.headers);
-        } else {
-          // 设置为空数组
-          userInputMetadata.headers = [];
-          console.log('【元数据修复】将invalid headers设为空数组');
-        }
-      }
-      
       // 确保metadataJson字段独立存在
       const metadataForBackend = { ...userInputMetadata };
-      
-      // 【重要修改】构建新对象，确保元数据被保留
+      // 构建新对象，确保元数据被保留
       const newObject = {
         entity: form.entity,
-        locationInfo: {
-          row: form.locationInfo.row,
-          col: form.locationInfo.col
-        },
-        // 使用用户输入的元数据
+        locationInfo: locationInfoObj,
         metadata: {...userInputMetadata},
-        // 添加原始元数据字段，确保在处理过程中不会丢失
         originalMetadata: {...userInputMetadata},
         metadataJson: metadataJsonString,
         _preserveUserMetadata: true, // 特殊标记，指示应保留用户元数据
@@ -779,65 +719,31 @@ const handleSave = () => {
         dataItems: form.dataItems || [],
         excelFileId: form.excelFileId
       };
-      
       // 创建dataContent字段，确保包含完整元数据
       try {
-        // 确保明确包含元数据字段
         const dataContent = {
           entity: newObject.entity,
           status: newObject.status,
-          // 使用用户输入的元数据
           metadata: {...userInputMetadata},
-          // 保留原始元数据
           originalMetadata: {...userInputMetadata},
-          // 独立的metadataJson字段，确保后端可以正确识别
           metadataJson: metadataJsonString,
           _preserveUserMetadata: true,
           dataItems: newObject.dataItems,
           excelFileId: newObject.excelFileId
         };
-        
-        // 验证dataContent对象中的元数据是否完整
-        console.log('【dataContent】dataContent中的元数据字段:', Object.keys(dataContent.metadata).join(', '));
-        
-        // 将整个dataContent转为字符串
         newObject.dataContent = JSON.stringify(dataContent);
-        
-        // 验证dataContent中是否包含元数据
-        console.log('【验证】dataContent是否包含metadata字段:', 
-          newObject.dataContent.includes('"metadata":'));
-        
-        // 检查具体元数据字段是否包含在dataContent中
-        if (userInputMetadata.dataName) {
-          console.log(`【验证】dataContent是否包含dataName(${userInputMetadata.dataName}):`, 
-            newObject.dataContent.includes(userInputMetadata.dataName));
-        }
-        if (userInputMetadata.sourceUnit) {
-          console.log(`【验证】dataContent是否包含sourceUnit(${userInputMetadata.sourceUnit}):`, 
-            newObject.dataContent.includes(userInputMetadata.sourceUnit));
-        }
       } catch (error) {
-        console.error('【错误】创建dataContent失败:', error);
+        // console.error('【错误】创建dataContent失败:', error);
       }
-      
-      // 在发送前再次检查元数据完整性
-      console.log('【最终检查】newObject.metadata:', JSON.stringify(newObject.metadata));
-      console.log('【最终检查】newObject.originalMetadata:', JSON.stringify(newObject.originalMetadata));
-      
       // 发送保存事件
-      console.log('【保存流程】触发save事件，保存对象到后端');
-      
-      // 添加事件前后的标记，以便追踪元数据是否被修改
+      // console.log('【保存流程】触发save事件，保存对象到后端');
+      console.log('[定位信息] 发送前 newObject.locationInfo:', newObject.locationInfo)
       emit('save', newObject);
-      
-      console.log('【保存流程】save事件已触发完成');
-      
+      // console.log('【保存流程】save事件已触发完成');
       // 关闭对话框
       dialogVisible.value = false;
-      
       // 显示成功消息
       ElMessage.success('数字对象创建成功');
-      
       // 重置表单
       resetForm();
     } else {
@@ -850,8 +756,7 @@ const handleSave = () => {
 // 重置表单时也重置上传状态
 const resetForm = () => {
   form.entity = ''
-  form.locationInfo.row = ''
-  form.locationInfo.col = ''
+  form.locationInfo.input = ''
   form.metadata.dataName = ''
   form.metadata.sourceUnit = ''
   form.metadata.contactPerson = ''
