@@ -21,9 +21,11 @@
                    {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).tableName || '-' }},
                    <el-popover placement="top" trigger="click">
                      <template #reference>
-                       <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                       <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
                      </template>
-                     <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields }}</div>
+                     <div style="max-width:400px;word-break:break-all;">
+                       {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields }}
+                     </div>
                    </el-popover>
                   )
                 </template>
@@ -33,7 +35,7 @@
                    {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields || '-' }})
                 </template>
               </template>
-              <template v-else>{{ object.locationInfo }}</template>
+              <template v-else>-</template>
             </span>
             <span class="info-item constraint-info" :title="Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint"><strong>约束条件：</strong>{{ Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint }}</span>
           </div>
@@ -125,17 +127,22 @@ function closeDialog() {
 }
 
 function getLocationInfoObj(locationInfo, locationInfoJson) {
-  if (typeof locationInfo === 'string') {
-    try { locationInfo = JSON.parse(locationInfo) } catch { locationInfo = null }
+  if (locationInfoJson) {
+    try {
+      return typeof locationInfoJson === 'object' ? locationInfoJson : JSON.parse(locationInfoJson);
+    } catch {}
   }
-  if ((!locationInfo || typeof locationInfo !== 'object') && locationInfoJson) {
-    try { locationInfo = JSON.parse(locationInfoJson) } catch { locationInfo = null }
+  if (locationInfo) {
+    if (typeof locationInfo === 'object') return locationInfo;
+    try {
+      return JSON.parse(locationInfo);
+    } catch {}
   }
-  if (!locationInfo || typeof locationInfo !== 'object') return null
-  return locationInfo
+  return null;
 }
 function isSelectFieldsLong(selectFields) {
-  return typeof selectFields === 'string' && selectFields.length > 30
+  if (!selectFields) return false;
+  return selectFields.length > 30;
 }
 function getObjectKeys(dataArray) {
   if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) return []
@@ -187,22 +194,24 @@ function handleExportExcel() {
 }
 .info-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
-  white-space: nowrap;
+  white-space: normal;
 }
 .info-item {
   display: inline-block;
   padding: 0 10px;
   color: #333;
   font-size: 14px;
-  max-width: 300px;
+  max-width: 600px;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
+  white-space: normal;
 }
 .select-fields-link {
   text-decoration: underline;
@@ -270,5 +279,13 @@ function handleExportExcel() {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 15px;
+}
+.constraint-info {
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
 }
 </style> 

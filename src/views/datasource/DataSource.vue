@@ -202,102 +202,11 @@
   />
 
   <!-- Excel预览对话框 -->
-  <el-dialog
-    v-model="previewDialogVisible"
-    :title="`预览Excel - ${previewForm.entity}`"
-    width="90%"
-    :close-on-click-modal="false"
-    draggable
-    class="custom-dialog"
-    top="5vh"
-  >
-    <div class="preview-header">
-      <div class="preview-info">
-        <!-- 基本信息表格 -->
-        <div class="basic-info-table two-rows">
-          <div class="info-row">
-            <span class="info-item"><strong>实体：</strong>{{ previewForm.entity }}</span>
-            <span class="info-item"><strong>定位信息：</strong>
-              <template v-if="getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson)">
-                <template v-if="isSelectFieldsLong(getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).selectFields)">
-                  ({{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).databaseName || '-' }},
-                   {{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).tableName || '-' }},
-                   <el-popover placement="top" trigger="click">
-                     <template #reference>
-                       <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
-                     </template>
-                     <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).selectFields }}</div>
-                   </el-popover>
-                  )
-                </template>
-                <template v-else>
-                  ({{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).databaseName || '-' }},
-                   {{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).tableName || '-' }},
-                   {{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).selectFields || '-' }})
-                </template>
-              </template>
-              <template v-else>{{ previewForm.locationInfo }}</template>
-            </span>
-            <span class="info-item constraint-info" :title="Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint"><strong>约束条件：</strong>{{ Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(previewForm.transferControl) ? previewForm.transferControl.join(', ') : previewForm.transferControl }}</span>
-            <span class="info-item"><strong>分类值：</strong>{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
-            <span class="info-item"><strong>分级值：</strong>{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
-          </div>
-        </div>
-        
-        <!-- 元数据信息显示 -->
-        <div v-if="previewForm.metadata" class="metadata-section">
-          <span class="info-item"><strong>状态：</strong>{{ previewForm.status }}</span>
-          <div class="metadata-items">
-            <!-- 元数据项在一行显示 -->
-            <div class="metadata-item">数据名称: <strong>{{ previewForm.metadata.dataName || previewForm.entity }}</strong></div>
-            <div class="metadata-item">来源单位: <strong>{{ previewForm.metadata.sourceUnit || '数据部' }}</strong></div>
-            <div class="metadata-item">联系人: <strong>{{ previewForm.metadata.contactPerson || '未指定' }}</strong></div>
-            <div class="metadata-item">联系电话: <strong>{{ previewForm.metadata.contactPhone || '未提供' }}</strong></div>
-            <div class="metadata-item">资源摘要: <strong>{{ previewForm.metadata.resourceSummary|| '无' }}</strong></div>
-            <div class="metadata-item">领域分类: <strong>{{ previewForm.metadata.fieldClassification || '未分类' }}</strong></div>
-            <div class="metadata-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 替换ExcelPreview组件，改用直接表格显示 -->
-    <div class="excel-data-section">
-      <h3 class="section-title">数据预览</h3>
-      
-      <div v-if="isExcelLoading" class="loading-container">
-        <el-loading :fullscreen="false" text="正在加载Excel数据..." />
-      </div>
-      
-      <div v-else-if="excelTableData.length > 0" class="excel-table-container">
-        <div class="data-info">找到 {{ excelTableData.length }} 条记录</div>
-        <el-table :data="excelTableData" border stripe style="width: 100%">
-          <el-table-column 
-            v-for="(key, index) in getObjectKeys(excelTableData)" 
-            :key="index"
-            :prop="key"
-            :label="key"
-            :align="typeof excelTableData[0][key] === 'number' ? 'center' : 'left'"
-            :min-width="100"
-          />
-        </el-table>
-      </div>
-      
-      <div v-else class="no-data-message">
-        <el-empty description="暂无数据" />
-      </div>
-    </div>
-    
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="previewDialogVisible = false">关闭</el-button>
-        <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
-      </span>
-    </template>
-  </el-dialog>
+  <ObjectPreviewDialog
+    v-model:visible="previewDialogVisible"
+    :object="previewForm"
+    :excelData="excelTableData"
+  />
 
   <!-- 添加调试指示器 -->
   <div v-if="showDebugTools" class="debug-dialog-status">
@@ -328,6 +237,7 @@ import axios from 'axios'
 import { API_URL, axiosInstance, testApiConnection } from '@/services/apiConfig'
 import VisualizationDialog from '../../components/visualization/VisualizationDialog.vue'
 import ApplicationListDialog from '@/components/source/ApplicationListDialog.vue'
+import ObjectPreviewDialog from '@/components/ObjectPreviewDialog.vue'
 
 const router = useRouter()
 const activeTab = ref('objectList')

@@ -59,7 +59,31 @@
                 <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
               </template>
             </el-table-column>
-            <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center" />
+            <el-table-column prop="locationInfo" label="定位信息" min-width="180" align="center">
+              <template #default="scope">
+                <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
+                  <template v-if="isSelectFieldsLong(getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields)">
+                    ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
+                     {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
+                     <el-popover placement="top" trigger="click">
+                       <template #reference>
+                         <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
+                       </template>
+                       <div style="max-width:400px;word-break:break-all;">
+                         {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields }}
+                       </div>
+                     </el-popover>
+                    )
+                  </template>
+                  <template v-else>
+                    ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
+                     {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
+                     {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields || '-' }})
+                  </template>
+                </span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="constraint" label="约束条件" min-width="250" align="center">
               <template #default="scope">
                 <div class="constraint-container">
@@ -166,78 +190,11 @@
   </el-dialog>
 
   <!-- Excel预览对话框 -->
-  <el-dialog
-    v-model="previewDialogVisible"
-    :title="`预览Excel - ${previewForm.entity}`"
-    width="90%"
-    :close-on-click-modal="false"
-    draggable
-    class="custom-dialog"
-    top="5vh"
-  >
-  <div class="preview-header">
-      <div class="preview-info">
-        <!-- 基本信息表格 -->
-        <div class="basic-info-table">
-          <span class="info-item"><strong>实体：</strong>{{ previewForm.entity }}</span>
-          <span class="info-item"><strong>定位信息：</strong>{{ previewForm.locationInfo }}</span>
-          <span class="info-item constraint-info" :title="Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint"><strong>约束条件：</strong>{{ Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint }}</span>
-          <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(previewForm.transferControl) ? previewForm.transferControl.join(', ') : previewForm.transferControl }}</span>
-          <span class="info-item"><strong>分类值：</strong>{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
-          <span class="info-item"><strong>分级值：</strong>{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
-        </div>
-        
-        <!-- 元数据信息显示 -->
-        <div v-if="previewForm.metadata" class="metadata-section">
-          <span class="info-item"><strong>状态：</strong>{{ previewForm.status }}</span>
-          <div class="metadata-items">
-            <!-- 元数据项在一行显示 -->
-            <div class="metadata-item">数据名称: <strong>{{ previewForm.metadata.dataName || previewForm.entity }}</strong></div>
-            <div class="metadata-item">来源单位: <strong>{{ previewForm.metadata.sourceUnit || '数据部' }}</strong></div>
-            <div class="metadata-item">联系人: <strong>{{ previewForm.metadata.contactPerson || '未指定' }}</strong></div>
-            <div class="metadata-item">联系电话: <strong>{{ previewForm.metadata.contactPhone || '未提供' }}</strong></div>
-            <div class="metadata-item">资源摘要: <strong>{{ previewForm.metadata.resourceSummary|| '无' }}</strong></div>
-            <div class="metadata-item">领域分类: <strong>{{ previewForm.metadata.fieldClassification || '未分类' }}</strong></div>
-            <div class="metadata-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 直接显示Excel数据表格 -->
-    <div class="excel-data-section">
-      <h3 class="section-title">数据预览</h3>
-      
-      <div v-if="isExcelLoading" class="loading-container">
-        <el-loading :fullscreen="false" text="正在加载Excel数据..." />
-      </div>
-      
-      <div v-else-if="excelTableData.length > 0" class="excel-table-container">
-        <div class="data-info">找到 {{ excelTableData.length }} 条记录</div>
-        <el-table :data="excelTableData" border stripe style="width: 100%">
-          <el-table-column 
-            v-for="(key, index) in getObjectKeys(excelTableData)" 
-            :key="index"
-            :prop="key"
-            :label="key"
-            :align="'center'"
-            :min-width="100"
-          />
-        </el-table>
-      </div>
-      
-      <div v-else class="no-data-message">
-        <el-empty description="暂无数据" />
-      </div>
-    </div>
-    
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="previewDialogVisible = false">关闭</el-button>
-        <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
-      </span>
-    </template>
-  </el-dialog>
+  <ObjectPreviewDialog
+    v-model:visible="previewDialogVisible"
+    :object="previewForm"
+    :excelData="excelTableData"
+  />
 
   <!-- 添加目录对话框 -->
   <el-dialog
@@ -276,6 +233,7 @@ import dataObjectService from '@/services/dataObjectService'
 import { ensureArray, advancedSearch } from '@/utils/searchUtils';
 import axios from 'axios'
 import VisualizationDialog from '@/components/visualization/VisualizationDialog.vue'
+import ObjectPreviewDialog from '@/components/ObjectPreviewDialog.vue'
 
 const router = useRouter()
 const activeTab = ref('objectList')
@@ -583,6 +541,7 @@ const previewForm = reactive({
   id: '',
   entity: '',
   locationInfo: '',
+  locationInfoJson: '',
   constraint: '',
   transferControl: '',
   status: '',
@@ -881,10 +840,10 @@ const createExcelFromDataItems = (dataItems) => {
 
 // 预览实体
 const previewEntity = (row) => {
-  // 设置预览表单数据
   previewForm.id = row.id
   previewForm.entity = row.entity
   previewForm.locationInfo = row.locationInfo
+  previewForm.locationInfoJson = row.locationInfoJson
   previewForm.constraint = row.constraint
   previewForm.transferControl = row.transferControl
   previewForm.status = row.status || ''
@@ -1373,6 +1332,28 @@ const headerCellStyle = ({ column }) => {
     padding: '10px 0'
   };
 };
+
+// 解析 locationInfo 字段为对象
+function getLocationInfoObj(locationInfo, locationInfoJson) {
+  if (locationInfoJson) {
+    try {
+      return typeof locationInfoJson === 'object' ? locationInfoJson : JSON.parse(locationInfoJson);
+    } catch {}
+  }
+  if (locationInfo) {
+    if (typeof locationInfo === 'object') return locationInfo;
+    try {
+      return JSON.parse(locationInfo);
+    } catch {}
+  }
+  return null;
+}
+
+// 判断 selectFields 是否过长
+function isSelectFieldsLong(selectFields) {
+  if (!selectFields) return false;
+  return selectFields.length > 30;
+}
 </script>
 
 <style scoped>
@@ -1896,5 +1877,9 @@ const headerCellStyle = ({ column }) => {
   text-align: center;
   margin-bottom: 12px;
   color: #222;
+}
+
+.select-fields-link {
+  text-decoration: underline;
 }
 </style> 
