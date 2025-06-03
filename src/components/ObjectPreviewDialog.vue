@@ -16,24 +16,17 @@
             <span class="info-item"><strong>实体：</strong>{{ object.entity }}</span>
             <span class="info-item"><strong>定位信息：</strong>
               <template v-if="getLocationInfoObj(object.locationInfo, object.locationInfoJson)">
-                <template v-if="isSelectFieldsLong(getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields)">
-                  ({{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).databaseName || '-' }},
-                   {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).tableName || '-' }},
-                   <el-popover placement="top" trigger="click">
-                     <template #reference>
-                       <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
-                     </template>
-                     <div style="max-width:400px;word-break:break-all;">
-                       {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields }}
-                     </div>
-                   </el-popover>
-                  )
-                </template>
-                <template v-else>
-                  ({{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).databaseName || '-' }},
-                   {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).tableName || '-' }},
-                   {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields || '-' }})
-                </template>
+                ({{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).databaseName || '-' }},
+                 {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).tableName || '-' }},
+                 <el-popover placement="top" trigger="click">
+                   <template #reference>
+                     <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
+                   </template>
+                   <div style="max-width:400px;word-break:break-all;">
+                     {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields }}
+                   </div>
+                 </el-popover>
+                )
               </template>
               <template v-else>-</template>
             </span>
