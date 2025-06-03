@@ -742,15 +742,15 @@ const transformToBackendFormat = (frontendData) => {
   } else {
     // 否则按原有 locations 数组组装
     locationInfo = {
-      locations: [
-        {
-          sheet: frontendData.sheet || "Sheet1",
-          startRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[0] : "1",
-          endRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[1] || "100" : "100",
-          startColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[0] : "A",
-          endColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[1] || "Z" : "Z"
-        }
-      ]
+    locations: [
+      {
+        sheet: frontendData.sheet || "Sheet1",
+        startRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[0] : "1",
+        endRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[1] || "100" : "100",
+        startColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[0] : "A",
+        endColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[1] || "Z" : "Z"
+      }
+    ]
     }
   }
 
@@ -1178,6 +1178,16 @@ const updateDataObjectViaApi = async (id, dataObject) => {
     
     // 获取CSRF令牌
     const token = await prepareCsrfToken();
+    
+    // 新增：兼容locationInfoInput输入
+    if (dataObject.locationInfoInput && typeof dataObject.locationInfoInput === 'string') {
+      const arr = dataObject.locationInfoInput.split(',').map(s => s.trim())
+      dataObject.locationInfo = {
+        databaseName: arr[0] || '',
+        tableName: arr[1] || '',
+        selectFields: arr.length > 2 ? arr.slice(2).join(',') : ''
+      }
+    }
     
     // 将前端数据转换为后端格式
     const backendData = transformToBackendFormat(dataObject)

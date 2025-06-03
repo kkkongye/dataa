@@ -106,12 +106,10 @@
         <el-input v-model="editForm.metadata.fieldClassification" placeholder="请输入领域分类" style="width: 300px;"></el-input>
       </el-form-item>
       
-      <el-form-item label="定位信息：" prop="locationInfo">
+      <el-form-item label="定位信息：" prop="locationInfoInput">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <el-input v-model="editForm.locationInfo.row" placeholder="例：0-4" style="width: 120px;"></el-input>
-          <span>行</span>
-          <el-input v-model="editForm.locationInfo.col" placeholder="例：0-4" style="width: 120px;"></el-input>
-          <span>列</span>
+          <el-input v-model="editForm.locationInfoInput" placeholder="库名,表名,字段1,字段2..." style="width: 500px;" />
+          <span style="color: #aaa;">格式：库名,表名,字段1,字段2...</span>
         </div>
       </el-form-item>
       
@@ -268,10 +266,8 @@ const metadataContactPhone = ref('')
 const editForm = reactive({
   id: '',
   entity: '',
-  locationInfo: {
-    row: '',
-    col: ''
-  },
+  locationInfoInput: '',
+  locationInfo: {},
   metadata: {
     dataName: '',
     sourceUnit: '',
@@ -385,16 +381,49 @@ const handleEdit = async (row) => {
   editForm.entity = sourceObj.entity
   
   // 处理定位信息
-  if (sourceObj.locationInfo) {
-    if (typeof sourceObj.locationInfo === 'object') {
-      editForm.locationInfo = { 
-        row: sourceObj.locationInfo.row || '', 
-        col: sourceObj.locationInfo.col || '' 
+  if (sourceObj.locationInfoJson) {
+    try {
+      const infoObj = typeof sourceObj.locationInfoJson === 'string'
+        ? JSON.parse(sourceObj.locationInfoJson)
+        : sourceObj.locationInfoJson;
+      const { databaseName = '', tableName = '', selectFields = '' } = infoObj;
+      let fieldsArr = [];
+      if (Array.isArray(selectFields)) {
+        fieldsArr = selectFields;
+      } else if (typeof selectFields === 'string' && selectFields) {
+        fieldsArr = selectFields.split(',').map(s => s.trim());
       }
-    } else if (typeof sourceObj.locationInfo === 'string') {
-      const locationInfo = parseLocationInfoString(sourceObj.locationInfo)
-      editForm.locationInfo = locationInfo
+      editForm.locationInfoInput = [databaseName, tableName, ...fieldsArr].filter(Boolean).join(',');
+    } catch (e) {
+      // fallback to old logic
+      if (sourceObj.locationInfo && typeof sourceObj.locationInfo === 'object') {
+        const { databaseName = '', tableName = '', selectFields = '' } = sourceObj.locationInfo
+        let fieldsArr = []
+        if (Array.isArray(selectFields)) {
+          fieldsArr = selectFields
+        } else if (typeof selectFields === 'string' && selectFields) {
+          fieldsArr = selectFields.split(',').map(s => s.trim())
+        }
+        editForm.locationInfoInput = [databaseName, tableName, ...fieldsArr].filter(Boolean).join(',')
+      } else if (typeof sourceObj.locationInfo === 'string') {
+        editForm.locationInfoInput = sourceObj.locationInfo
+      } else {
+        editForm.locationInfoInput = ''
+      }
     }
+  } else if (sourceObj.locationInfo && typeof sourceObj.locationInfo === 'object') {
+    const { databaseName = '', tableName = '', selectFields = '' } = sourceObj.locationInfo
+    let fieldsArr = []
+    if (Array.isArray(selectFields)) {
+      fieldsArr = selectFields
+    } else if (typeof selectFields === 'string' && selectFields) {
+      fieldsArr = selectFields.split(',').map(s => s.trim())
+    }
+    editForm.locationInfoInput = [databaseName, tableName, ...fieldsArr].filter(Boolean).join(',')
+  } else if (typeof sourceObj.locationInfo === 'string') {
+    editForm.locationInfoInput = sourceObj.locationInfo
+  } else {
+    editForm.locationInfoInput = ''
   }
   
   // 处理元数据
@@ -1021,7 +1050,21 @@ const handleSaveEditManually = () => {
           status: editForm.status || '',
           feedback: editForm.feedback || '',
           excelData: editForm.excelData,
-          dataItems: editForm.dataItems || [] // 确保保留原始dataItems数据
+          dataItems: editForm.dataItems || [], // 确保保留原始dataItems数据
+          locationInfoInput: editForm.locationInfoInput // 添加 locationInfoInput
+        }
+        
+        // 如果有 locationInfoInput，解析并添加到 locationInfo
+        if (editForm.locationInfoInput) {
+          const arr = editForm.locationInfoInput.split(',').map(s => s.trim())
+          if (arr.length >= 2) {
+            updatedObject.locationInfo = {
+              ...updatedObject.locationInfo,
+              databaseName: arr[0] || '',
+              tableName: arr[1] || '',
+              selectFields: arr.length > 2 ? arr.slice(2).join(',') : ''
+            }
+          }
         }
         
         console.log('准备保存更新的对象:', updatedObject)

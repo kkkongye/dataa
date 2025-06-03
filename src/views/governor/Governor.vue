@@ -54,28 +54,18 @@
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
               </template>
-            </el-table-column>
-            <el-table-column prop="locationInfo" label="定位信息" width="180" align="center">
+            </el-table-column><el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center">
               <template #default="scope">
                 <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
-                  <template v-if="isSelectFieldsLong(getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields)">
-                    ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
-                     {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
-                     <el-popover placement="top" trigger="click">
-                       <template #reference>
-                         <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
-                       </template>
-                       <div style="max-width:400px;word-break:break-all;">
-                         {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields }}
-                       </div>
-                     </el-popover>
-                    )
-                  </template>
-                  <template v-else>
-                    ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
-                     {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
-                     {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields || '-' }})
-                  </template>
+                  ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
+                  {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
+                  <el-popover placement="top" trigger="click">
+                    <template #reference>
+                      <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                    </template>
+                    <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields }}</div>
+                  </el-popover>
+                  )
                 </span>
                 <span v-else>-</span>
               </template>
