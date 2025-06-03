@@ -732,16 +732,26 @@ const transformToBackendFormat = (frontendData) => {
   }
 
   // 构建位置信息对象
-  const locationInfo = {
-    locations: [
-      {
-        sheet: frontendData.sheet || "Sheet1",
-        startRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[0] : "1",
-        endRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[1] || "100" : "100",
-        startColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[0] : "A",
-        endColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[1] || "Z" : "Z"
-      }
-    ]
+  let locationInfo = frontendData.locationInfo;
+  // 判断是否为自定义结构（如有 databaseName/tableName/selectFields 字段）
+  if (
+    locationInfo &&
+    (locationInfo.databaseName || locationInfo.tableName || locationInfo.selectFields)
+  ) {
+    // 已经是自定义结构，直接用
+  } else {
+    // 否则按原有 locations 数组组装
+    locationInfo = {
+      locations: [
+        {
+          sheet: frontendData.sheet || "Sheet1",
+          startRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[0] : "1",
+          endRow: frontendData.locationInfo && frontendData.locationInfo.row ? frontendData.locationInfo.row.split('-')[1] || "100" : "100",
+          startColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[0] : "A",
+          endColumn: frontendData.locationInfo && frontendData.locationInfo.col ? frontendData.locationInfo.col.split('-')[1] || "Z" : "Z"
+        }
+      ]
+    }
   }
 
   // 创建约束条件字符串 - 使用完全符合要求的格式

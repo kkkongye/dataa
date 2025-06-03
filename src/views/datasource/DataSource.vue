@@ -2107,6 +2107,12 @@ const saveCreateObject = async (newObject) => {
       hasDataContent: !!newObject.dataContent
     });
     
+    // 增加定位信息日志输出
+    console.log('[新建数字对象] 即将上传的定位信息:', newObject.locationInfo);
+    if (newObject.locationInfoJson) {
+      console.log('[新建数字对象] locationInfoJson:', newObject.locationInfoJson);
+    }
+    
     // 调用API添加数据对象，传递excelFileId参数
     const result = await dataObjectService.addDataObjectViaApi(newObject, requestParams);
     
