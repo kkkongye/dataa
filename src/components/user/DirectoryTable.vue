@@ -16,7 +16,7 @@
     
     <div class="directory-table">
       <div class="directory-table-header" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
-        <el-button type="primary" plain @click="emit('show-decrypt')">解密</el-button>
+        <el-button type="primary" plain @click="handleDecrypt">解密</el-button>
       </div>
       <div v-if="loading" class="loading-container">
         <el-loading :fullscreen="false" text="加载数据中..." />
@@ -614,6 +614,15 @@ async function markApplyStatusForUser() {
   } catch (e) {
     console.error('获取申请记录失败', e)
   }
+}
+
+function handleDecrypt() {
+  if (selectedRows.value.length === 0) {
+    ElMessage.info('请先勾选要解密的数据对象')
+    return
+  }
+  const ids = selectedRows.value.map(row => row.id)
+  emit('show-decrypt', ids)
 }
 </script>
 

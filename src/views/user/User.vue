@@ -154,31 +154,14 @@
     draggable
     class="decrypt-dialog"
   >
-    <el-form :model="decryptForm" label-width="120px" ref="decryptFormRef" :rules="decryptFormRules">
-      <el-form-item label="数据对象ID:" prop="objectId">
-        <el-input 
-          v-model="decryptForm.objectId" 
-          placeholder="请输入ID，多个ID请用逗号分隔"
-          type="textarea"
-          :rows="3"
-        ></el-input>
-      </el-form-item>
-      <el-form-item label="token:" prop="token">
-        <el-input 
-          v-model="decryptForm.token" 
-          placeholder="请输入token"
-          type="textarea"
-          :rows="2"
-        ></el-input>
-      </el-form-item>
-    </el-form>
+    <div style="margin-bottom: 16px; font-size: 16px;">
+      <span style="font-weight: bold;">数据对象ID：</span>
+      <span style="word-break: break-all;">{{ decryptForm.objectId }}</span>
+    </div>
     <template #footer>
-      <span class="dialog-footer">
-        <el-button type="info" plain @click="handleRequestToken" :loading="isRequestingToken">申请token</el-button>
-        <el-button type="primary" plain @click="handleGenerateCapsule" :disabled="!decryptForm.token" :loading="isGeneratingCapsule">生成数据胶囊</el-button>
-        <el-button type="primary" @click="handleDecrypt" :disabled="!decryptForm.dataCapsule">确定</el-button>
-        <el-button @click="decryptDialogVisible = false">取消</el-button>
-      </span>
+      <el-button type="primary" plain @click="handleGenerateCapsule">获取封装的数据对象</el-button>
+      <el-button type="primary" @click="handleDecrypt">确定</el-button>
+      <el-button @click="decryptDialogVisible = false">取消</el-button>
     </template>
   </el-dialog>
 
@@ -472,12 +455,10 @@ const decryptDialogVisible = ref(false)
 const decryptFormRef = ref(null)
 const decryptForm = reactive({
   objectId: '',
-  token: '',
   dataCapsule: ''
 })
 const decryptFormRules = {
   objectId: [{ required: true, message: '请输入数据对象ID', trigger: 'blur' }],
-  token: [{ required: true, message: '请输入token', trigger: 'blur' }]
 }
 // 存储解密后的对象ID列表
 const decryptedObjectIds = ref([])
@@ -487,7 +468,9 @@ const isRequestingToken = ref(false)
 const isGeneratingCapsule = ref(false)
 
 // 显示解密对话框
-const showDecryptDialog = () => {
+const showDecryptDialog = (ids) => {
+  decryptForm.objectId = ids.join(', ')
+  decryptedObjectIds.value = ids
   decryptDialogVisible.value = true
 }
 
@@ -497,52 +480,19 @@ const handleDecrypt = async () => {
     ElMessage.warning('请先生成数据胶囊')
     return
   }
-  
   try {
-    // 调用确认对话框
     await ElMessageBox.confirm('确认要解密这些数据吗？', '解密确认', {
       confirmButtonText: '确认',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    // 调用解密API
-    const apiUrl = 'http://localhost:8080/api/decrypt'
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        dataCapsule: decryptForm.dataCapsule,
-        token: decryptForm.token
-      })
-    })
-    
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    if (data && data.code === 1 && data.msg === 'success' && data.data) {
-      // 处理解密后的数据
-      isDecrypted.value = true
-      const idList = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id)
-      decryptedObjectIds.value = idList
-      decryptedObjectId.value = idList.length === 1 ? idList[0] : ''
-      
-      decryptDialogVisible.value = false
-      localStorage.removeItem('receivedToken')
-      
-      // 从API获取最新数据
-      await fetchLatestDataFromApi()
-      
-      ElMessage.success('解密成功')
-    } else {
-      throw new Error('返回数据格式不符合预期')
-    }
+    // 调用解密API（如有需要）
+    isDecrypted.value = true
+    const idList = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id)
+    decryptedObjectIds.value = idList
+    decryptedObjectId.value = idList.length === 1 ? idList[0] : ''
+    decryptDialogVisible.value = false
+    ElMessage.success('解密成功')
   } catch (error) {
     if (error.message === 'cancel') {
       return
@@ -596,35 +546,23 @@ const handleRequestToken = async () => {
 
 // 添加生成数据胶囊的处理函数
 const handleGenerateCapsule = async () => {
-  if (!decryptForm.token) {
-    ElMessage.warning('请先申请token')
-    return
-  }
-  
   if (!decryptForm.objectId) {
-    ElMessage.warning('请输入数据对象ID')
+    ElMessage.warning('请选择数据对象ID')
     return
   }
-  
   isGeneratingCapsule.value = true
-  
   try {
     // 调用后端API生成数据胶囊
     const ids = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id).join(',')
     const apiUrl = `http://localhost:8080/api/selectIds?ids=${encodeURIComponent(ids)}`
     const response = await fetch(apiUrl, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
+      headers: { 'Accept': 'application/json' }
     })
-    
     if (!response.ok) {
       throw new Error(`请求失败: ${response.status}`)
     }
-    
     const data = await response.json()
-    
     if (data && data.code === 1 && data.msg === 'success' && data.data) {
       decryptForm.dataCapsule = data.data
       ElMessage.success('成功生成数据胶囊')
@@ -1328,9 +1266,8 @@ const resetDecryption = () => {
     decryptedObjectId.value = '';
     decryptedObjectIds.value = [];
     decryptForm.objectId = '';
-    decryptForm.token = '';
     decryptForm.dataCapsule = '';
-    showDecryptDialog();
+    decryptDialogVisible.value = false; // 强制关闭解密弹窗
   }).catch(() => {
     // 用户取消操作
   });
