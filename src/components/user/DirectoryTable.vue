@@ -76,12 +76,14 @@
           </el-table-column>
           <el-table-column label="申请" width="100">
             <template #default="scope">
-              <el-button type="primary" size="small" @click="handleApply(scope.row)">申请</el-button>
+              <el-button type="primary" size="small" :disabled="scope.row.applied" @click="handleApply(scope.row)">
+                {{ scope.row.applied ? '已申请' : '申请' }}
+              </el-button>
             </template>
           </el-table-column>
           <el-table-column label="申请状态" width="200">
             <template #default="scope">
-              <el-tag :type="getApplyStatusTagType(scope.row.applyStatus)">{{ scope.row.applyStatus }}</el-tag>
+              <el-tag :type="getApplyStatusTagType(scope.row)">{{ getApplyStatusText(scope.row) }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -469,6 +471,9 @@ const fetchData = async () => {
       addExampleData()
       assignRandomApplyStatus()
     }
+    
+    // 新增：标记申请状态
+    await markApplyStatusForUser()
   } catch (error) {
     console.error('获取数据失败:', error)
     ElMessage.error(`获取数据失败: ${error.message}`)
@@ -540,11 +545,19 @@ function assignRandomApplyStatus() {
 }
 
 // 获取申请状态tag类型
-function getApplyStatusTagType(status) {
-  if (status === '治理方已同意,请解密查看') return 'success'
-  if (status === '数源方已同意,等待治理方处理') return 'warning'
-  if (status === '拒绝申请') return 'danger'
-  return 'info'
+function getApplyStatusTagType(row) {
+  if (row.sourceAgreed === true && row.governanceAgreed === true) {
+    return 'success'
+  }
+  return 'danger'
+}
+
+// 获取申请状态文本
+function getApplyStatusText(row) {
+  if (row.sourceAgreed === true && row.governanceAgreed === true) {
+    return '申请已同意,请解密查看'
+  }
+  return '无权限解密'
 }
 
 // 申请按钮点击事件（可后续扩展）
@@ -555,8 +568,9 @@ function handleApply(row) {
     .then(res => {
       console.log('接口返回结果:', res.data);
       ElMessage.success(`已对实体【${row.entity}】发起申请`);
-      // 只更新当前行的申请状态
-      row.applyStatus = '数源方同意等待治理方通过';
+      // 只更新当前行的申请状态和按钮禁用
+      row.applyStatus = '待处理';
+      row.applied = true;
     })
     .catch(err => {
       console.error('申请接口出错:', err);
@@ -571,10 +585,35 @@ function handleSelectionChange(val) {
   selectedRows.value = val
 }
 
-// 只有申请状态为"治理方通过 请解密查看"时可选
+// 只有 sourceAgreed 和 governanceAgreed 都为 true 时可选
 function isRowSelectable(row) {
-  const status = (row.applyStatus || '');
-  return status === '治理方已同意,请解密查看';
+  return row.sourceAgreed === true && row.governanceAgreed === true;
+}
+
+// 新增：获取所有申请记录并标记表格状态
+async function markApplyStatusForUser() {
+  try {
+    const res = await axios.get('http://localhost:8080/api/applications/records', { withCredentials: true })
+    if (res.data && res.data.code === 1) {
+      const records = res.data.data || []
+      const username = localStorage.getItem('username')
+      tableData.value.forEach(row => {
+        // 查找该用户对该对象的申请记录
+        const record = records.find(r => r.objectId === row.id && r.applicant === username)
+        if (record) {
+          row.applied = true
+          row.sourceAgreed = record.sourceAgreed
+          row.governanceAgreed = record.governanceAgreed
+        } else {
+          row.applied = false
+          row.sourceAgreed = false
+          row.governanceAgreed = false
+        }
+      })
+    }
+  } catch (e) {
+    console.error('获取申请记录失败', e)
+  }
 }
 </script>
 

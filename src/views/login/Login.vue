@@ -76,26 +76,26 @@ const handleLogin = async () => {
       { withCredentials: true }
     )
     if (response.data && response.data.code === 1) {
-      // 登录成功，保存用户信息和角色
-      localStorage.setItem('role', loginForm.role)
-      localStorage.setItem('username', loginForm.username)
+        // 登录成功，保存用户信息和角色
+        localStorage.setItem('role', loginForm.role)
+        localStorage.setItem('username', loginForm.username)
       localStorage.setItem('userId', response.data.data.id?.toString?.() || '')
-      ElMessage.success('登录成功')
-      // 根据角色跳转到不同页面
-      switch (loginForm.role) {
-        case 'datasource':
-          router.push('/datasource')
-          break
-        case 'governor':
-          router.push('/governor')
-          break
-        case 'user':
-          router.push('/user')
-          break
-        default:
-          router.push('/datasource')
-      }
-    } else {
+        ElMessage.success('登录成功')
+        // 根据角色跳转到不同页面
+        switch (loginForm.role) {
+          case 'datasource':
+            router.push('/datasource')
+            break
+          case 'governor':
+            router.push('/governor')
+            break
+          case 'user':
+            router.push('/user')
+            break
+          default:
+            router.push('/datasource')
+        }
+      } else {
       ElMessage.error(response.data.msg || '用户名或密码错误')
     }
   } catch (error) {
