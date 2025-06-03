@@ -58,7 +58,7 @@ INSERT INTO data_objects (
         {"姓名":"蔡三十二","性别":"女","年龄":30,"身份证号":"330131199502126789","居住地址":"浙江省杭州市拱墅区湖墅街道30号","经济收入":4300,"最低生活保障金":null,"临时救助":false,"特困供养":false,"重要程度":"一般"}
     ],"data":{}}',
     '{"dataName":"民政基础信息表","sourceUnit":"民政局","contactPerson":"王干事","contactPhone":"13800138000","resourceSummary":"居民民政档案","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","居住地址","经济收入","最低生活保障金","临时救助","特困供养","重要程度"]}',
-    '{"locationInfo": {"databaseName": "民政核心数据库","tableName": "CivilAffairs","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,EconomicIncome,MinimumLivingAllowance,TemporaryAssistance,ExtremelyPoorSupport,Importance"}}',
+    '{"databaseName": "民政核心数据库","tableName": "CivilAffairs","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,EconomicIncome,MinimumLivingAllowance,TemporaryAssistance,ExtremelyPoorSupport,Importance"}',
     '{"constraints":[{"formatConstraint":"xlsx","accessConstraint":"全部允许","pathConstraint":"点对点","regionConstraint":"内网","shareConstraint":"允许共享"}]}',
     '{"operations":{"read":1,"modify":1}}',
     '{"auditUser":"audit_admin","auditTime":"2023-12-05 09:30:00"}',
@@ -96,8 +96,7 @@ INSERT INTO data_objects (
         {"姓名":"黄志强","性别":"男","年龄":55,"身份证号":"330116197007156789","居住地址":"浙江省杭州市西湖区西溪街道15号","失业状态":false,"灵活就业":false,"养老金金额":0,"重要程度":"核心"}
     ],"data":{}}',
     '{"dataName":"人社局仿真信息表","sourceUnit":"人社局","contactPerson":"张科长","contactPhone":"13900139000","resourceSummary":"居民社保档案","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","居住地址","失业状态","灵活就业","养老金金额","重要程度"]}',
-    '{"locationInfo": {"databaseName": "人社信息库","tableName": "HumanResources","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,UnemploymentStatus,FlexibleEmployment,PensionAmount,Importance"
-    }}',
+    '{"databaseName": "人社信息库","tableName": "HumanResources","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,UnemploymentStatus,FlexibleEmployment,PensionAmount,Importance"}',
     '{"constraints":[{"formatConstraint":"csv","accessConstraint":"只允许管理方获取","pathConstraint":"广播","regionConstraint":"外网","shareConstraint":"不允许共享"}]}',
     '{"operations":{"read":1}}',
     '{"auditUser":"sys_admin","auditTime":"2023-12-05 10:00:00"}',
@@ -145,7 +144,7 @@ INSERT INTO data_objects (
         {"姓名":"邓建军","性别":"男","年龄":71,"身份证号":"330126195403106789","居住地址":"浙江省杭州市建德市梅城镇25号","家庭纳税额":0,"免税信息":"养老金免税","收入状态评估":1,"重要程度":"重要"}
     ],"data":{}}',
     '{"dataName":"税务局仿真信息表","sourceUnit":"税务局","contactPerson":"刘科长","contactPhone":"13700137000","resourceSummary":"居民税务档案","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","居住地址","家庭纳税额","免税信息","收入状态评估","重要程度"]}',
-    '{"locationInfo": {"databaseName": "税务信息库","tableName": "TaxBureau","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,FamilyTaxAmount,TaxExemptionInfo,IncomeStatusAssessment,Importance"}}',
+    '{"databaseName": "税务信息库","tableName": "TaxBureau","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,FamilyTaxAmount,TaxExemptionInfo,IncomeStatusAssessment,Importance"}',
     '{"constraints":[{"formatConstraint":"json","accessConstraint":"全部允许","pathConstraint":"点对点","regionConstraint":"内网","shareConstraint":"允许共享"}]}',
     '{"operations":{"read":1,"share":1}}',
     '{"auditUser":"inventory_audit","auditTime":"2023-12-05 14:20:00"}',
@@ -188,7 +187,7 @@ INSERT INTO data_objects (
         {"姓名":"罗玉华","性别":"女","年龄":76,"身份证号":"330121194904276789","居住地址":"浙江省杭州市余杭区南苑街道20号","住房条件":"农村自建房（120㎡）","残疾状态":"肢体残疾（二级）","家访状态":true,"重要程度":"重要"}
     ],"data":{}}',
     '{"dataName":"社区服务中心仿真信息表","sourceUnit":"社区服务中心","contactPerson":"张主任","contactPhone":"13600136000","resourceSummary":"居民社区服务档案","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","居住地址","住房条件","残疾状态","家访状态","重要程度"]}',
-    '{"locationInfo": {"databaseName": "社区服务信息库","tableName": "CommunityServiceCenter","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,HousingCondition,DisabilityStatus,HomeVisitStatus,Importance"}}',
+    '{"databaseName": "社区服务信息库","tableName": "CommunityServiceCenter","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,HousingCondition,DisabilityStatus,HomeVisitStatus,Importance"}',
     '{"constraints":[{"formatConstraint":"pdf","accessConstraint":"只允许管理方获取","pathConstraint":"广播","regionConstraint":"外网","shareConstraint":"不允许共享"}]}',
     '{"operations":{"read":1}}',
     '{"auditUser":"finance_auditor","auditTime":"2023-12-05 17:30:00"}',
@@ -226,8 +225,8 @@ ADD COLUMN data_source_category VARCHAR(255);
 ALTER TABLE users
 ADD COLUMN role VARCHAR(255);
 
-DROP TABLE application_record;
-DROP TABLE digital_object_display;
+-- DROP TABLE application_record;
+-- DROP TABLE digital_object_display;
 
 CREATE TABLE digital_object_display (
     object_id VARCHAR(255) PRIMARY KEY COMMENT '数字对象ID（关联data_objects.id）',

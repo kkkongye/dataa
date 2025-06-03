@@ -73,7 +73,29 @@
             <el-link type="primary" @click="handlePreview(scope.row)">{{ scope.row.entity }}</el-link>
           </template>
         </el-table-column>
-        <el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center" />
+        <el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center">
+          <template #default="scope">
+            <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
+              <template v-if="isSelectFieldsLong(getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields)">
+                ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
+                 {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
+                 <el-popover placement="top" trigger="click">
+                   <template #reference>
+                     <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                   </template>
+                   <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields }}</div>
+                 </el-popover>
+                )
+              </template>
+              <template v-else>
+                ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
+                 {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
+                 {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields || '-' }})
+              </template>
+            </span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
           <template #default="scope">
             <div class="constraint-container">
@@ -773,6 +795,30 @@ const cellStyle = ({ column }) => {
 const showAuditLogDialog = (row) => {
   auditLogVisible.value = true
 }
+
+function getLocationInfoObj(locationInfo, locationInfoJson) {
+  // 优先用 locationInfo
+  if (typeof locationInfo === 'string') {
+    try {
+      locationInfo = JSON.parse(locationInfo)
+    } catch (e) {
+      locationInfo = null
+    }
+  }
+  if ((!locationInfo || typeof locationInfo !== 'object') && locationInfoJson) {
+    try {
+      locationInfo = JSON.parse(locationInfoJson)
+    } catch (e) {
+      locationInfo = null
+    }
+  }
+  if (!locationInfo || typeof locationInfo !== 'object') return null
+  return locationInfo
+}
+
+function isSelectFieldsLong(selectFields) {
+  return typeof selectFields === 'string' && selectFields.length > 30
+}
 </script>
 
 <style scoped>
@@ -982,5 +1028,9 @@ const showAuditLogDialog = (row) => {
 
 .visualization-btn .el-icon {
   font-size: 16px;
+}
+
+.select-fields-link {
+  text-decoration: underline;
 }
 </style> 

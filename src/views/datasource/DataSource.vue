@@ -214,13 +214,37 @@
     <div class="preview-header">
       <div class="preview-info">
         <!-- 基本信息表格 -->
-        <div class="basic-info-table">
-          <span class="info-item"><strong>实体：</strong>{{ previewForm.entity }}</span>
-          <span class="info-item"><strong>定位信息：</strong>{{ previewForm.locationInfo }}</span>
-          <span class="info-item constraint-info" :title="Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint"><strong>约束条件：</strong>{{ Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint }}</span>
-          <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(previewForm.transferControl) ? previewForm.transferControl.join(', ') : previewForm.transferControl }}</span>
-          <span class="info-item"><strong>分类值：</strong>{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
-          <span class="info-item"><strong>分级值：</strong>{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
+        <div class="basic-info-table two-rows">
+          <div class="info-row">
+            <span class="info-item"><strong>实体：</strong>{{ previewForm.entity }}</span>
+            <span class="info-item"><strong>定位信息：</strong>
+              <template v-if="getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson)">
+                <template v-if="isSelectFieldsLong(getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).selectFields)">
+                  ({{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).databaseName || '-' }},
+                   {{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).tableName || '-' }},
+                   <el-popover placement="top" trigger="click">
+                     <template #reference>
+                       <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                     </template>
+                     <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).selectFields }}</div>
+                   </el-popover>
+                  )
+                </template>
+                <template v-else>
+                  ({{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).databaseName || '-' }},
+                   {{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).tableName || '-' }},
+                   {{ getLocationInfoObj(previewForm.locationInfo, previewForm.locationInfoJson).selectFields || '-' }})
+                </template>
+              </template>
+              <template v-else>{{ previewForm.locationInfo }}</template>
+            </span>
+            <span class="info-item constraint-info" :title="Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint"><strong>约束条件：</strong>{{ Array.isArray(previewForm.constraint) ? previewForm.constraint.join(', ') : previewForm.constraint }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(previewForm.transferControl) ? previewForm.transferControl.join(', ') : previewForm.transferControl }}</span>
+            <span class="info-item"><strong>分类值：</strong>{{ previewForm.totalCategoryValue || previewForm.classificationValue || '未分类' }}</span>
+            <span class="info-item"><strong>分级值：</strong>{{ previewForm.totalGradeValue || previewForm.levelValue || '未分级' }}</span>
+          </div>
         </div>
         
         <!-- 元数据信息显示 -->
@@ -1150,7 +1174,9 @@ const previewForm = reactive({
   totalGradeValue: '',
   classificationValue: '',
   levelValue: '',
-  metadata: null // 添加元数据字段
+  metadata: null, // 添加元数据字段
+  locationInfoJson: '',
+  selectFields: ''
 })
 
 // Excel表格数据
@@ -1180,6 +1206,7 @@ const previewEntity = (row) => {
   previewForm.id = row.id
   previewForm.entity = row.entity
   previewForm.locationInfo = row.locationInfo
+  previewForm.locationInfoJson = row.locationInfoJson // 确保locationInfoJson被正确传递
   previewForm.constraint = ensureArray(row.constraint)
   previewForm.transferControl = ensureArray(row.transferControl)
   previewForm.status = row.status
@@ -2716,9 +2743,37 @@ const showVisualization = () => {
 };
 
 const applicationListVisible = ref(false)
+
+// 在script部分添加这两个函数
+// 获取定位信息对象
+function getLocationInfoObj(locationInfo, locationInfoJson) {
+  // 优先用 locationInfo
+  if (typeof locationInfo === 'string') {
+    try {
+      locationInfo = JSON.parse(locationInfo)
+    } catch (e) {
+      locationInfo = null
+    }
+  }
+  if ((!locationInfo || typeof locationInfo !== 'object') && locationInfoJson) {
+    try {
+      locationInfo = JSON.parse(locationInfoJson)
+    } catch (e) {
+      locationInfo = null
+    }
+  }
+  if (!locationInfo || typeof locationInfo !== 'object') return null
+  return locationInfo
+}
+
+// 判断select字段是否过长
+function isSelectFieldsLong(selectFields) {
+  return typeof selectFields === 'string' && selectFields.length > 30
+}
 </script>
 
 <style scoped>
+/* 全局样式 */
 .datasource-container {
   width: 100%;
   height: 100vh;
@@ -2877,6 +2932,21 @@ const applicationListVisible = ref(false)
   background-color: #f5f7fa;
   border-radius: 4px;
   padding: 12px 15px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.basic-info-table.two-rows {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  justify-content: center;
+  width: 100%;
   overflow-x: auto;
   white-space: nowrap;
 }
@@ -3286,5 +3356,9 @@ pre {
   text-align: center;
   margin-bottom: 5px;
   color: #222;
+}
+
+.select-fields-link {
+  text-decoration: underline;
 }
 </style> 
