@@ -79,7 +79,7 @@
             :on-change="handleEditFileChange"
             :before-upload="beforeUpload"
           >
-            <el-button type="primary">上传Excel</el-button>
+            <el-button type="primary">上传</el-button>
           </el-upload>
         </div>
       </el-form-item>
@@ -107,11 +107,10 @@
       </el-form-item>
       
       <el-form-item label="定位信息：" prop="locationInfoInput">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <el-input v-model="editForm.locationInfoInput" placeholder="库名,表名,字段1,字段2..." style="width: 500px;" />
-          <span style="color: #aaa;">格式：库名,表名,字段1,字段2...</span>
-        </div>
+        <el-input v-model="editForm.locationInfoInput" placeholder="库名,表名,字段1,字段2..." style="width: 300px;" />
+        <span style="color: #aaa; margin-left: 10px;">格式：库名,表名,字段1,字段2...</span>
       </el-form-item>
+    
       
       <el-form-item label="约束条件：">
         <div class="constraint-section">
@@ -180,6 +179,10 @@
           <el-option label="可委托" value="可委托"></el-option>
         </el-select>
       </el-form-item>
+      <!-- 分类分级值按钮（大按钮，带文字） -->
+      <el-form-item label="分类分级值：">
+        <el-button type="primary" class="generate-btn" style="width: 140px; height: 30px; font-size: 14px;" @click="openClassificationLevelDialog">生成分类分级值</el-button>
+      </el-form-item>
     </el-form>
     
     <template #footer>
@@ -218,6 +221,14 @@
 
   <ApplicationListDialog v-model:visible="applicationListVisible" />
 
+  <!-- 在template底部添加分类分级对话框 -->
+  <ClassificationLevelDialog
+    v-model:visible="classificationLevelDialogVisible"
+    :object-id="editForm.id"
+    :model-value="classificationLevelData"
+    @confirm="handleClassificationLevelConfirm"
+  />
+
 </template>
 
 <script setup>
@@ -236,6 +247,7 @@ import { API_URL, axiosInstance, testApiConnection } from '@/services/apiConfig'
 import VisualizationDialog from '../../components/visualization/VisualizationDialog.vue'
 import ApplicationListDialog from '@/components/source/ApplicationListDialog.vue'
 import ObjectPreviewDialog from '@/components/ObjectPreviewDialog.vue'
+import ClassificationLevelDialog from '@/components/source/ClassificationLevelDialog.vue'
 
 const router = useRouter()
 const activeTab = ref('objectList')
@@ -656,6 +668,23 @@ const handleEdit = async (row) => {
   
   // 显示编辑对话框
   editDialogVisible.value = true
+  
+  // 回填权重
+  if (sourceObj.weights) {
+    normalWeight.value = sourceObj.weights.normalWeight || 1.0
+    importantWeight.value = sourceObj.weights.importantWeight || 2.0
+    criticalWeight.value = sourceObj.weights.criticalWeight || 3.0
+    editForm.weights = { ...sourceObj.weights }
+  } else {
+    normalWeight.value = 1.0
+    importantWeight.value = 2.0
+    criticalWeight.value = 3.0
+    editForm.weights = {
+      normalWeight: 1.0,
+      importantWeight: 2.0,
+      criticalWeight: 3.0
+    }
+  }
 }
 
 // 取消编辑
@@ -1051,7 +1080,7 @@ const handleSaveEditManually = () => {
           feedback: editForm.feedback || '',
           excelData: editForm.excelData,
           dataItems: editForm.dataItems || [], // 确保保留原始dataItems数据
-          locationInfoInput: editForm.locationInfoInput // 添加 locationInfoInput
+          locationInfoInput: editForm.locationInfoInput, // 添加 locationInfoInput
         }
         
         // 如果有 locationInfoInput，解析并添加到 locationInfo
@@ -2729,6 +2758,66 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
 function isSelectFieldsLong(selectFields) {
   return typeof selectFields === 'string' && selectFields.length > 30
 }
+
+// 分类分级对话框相关状态
+const classificationLevelDialogVisible = ref(false)
+const classificationLevelData = ref({})
+
+// 打开分类分级对话框
+const openClassificationLevelDialog = () => {
+  classificationLevelData.value = {
+    classificationValue: editForm.classificationValue || editForm.totalCategoryValue || '',
+    industryCategory: editForm.industryCategory || '',
+    dataTimeliness: editForm.dataTimeliness || '',
+    dataSource: editForm.dataSource || '',
+    levelValue: editForm.levelValue || editForm.totalGradeValue || '',
+    dbGrade: editForm.dbGrade !== undefined ? editForm.dbGrade : 0,
+    tableGrade: editForm.tableGrade !== undefined ? editForm.tableGrade : 0,
+    rowGrades: editForm.rowGrades || [0, 0],
+    columnGrades: editForm.columnGrades || [0, 0]
+  }
+  classificationLevelDialogVisible.value = true
+}
+
+// 分类分级对话框确认回调
+const handleClassificationLevelConfirm = async (data) => {
+  // 只在这里单独上传分类分级值，不在保存编辑对象时上传
+  editForm.classificationValue = data.classificationValue
+  editForm.totalCategoryValue = data.classificationValue
+  editForm.industryCategory = data.industryCategory
+  editForm.dataTimeliness = data.dataTimeliness
+  editForm.dataSource = data.dataSource
+  editForm.levelValue = data.levelValue
+  editForm.totalGradeValue = data.levelValue
+  editForm.dbGrade = data.dbGrade
+  editForm.tableGrade = data.tableGrade
+  editForm.rowGrades = data.rowGrades
+  editForm.columnGrades = data.columnGrades
+
+  // 构建分类值数据
+  const categoryData = {
+    industryCategory: data.industryCategory || '',
+    processingTimeCategory: data.dataTimeliness || '',
+    dataSourceCategory: data.dataSource || ''
+  }
+  try {
+    // 只在这里单独上传分类分级值
+    const categoriesResponse = await fetch(`http://localhost:8080/api/objects/${editForm.id}/categories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(categoryData)
+    })
+    if (!categoriesResponse.ok) {
+      console.warn(`分类数据提交状态: ${categoriesResponse.status} ${categoriesResponse.statusText}`)
+    } else {
+      console.log('分类数据提交成功:', await categoriesResponse.text())
+    }
+  } catch (apiError) {
+    console.error('分类数据API提交失败:', apiError)
+  }
+  ElMessage.success('分类分级值已更新')
+  classificationLevelDialogVisible.value = false
+}
 </script>
 
 <style scoped>
@@ -3319,5 +3408,24 @@ pre {
 
 .select-fields-link {
   text-decoration: underline;
+}
+
+.weight-form {
+  display: flex;
+  gap: 10px;
+}
+
+.weight-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.weight-label {
+  font-weight: bold;
+}
+
+.weight-actions {
+  display: flex;
+  gap: 10px;
 }
 </style> 

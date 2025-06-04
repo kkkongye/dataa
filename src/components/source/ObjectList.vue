@@ -73,7 +73,7 @@
             <el-link type="primary" @click="handlePreview(scope.row)">{{ scope.row.entity }}</el-link>
           </template>
         </el-table-column>
-        <el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center">
+        <el-table-column prop="locationInfo" label="定位信息" min-width="140" align="center">
           <template #default="scope">
             <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
               ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
@@ -199,7 +199,15 @@
                 <span class="label">分级值：</span>
                 <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
               </div>
-              <el-button type="primary" size="small" class="generate-btn" @click.stop="generateClassificationLevel(scope.row)">生成分类分级值</el-button>
+              <el-button
+                type="primary"
+                size="small"
+                class="generate-btn"
+                @click.stop="generateClassificationLevel(scope.row)"
+                :disabled="isClassificationGenerated(scope.row)"
+              >
+                {{ isClassificationGenerated(scope.row) ? '已生成分类分级值' : '生成分类分级值' }}
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -811,6 +819,21 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
 
 function isSelectFieldsLong(selectFields) {
   return typeof selectFields === 'string' && selectFields.length > 30
+}
+
+function isClassificationGenerated(row) {
+  const isEmpty = v =>
+    v === undefined ||
+    v === null ||
+    v === '' ||
+    v === 0 ||
+    v === '0' ||
+    v === '未分类' ||
+    v === '未分级';
+  const cat = row.totalCategoryValue;
+  const grade = row.totalGradeValue;
+  // 只要有一个不是"未生成"状态就禁用
+  return !isEmpty(cat) || !isEmpty(grade);
 }
 </script>
 
