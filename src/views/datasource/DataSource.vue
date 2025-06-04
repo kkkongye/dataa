@@ -1,7 +1,7 @@
 <template>
   <div class="datasource-container">
     <!-- 头部导航 -->
-    <AppHeader role-name="数源方" @logout="logout" />
+    <AppHeader role-name="税务局(数源方)" @logout="logout" />
     
     <!-- API错误提示 -->
     <div v-if="apiErrorVisible" class="api-error-alert">

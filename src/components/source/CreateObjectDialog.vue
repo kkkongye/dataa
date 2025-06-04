@@ -52,12 +52,12 @@
       </el-form-item>
 
       <!-- 添加权重赋值按钮 -->
-      <el-form-item label="权重赋值：" style="margin-bottom: 22px;">
+      <!-- <el-form-item label="权重赋值：" style="margin-bottom: 22px;">
         <el-button type="primary" @click="showWeightForm = !showWeightForm">
           {{ showWeightForm ? '隐藏权重设置' : '设置权重' }}
         </el-button>
       </el-form-item>
-      
+       -->
       <!-- 权重修改表单 -->
       <el-form-item v-if="showWeightForm">
         <div class="weight-form">
@@ -379,7 +379,11 @@ watch(form, (newVal) => {
   // 解析定位信息
   let locationInfoObj = {}
   if (newVal.locationInfo.input && newVal.locationInfo.input.split(',').length >= 3) {
-    const [databaseName, tableName, selectFields] = newVal.locationInfo.input.split(',').map(s => s.trim())
+    const arr = newVal.locationInfo.input.split(',').map(s => s.trim())
+    const databaseName = arr[0]
+    const tableName = arr[1]
+    // selectFields为第3位及以后全部字段合并
+    const selectFields = arr.length > 2 ? arr.slice(2).join(',') : ''
     locationInfoObj = { databaseName, tableName, selectFields }
   }
   emit('update:modelValue', {
@@ -611,7 +615,11 @@ const handleSave = () => {
   // 解析定位信息
   let locationInfoObj = {}
   if (form.locationInfo.input && form.locationInfo.input.split(',').length >= 3) {
-    const [databaseName, tableName, selectFields] = form.locationInfo.input.split(',').map(s => s.trim())
+    const arr = form.locationInfo.input.split(',').map(s => s.trim())
+    const databaseName = arr[0]
+    const tableName = arr[1]
+    // selectFields为第3位及以后全部字段合并
+    const selectFields = arr.length > 2 ? arr.slice(2).join(',') : ''
     locationInfoObj = { databaseName, tableName, selectFields }
     console.log('[定位信息] 解析后 locationInfoObj:', locationInfoObj)
   } else {

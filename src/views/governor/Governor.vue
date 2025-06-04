@@ -1,7 +1,7 @@
 <template>
   <div class="datasource-container">
     <!-- 头部导航 -->
-    <AppHeader role-name="治理方" @logout="logout" />
+    <AppHeader role-name="某市大数据局(治理方)" @logout="logout" />
     
     <!-- 主内容区域 -->
     <div class="main-content">
