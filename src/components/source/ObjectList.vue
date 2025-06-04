@@ -228,7 +228,7 @@
             </span>
             
             <!-- 没有反馈信息 -->
-            <span v-else>-</span>
+            <span v-else></span>
           </template>
         </el-table-column>
         <el-table-column prop="operation" label="操作" width="150" align="center">
@@ -595,7 +595,7 @@ const extractFeedback = (dataContent) => {
       }
     }
     
-    return '-';
+    return '';
   } catch (e) {
     return '提取失败';
   }
