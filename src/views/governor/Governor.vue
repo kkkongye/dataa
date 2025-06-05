@@ -400,10 +400,13 @@ const totalCount = computed(() => {
 // 根据状态和搜索条件过滤数据
 const filteredTableData = computed(() => {
   let result = tableData.value;
+  // 始终排除"待生成分类分级值"
+  result = result.filter(item => item.status !== '待生成分类分级值');
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验');
   } else if (currentStatus.value === '待生成分类分级值') {
-    result = result.filter(item => item.status === '待生成分类分级值');
+    // 这里可以直接返回空数组，因为已被排除
+    result = [];
   } else if (currentStatus.value) {
     result = result.filter(item => item.status === currentStatus.value);
   }
@@ -479,16 +482,14 @@ const updateStatus = async (row, newStatus) => {
   // 本地模式标志，改为false以启用调用后端API
   const localModeOnly = false;
   
-  // 特殊处理"库存管理"实体的审查功能
-  if (newStatus === '审查中' && row.entity === '库存管理') {
+  // 所有实体都支持"审查"弹窗和临时状态
+  if (newStatus === '审查中') {
     try {
       reportDialogVisible.value = true;
-      
       const index = tableData.value.findIndex(item => item.id === row.id);
       if (index !== -1) {
         const originalStatus = tableData.value[index].status;
         tableData.value[index].status = '审查中';
-        
         setTimeout(() => {
           if (tableData.value[index]) {
             tableData.value[index].status = originalStatus;
