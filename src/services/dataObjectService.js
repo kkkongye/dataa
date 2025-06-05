@@ -173,7 +173,6 @@ const adaptBackendData = (backendItem) => {
     console.warn('adaptBackendData: 输入为空，返回默认对象')
     return createDefaultDataObject()
   }
-  console.log('adaptBackendData: 输入对象', JSON.stringify(backendItem, null, 2))
   
   // 如果有 locationInfoJson 字段，尝试解析
   let parsedLocation = null

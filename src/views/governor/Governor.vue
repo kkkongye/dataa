@@ -425,6 +425,7 @@ const getStatusClass = (status) => {
   if (status === '待校验' || status === '待检验') return 'status-pending'
   if (status === '已合格') return 'status-success'
   if (status === '不合格') return 'status-error'
+  if (status === '待生成分类分级值') return 'status-to-generate'
   return ''
 }
 
@@ -1955,5 +1956,11 @@ function isSelectFieldsLong(selectFields) {
 
 .select-fields-link {
   text-decoration: underline;
+}
+
+.status-to-generate {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
 }
 </style> 

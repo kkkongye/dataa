@@ -456,6 +456,7 @@ const getStatusClass = (status) => {
   if (status === '待校验' || status === '待检验') return 'status-pending'
   if (status === '已合格') return 'status-success'
   if (status === '不合格') return 'status-error'
+  if (status === '待生成分类分级值') return 'status-to-generate'
   return ''
 }
 
@@ -906,6 +907,13 @@ function isClassificationGenerated(row) {
 .status-pending {
   background-color: #e0e2e6;
   color: #8b8e8f;
+}
+
+/* 待生成分类分级值状态样式 */
+.status-to-generate {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
 }
 
 /* 分页区域 */

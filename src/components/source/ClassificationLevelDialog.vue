@@ -626,6 +626,7 @@ const handleConfirm = () => {
       // 仍然关闭对话框并传递本地计算结果
       emit('confirm', result);
       emit('update:modelValue', null);
+      window.location.reload(); // 强制刷新整个页面
       return; // 提前退出，不发送请求
     }
     
@@ -670,7 +671,7 @@ const handleConfirm = () => {
 
     // 并行处理两个请求
     Promise.all(requests)
-      .then(([totalValuesResponse, categoriesResponse]) => {
+      .then(async ([totalValuesResponse, categoriesResponse]) => {
         let successMessages = [];
         let warningMessages = [];
 
@@ -695,6 +696,58 @@ const handleConfirm = () => {
           warningMessages.push(`分类类别值保存失败: ${categoriesResponse.data?.msg || categoriesResponse.data?.message || '未知错误'}`);
         }
 
+        // 新增：如果两个都成功，自动修改状态为"待校验"
+        if (
+          totalValuesResponse.status >= 200 && totalValuesResponse.status < 300 && totalValuesResponse.data && totalValuesResponse.data.code === 1 &&
+          categoriesResponse.status >= 200 && categoriesResponse.status < 300 && categoriesResponse.data && categoriesResponse.data.code === 1
+        ) {
+          try {
+            console.log('[分类分级] 尝试GET原始对象:', `${baseUrl}/objects/${id}`);
+            const getResp = await axios.get(`${baseUrl}/objects/${id}`);
+            let objectData = getResp.data && getResp.data.data ? getResp.data.data : getResp.data;
+            console.log('[分类分级] GET返回对象:', objectData);
+
+            if (!objectData) throw new Error('未获取到对象原始数据');
+            objectData.status = '待校验';
+            if (objectData.dataEntity) {
+              objectData.dataEntity.status = '待校验';
+              console.log('[分类分级] 同步设置dataEntity.status为待校验:', objectData.dataEntity.status);
+            }
+            console.log('[分类分级] 修改后对象:', objectData);
+
+            // 构造PUT体，完整复制objectData，只将dataEntity.status改为'待检验'
+            const putBody = {
+              ...objectData,
+              dataEntity: {
+                ...objectData.dataEntity,
+                status: '待检验' // 必须严格为"待检验"
+              }
+            };
+            // 可选：去掉所有为undefined的字段
+            Object.keys(putBody).forEach(key => {
+              if (putBody[key] === undefined) delete putBody[key];
+            });
+            console.log('[分类分级] PUT请求body(全量):', putBody);
+
+            const putResp = await axios.put(`${baseUrl}/objects/${id}`, putBody, {
+              headers: { 'Content-Type': 'application/json' }
+            });
+            console.log('[分类分级] PUT返回:', putResp);
+
+            if (
+              putResp.status === 200 || putResp.status === 204 ||
+              (putResp.data && (putResp.data.code === 200 || putResp.data.code === 1 || putResp.data.success === true))
+            ) {
+              successMessages.push('状态已变为待校验');
+            } else {
+              warningMessages.push('状态修改为待校验失败');
+            }
+          } catch (e) {
+            console.error('[分类分级] 自动修改状态为待校验失败:', e);
+            warningMessages.push('自动修改状态为待校验失败: ' + (e.message || e));
+          }
+        }
+
         // 显示消息
         if (successMessages.length > 0) {
           ElMessage.success(successMessages.join('；'));
@@ -706,6 +759,7 @@ const handleConfirm = () => {
         // 无论成功还是失败，都更新前端显示并关闭对话框
         emit('confirm', result);
         emit('update:modelValue', null);
+        window.location.reload(); // 强制刷新整个页面
       })
       .catch(error => {
         console.error('【分类分级值】请求失败:', error.message);
