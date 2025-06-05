@@ -257,6 +257,9 @@ const currentPage = ref(1)
 const pageSize = ref(5)
 const totalCount = ref(0)
 const selectedRows = ref([])
+const normalWeight = ref(1.0)
+const importantWeight = ref(2.0)
+const criticalWeight = ref(3.0)
 
 // 添加计算属性判断是否为已合格状态
 const isQualifiedStatus = computed(() => currentStatus.value === '已合格')
@@ -555,6 +558,14 @@ const handleEdit = async (row) => {
   editForm.status = sourceObj.status || ''
   editForm.feedback = sourceObj.feedback || ''
   
+  // 如果状态为'不合格'或'已合格'，自动改为'待检验'，但不清空feedback
+  if (sourceObj.status === '不合格' || sourceObj.status === '已合格') {
+    editForm.status = '待检验';
+    if (editForm.dataEntity && typeof editForm.dataEntity === 'object') {
+      editForm.dataEntity.status = '待检验';
+    }
+  }
+  
   editForm.auditInfo = sourceObj.auditInfo || ''
   
   editForm.excelData = sourceObj.excelData || null
@@ -683,6 +694,13 @@ const handleEdit = async (row) => {
       normalWeight: 1.0,
       importantWeight: 2.0,
       criticalWeight: 3.0
+    }
+  }
+  // 最后强制修正状态，避免被覆盖
+  if (sourceObj.status === '不合格' || sourceObj.status === '已合格') {
+    editForm.status = '待检验';
+    if (editForm.dataEntity && typeof editForm.dataEntity === 'object') {
+      editForm.dataEntity.status = '待检验';
     }
   }
 }
@@ -1050,7 +1068,13 @@ const handleSaveEditManually = () => {
           canDelegate: editForm.transferControl.includes('可委托')
         }
         
+        // 保存前日志输出
+        console.log('[编辑保存] editForm.status:', editForm.status);
         // 构建更新后的对象
+        let statusToSave = editForm.status;
+        if (statusToSave === '待校验') {
+          statusToSave = '待检验';
+        }
         const updatedObject = {
           id: editForm.id,
           entity: editForm.entity,
@@ -1076,12 +1100,19 @@ const handleSaveEditManually = () => {
           transferControl: editForm.transferControl || [],
           propagationControl: propagationControl,
           auditInfo: editForm.auditInfo || '',
-          status: editForm.status || '',
+          status: statusToSave || '',
           feedback: editForm.feedback || '',
           excelData: editForm.excelData,
-          dataItems: editForm.dataItems || [], // 确保保留原始dataItems数据
-          locationInfoInput: editForm.locationInfoInput, // 添加 locationInfoInput
+          dataItems: editForm.dataItems || [],
+          locationInfoInput: editForm.locationInfoInput,
+          // 保证dataEntity.status也为待检验
+          dataEntity: {
+            ...(editForm.dataEntity || {}),
+            status: statusToSave
+          }
         }
+        console.log('[编辑保存] updatedObject.status:', updatedObject.status);
+        console.log('[编辑保存] updatedObject.dataEntity.status:', updatedObject.dataEntity && updatedObject.dataEntity.status);
         
         // 如果有 locationInfoInput，解析并添加到 locationInfo
         if (editForm.locationInfoInput) {
