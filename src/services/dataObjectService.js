@@ -629,7 +629,7 @@ const extractStatus = (backendItem) => {
   }
   
   // 其次尝试直接获取status字段
-  return getValidValue(backendItem.status, '待检验')
+  return getValidValue(backendItem.status, '待生成分类分级值')
 }
 
 // 获取有效值，如果第一个值无效则使用后备值
@@ -673,7 +673,7 @@ const createDefaultDataObject = () => {
       canDelegate: true
     },
     auditInfo: '查看日志',
-    status: '待检验',
+    status: '待生成分类分级值',
     feedback: '',
     excelData: null,
     formatConstraint: '',
@@ -692,7 +692,7 @@ const transformToBackendFormat = (frontendData) => {
   // 构建数据实体对象 - 确保所有字段都在dataEntity内
   const dataEntity = {
     entity: frontendData.entity || '',
-    status: frontendData.status || '待审核', // 注意这里使用"待审核"作为默认值
+    status: frontendData.status || '待生成分类分级值', // 修改默认状态为"待生成分类分级值"
     feedback: frontendData.feedback || '',
     // 确保使用用户提供的元数据，不使用默认值覆盖用户数据
     metadata: {
@@ -1272,7 +1272,7 @@ const addDataObject = (newObject) => {
     id: newId,
     ...newObject,
     auditInfo: newObject.auditInfo || '查看日志',
-    status: newObject.status || '待检验',
+    status: newObject.status || '待生成分类分级值',
     feedback: newObject.feedback || ''
   }
   
@@ -1379,8 +1379,8 @@ const updateObjectStatus = (id, status, feedback = '') => {
   if (index !== -1) {
     sharedTableData[index].status = status
     
-    // 如果是已合格或待检验状态，清空反馈意见
-    if (status === '已合格' || status === '待检验') {
+    // 如果是已合格、待检验或待生成分类分级值状态，清空反馈意见
+    if (status === '已合格' || status === '待检验' || status === '待生成分类分级值') {
       sharedTableData[index].feedback = ''
     } else {
       sharedTableData[index].feedback = feedback

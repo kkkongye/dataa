@@ -13,7 +13,7 @@ import java.util.*;
 public class DataEntity {
     private String entity;
     private String status;
-    private static final Set<String> ALLOWED_STATUSES = Set.of("待检验", "已合格", "不合格");
+    private static final Set<String> ALLOWED_STATUSES = Set.of("待检验", "已合格", "不合格", "待生成分类分级值");
     private String feedback;
     private Metadata metadata;
     private List<Map<String, String>> dataItems = new ArrayList<>();

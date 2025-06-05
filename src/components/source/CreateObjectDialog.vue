@@ -721,7 +721,7 @@ const handleSave = () => {
         shareConstraint: form.shareConstraint,
         transferControl: form.transferControl,
         propagationControl: propagationControl,
-        status: '待检验',
+        status: '待生成分类分级值',
         feedback: '',
         excelData: form.excelData,
         dataItems: form.dataItems || [],

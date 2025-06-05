@@ -382,7 +382,11 @@ onMounted(() => {
 // 计算实际数据量
 const totalCount = computed(() => {
   let result = tableData.value;
-  if (currentStatus.value) {
+  if (currentStatus.value === '待校验') {
+    result = result.filter(item => item.status === '待校验' || item.status === '待检验');
+  } else if (currentStatus.value === '待生成分类分级值') {
+    result = result.filter(item => item.status === '待生成分类分级值');
+  } else if (currentStatus.value) {
     result = result.filter(item => item.status === currentStatus.value);
   }
   
@@ -398,6 +402,8 @@ const filteredTableData = computed(() => {
   let result = tableData.value;
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验');
+  } else if (currentStatus.value === '待生成分类分级值') {
+    result = result.filter(item => item.status === '待生成分类分级值');
   } else if (currentStatus.value) {
     result = result.filter(item => item.status === currentStatus.value);
   }

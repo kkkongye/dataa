@@ -18,6 +18,10 @@
         :class="['status-btn', { active: currentStatus === '不合格' }]" 
         @click="setStatus('不合格')"
       >不合格</el-button>
+      <el-button 
+        :class="['status-btn', { active: currentStatus === '待生成分类分级值' }]" 
+        @click="setStatus('待生成分类分级值')"
+      >待生成分类分级值</el-button>
     </div>
     
     <!-- 搜索和操作区 -->
@@ -369,6 +373,8 @@ const tableData = computed(() => {
   let filtered = props.data
   if (props.currentStatus === '待校验') {
     filtered = filtered.filter(item => item.status === '待校验' || item.status === '待检验')
+  } else if (props.currentStatus === '待生成分类分级值') {
+    filtered = filtered.filter(item => item.status === '待生成分类分级值')
   } else if (props.currentStatus) {
     filtered = filtered.filter(item => item.status === props.currentStatus)
   }

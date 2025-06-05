@@ -336,6 +336,8 @@ const filteredTableData = computed(() => {
   // 状态过滤
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验')
+  } else if (currentStatus.value === '待生成分类分级值') {
+    result = result.filter(item => item.status === '待生成分类分级值')
   } else if (currentStatus.value) {
     result = result.filter(item => item.status === currentStatus.value)
   }
@@ -955,7 +957,7 @@ const showCreateDialog = () => {
     createForm.regionConstraint = ''
     createForm.shareConstraint = ''
     createForm.transferControl = []
-    createForm.status = '待校验'
+    createForm.status = '待生成分类分级值'
     createForm.auditInfo = ''
   }, 100)
 }
@@ -974,7 +976,7 @@ const createForm = reactive({
   regionConstraint: '',
   shareConstraint: '',
   transferControl: [],
-  status: '待校验',
+  status: '待生成分类分级值',
   auditInfo: '',
   excelData: null 
 })
@@ -1937,7 +1939,7 @@ const resetCreateForm = () => {
   createForm.regionConstraint = ''
   createForm.shareConstraint = ''
   createForm.transferControl = []
-  createForm.status = '待校验'
+  createForm.status = '待生成分类分级值'
   createForm.auditInfo = ''
   
   if (createFormRef.value) {
@@ -2052,11 +2054,8 @@ const saveCreateObject = async (newObject) => {
     console.log('添加原始元数据副本:', newObject.originalMetadata);
   }
   
-  // 确保状态为"待校验"
-  if (newObject.status !== '待校验') {
-    console.log('修正状态值从', newObject.status, '到"待校验"');
-    newObject.status = '待校验';
-  }
+  // 不再强制修改状态，保留由dataObjectService设置的默认状态"待生成分类分级值"
+  console.log('当前对象状态值:', newObject.status);
   
   // 检查是否有excelFileId（从服务器上传时获取）
   if (!newObject.excelFileId && newObject.excelData) {
@@ -2104,7 +2103,7 @@ const saveCreateObject = async (newObject) => {
       // 创建一个最简单的dataContent，确保不会导致解析错误
       newObject.dataContent = JSON.stringify({
         entity: newObject.entity,
-        status: '待校验',
+        status: newObject.status,
         metadata: {
           dataName: newObject.entity || '未命名数据',
           sourceUnit: '数据部',
@@ -2135,6 +2134,9 @@ const saveCreateObject = async (newObject) => {
       
       // 添加excelFileId
       dataContentObj.excelFileId = newObject.excelFileId;
+      
+      // 确保使用当前对象的状态，而不是硬编码
+      dataContentObj.status = newObject.status;
       
       // 确保元数据被正确包含 - 使用原始元数据
       if (newObject.originalMetadata || newObject.metadata) {
@@ -2167,7 +2169,7 @@ const saveCreateObject = async (newObject) => {
       // 出错时创建一个新的简单dataContent
       newObject.dataContent = JSON.stringify({
         entity: newObject.entity,
-        status: newObject.status || '待校验',
+        status: newObject.status,
         excelFileId: newObject.excelFileId
       });
     }

@@ -74,21 +74,23 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 
 // 模拟数据
+// 模拟数据（带重复 user）
 const allData = ref([
-  { user: 'source1', time: '2025-05-30 14:30:00', type: '新建' },
-  { user: 'source2', time: '2025-05-31 09:05:45', type: '修改' },
-  { user: 'source3', time: '2025-05-31 10:20:33', type: '审核合格' },
-  { user: 'source4', time: '2025-06-01 08:15:27', type: '新建' },
-  { user: 'source5', time: '2025-06-01 11:45:19', type: '修改' },
-  { user: 'source6', time: '2025-06-02 13:30:55', type: '审核不合格' },
-  { user: 'source7', time: '2025-06-02 14:50:41', type: '新建' },
-  { user: 'source8', time: '2025-06-03 09:10:22', type: '修改' },
-  { user: 'source9', time: '2025-06-03 10:25:36', type: '审核合格' },
-  { user: 'source10', time: '2025-06-03 11:40:50', type: '新建' },
-  { user: 'source11', time: '2025-06-04 08:55:14', type: '修改' },
-  { user: 'source12', time: '2025-06-04 09:30:28', type: '审核不合格' },
-  { user: 'source13', time: '2025-06-04 10:45:42', type: '新建' },
+  { user: '张管理员', time: '2025-05-30 14:30:00', type: '新建' },
+  { user: '李管理员', time: '2025-05-31 09:05:45', type: '修改' },
+  { user: '王审核员', time: '2025-05-31 10:20:33', type: '审核合格' },
+  { user: '张管理员', time: '2025-06-01 08:15:27', type: '新建' },
+  { user: '李管理员', time: '2025-06-01 11:45:19', type: '修改' },
+  { user: '王审核员', time: '2025-06-02 13:30:55', type: '审核不合格' },
+  { user: '张管理员', time: '2025-06-02 14:50:41', type: '新建' },
+  { user: '李管理员', time: '2025-06-03 09:10:22', type: '修改' },
+  { user: '王审核员', time: '2025-06-03 10:25:36', type: '审核合格' },
+  { user: '张管理员', time: '2025-06-03 11:40:50', type: '新建' },
+  { user: '李管理员', time: '2025-06-04 08:55:14', type: '修改' },
+  { user: '王审核员', time: '2025-06-04 09:30:28', type: '审核不合格' },
+  { user: '张管理员', time: '2025-06-04 10:45:42', type: '新建' },
 ])
+
 
 // 目录筛选
 const filteredData = computed(() => {
