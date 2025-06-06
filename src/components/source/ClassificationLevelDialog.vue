@@ -187,7 +187,7 @@
   <el-dialog
     v-model="rowDetailDialogVisible"
     title="行分级值详情"
-    width="800px"
+    width="1600px"
     append-to-body
     destroy-on-close
   >
@@ -196,7 +196,7 @@
       
       <div v-if="rowExcelData.length > 0">
         <div class="data-info">找到 {{ rowExcelData.length }} 条记录</div>
-        <el-table :data="rowExcelData" border style="width: 100%" max-height="400px">
+        <el-table :data="rowExcelData" border style="width: 100%" max-height="600px">
           <el-table-column 
             v-for="(key, index) in getObjectKeys(rowExcelData).filter(k => k !== 'rowGradeValue')" 
             :key="index"
@@ -227,7 +227,7 @@
   <el-dialog
     v-model="columnDetailDialogVisible"
     title="列分级值详情"
-    width="800px"
+    width="1600px"
     append-to-body
     destroy-on-close
   >
@@ -236,7 +236,7 @@
       
       <div v-if="columnExcelData.length > 0">
         <div class="data-info">找到 {{ columnExcelData.length - 1 }} 条记录</div>
-        <el-table :data="columnExcelData" border style="width: 100%" max-height="400px">
+        <el-table :data="columnExcelData" border style="width: 100%" max-height="600px">
           <el-table-column 
             v-for="(key, index) in getObjectKeys(columnExcelData).filter(k => k !== '_isGradeRow')" 
             :key="index"
