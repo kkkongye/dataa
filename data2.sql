@@ -207,30 +207,13 @@ INSERT INTO data_objects (
     updated_at
 ) VALUES (
 	'b3f921c2-9d84-47e1-8c62-17f4a8a2fc1a',
-    '{"entity":"社区数据","status":"待生成分类分级值","feedback":"","metadata":null,"dataItems":[
-        {"姓名":"陈建国","性别":"男","年龄":65,"身份证号":"330102196001011234","居住地址":"浙江省杭州市上城区清波街道1号","住房条件":"公房（50㎡）","残疾状态":"视力残疾（二级）","家访状态":true,"重要程度":"重要"},
-        {"姓名":"林美华","性别":"女","年龄":42,"身份证号":"330103198305125678","居住地址":"浙江省杭州市西湖区灵隐街道2号","住房条件":"商品房（90㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"王守仁","性别":"男","年龄":78,"身份证号":"330104194709239012","居住地址":"浙江省杭州市江干区采荷街道3号","住房条件":"房改房（60㎡）","残疾状态":"肢体残疾（三级）","家访状态":true,"重要程度":"重要"},
-        {"姓名":"赵丽娟","性别":"女","年龄":53,"身份证号":"330105197203152345","居住地址":"浙江省杭州市拱墅区米市巷街道4号","住房条件":"廉租房（40㎡）","残疾状态":null,"家访状态":true,"重要程度":"核心"},
-        {"姓名":"钱伟长","性别":"男","年龄":31,"身份证号":"330106199407286789","居住地址":"浙江省杭州市滨江区西兴街道5号","住房条件":"公寓（45㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"孙玉梅","性别":"女","年龄":82,"身份证号":"330107194311100123","居住地址":"浙江省杭州市萧山区城厢街道6号","住房条件":"自建房（70㎡）","残疾状态":"听力残疾（一级）","家访状态":true,"重要程度":"重要"},
-        {"姓名":"周志远","性别":"男","年龄":47,"身份证号":"330108197802224567","居住地址":"浙江省杭州市余杭区临平街道7号","住房条件":"商品房（120㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"吴秀芳","性别":"女","年龄":29,"身份证号":"330109199610058901","居住地址":"浙江省杭州市富阳区富春街道8号","住房条件":"租赁房（35㎡）","残疾状态":null,"家访状态":true,"重要程度":"一般"},
-        {"姓名":"郑浩然","性别":"男","年龄":58,"身份证号":"330110196704172345","居住地址":"浙江省杭州市临安区锦城街道9号","住房条件":"经济适用房（65㎡）","残疾状态":"言语残疾（四级）","家访状态":true,"重要程度":"核心"},
-        {"姓名":"王桂兰","性别":"女","年龄":61,"身份证号":"330111196408296789","居住地址":"浙江省杭州市桐庐县桐君街道10号","住房条件":"农村自建房（100㎡）","残疾状态":null,"家访状态":true,"重要程度":"重要"},
-        {"姓名":"陈嘉庚","性别":"男","年龄":35,"身份证号":"330112199001130123","居住地址":"浙江省杭州市淳安县千岛湖镇11号","住房条件":"商品房（85㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"李淑兰","性别":"女","年龄":73,"身份证号":"330113195206064567","居住地址":"浙江省杭州市建德市新安江街道12号","住房条件":"房改房（55㎡）","残疾状态":"多重残疾（二级）","家访状态":true,"重要程度":"重要"},
-        {"姓名":"张伟明","性别":"男","年龄":44,"身份证号":"330114198111198901","居住地址":"浙江省杭州市西湖风景名胜区13号","住房条件":"商品房（110㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"刘桂英","性别":"女","年龄":26,"身份证号":"330115199903032345","居住地址":"浙江省杭州市上城区南星街道14号","住房条件":"租赁房（30㎡）","残疾状态":null,"家访状态":true,"重要程度":"一般"},
-        {"姓名":"黄志强","性别":"男","年龄":55,"身份证号":"330116197007156789","居住地址":"浙江省杭州市西湖区西溪街道15号","住房条件":"别墅（200㎡）","残疾状态":null,"家访状态":false,"重要程度":"核心"},
-        {"姓名":"林秀英","性别":"女","年龄":68,"身份证号":"330117195712280123","居住地址":"浙江省杭州市江干区凯旋街道16号","住房条件":"廉租房（45㎡）","残疾状态":"智力残疾（三级）","家访状态":true,"重要程度":"重要"},
-        {"姓名":"何光明","性别":"男","年龄":39,"身份证号":"330118198605114567","居住地址":"浙江省杭州市拱墅区和睦街道17号","住房条件":"经济适用房（70㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"郭秀云","性别":"女","年龄":49,"身份证号":"330119197609248901","居住地址":"浙江省杭州市滨江区长河街道18号","住房条件":"租赁房（40㎡）","残疾状态":"精神残疾（四级）","家访状态":true,"重要程度":"核心"},
-        {"姓名":"马建国","性别":"男","年龄":24,"身份证号":"330120199610152345","居住地址":"浙江省杭州市萧山区北干街道19号","住房条件":"公寓（40㎡）","残疾状态":null,"家访状态":false,"重要程度":"一般"},
-        {"姓名":"罗玉华","性别":"女","年龄":76,"身份证号":"330121194904276789","居住地址":"浙江省杭州市余杭区南苑街道20号","住房条件":"农村自建房（120㎡）","残疾状态":"肢体残疾（二级）","家访状态":true,"重要程度":"重要"}
+    '{"entity":"就业数据","status":"待生成分类分级值","feedback":"","metadata":null,"dataItems":[
+		{"姓名":"冯一","性别":"女","年龄":45,"身份证号":"330101197912080012","就业状态":"失业","单位名称":null,"职业技能等级":"初级","培训参加情况":"未参加","重要程度":"重要"},
+        {"姓名":"赵二","性别":"男","年龄":38,"身份证号":"330102198610145678","就业状态":"就业","单位名称":"杭州某科技有限公司","职业技能等级":"中级","培训参加情况":"已参加","重要程度":"一般"},
+        {"姓名":"钱三","性别":"女","年龄":52,"身份证号":"330103197305221234","就业状态":"失业","单位名称":null,"职业技能等级":"初级","培训参加情况":"未参加","重要程度":"核心"}
     ],"data":{}}',
-    '{"dataName":"社区服务中心仿真信息表","sourceUnit":"社区服务中心","contactPerson":"张主任","contactPhone":"13600136000","resourceSummary":"居民社区服务档案","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","居住地址","住房条件","残疾状态","家访状态","重要程度"]}',
-    '{"databaseName": "社区服务信息库","tableName": "CommunityServiceCenter","selectFields": "Name,Gender,Age,IDCard,ResidentialAddress,HousingCondition,DisabilityStatus,HomeVisitStatus,Importance"}',
+	'{"dataName":"居民就业信息表","sourceUnit":"人力资源和社会保障局","contactPerson":"李主任","contactPhone":"13700001234","resourceSummary":"反映辖区内居民就业状态的基础数据","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","就业状态","单位名称","职业技能等级","培训参加情况","重要程度"]}',
+    '{"databaseName": "人社基础数据库","tableName": "EmploymentStatus","selectFields": "Name,Gender,Age,IDCard,EmploymentStatus,CompanyName,SkillLevel,TrainingStatus,Importance"}',
     '{"constraints":[{"formatConstraint":"pdf","accessConstraint":"只允许管理方获取","pathConstraint":"广播","regionConstraint":"外网","shareConstraint":"不允许共享"}]}',
     '{"operations":{"read":1}}',
     '{"auditUser":"finance_auditor","auditTime":"2023-12-05 17:30:00"}',
@@ -238,6 +221,59 @@ INSERT INTO data_objects (
     NOW()
 );
 
+INSERT INTO data_objects (id, data_content, metadata_json, location_info_json, constraint_set_json, propagation_control_json, audit_info_json, created_at, updated_at) VALUES (
+'550e8400-e29b-41d4-a716-446655440099',
+'{"entity":"就业数据","status":"待生成分类分级值","feedback":"","metadata":null,"dataItems":[{"姓名":"冯一","性别":"女","年龄":45,"身份证号":"330101197912080012","就业状态":"失业","单位名称":null,"职业技能等级":"初级","培训参加情况":"未参加","重要程度":"重要"},{"姓名":"赵二","性别":"男","年龄":38,"身份证号":"330102198610145678","就业状态":"就业","单位名称":"杭州某科技有限公司","职业技能等级":"中级","培训参加情况":"已参加","重要程度":"一般"},{"姓名":"钱三","性别":"女","年龄":52,"身份证号":"330103197305221234","就业状态":"失业","单位名称":null,"职业技能等级":"初级","培训参加情况":"未参加","重要程度":"核心"}],"data":{}}',
+'{"dataName":"居民就业信息表","sourceUnit":"人力资源和社会保障局","contactPerson":"李主任","contactPhone":"13700001234","resourceSummary":"反映辖区内居民就业状态的基础数据","fieldClassification":"公共服务数据","headers":["姓名","性别","年龄","身份证号","就业状态","单位名称","职业技能等级","培训参加情况","重要程度"]}',
+'{"databaseName":"人社基础数据库","tableName":"EmploymentStatus","selectFields":"Name,Gender,Age,IDCard,EmploymentStatus,CompanyName,SkillLevel,TrainingStatus,Importance"}',
+'{"constraints":[{"formatConstraint":"json","accessConstraint":"实名用户","pathConstraint":"经治理方授权","regionConstraint":"政务专网","shareConstraint":"需申请共享"}]}',
+'{"operations":{"read":1,"modify":0}}',
+'{"auditUser":"audit_labor","auditTime":"2024-03-12 14:00:00"}',
+NOW(), NOW());
+
+INSERT INTO data_objects (
+    id, 
+    data_content, 
+    metadata_json, 
+    location_info_json, 
+    constraint_set_json, 
+    propagation_control_json, 
+    audit_info_json, 
+    created_at, 
+    updated_at
+) VALUES (
+    '770e8400-e29b-41d4-a716-556677889900',
+    '{"entity":"困难居民走访数据","status":"待生成分类分级值","feedback":"","metadata":null,"dataItems":[{"姓名":"赵六","性别":"男","年龄":67,"身份证号":"330106195701102345","家庭人口":2,"月收入":980,"住房状况":"租住老旧小区","健康状况":"患有慢性病","走访时间":"2025-05-20","走访人":"社区网格员张蕾","重要程度":"核心"},{"姓名":"孙七","性别":"女","年龄":45,"身份证号":"330107198002012345","家庭人口":4,"月收入":2500,"住房状况":"自有住房","健康状况":"健康","走访时间":"2025-05-21","走访人":"街道社工李然","重要程度":"一般"}],"data":{}}',
+    '{"dataName":"困难居民走访记录表","sourceUnit":"XX街道民政办公室","contactPerson":"高主任","contactPhone":"13688889999","resourceSummary":"记录辖区内困难居民的家庭经济和生活状况，作为救助依据","fieldClassification":"社会救助数据","headers":["姓名","性别","年龄","身份证号","家庭人口","月收入","住房状况","健康状况","走访时间","走访人","重要程度"]}',
+    '{"databaseName":"街道社会服务系统","tableName":"VisitRecord","selectFields":"Name,Gender,Age,IDCard,FamilySize,Income,Housing,HealthStatus,VisitTime,Visitor,Importance"}',
+    '{"constraints":[{"formatConstraint":"json","accessConstraint":"实名用户","pathConstraint":"需经治理方授权","regionConstraint":"政务内网","shareConstraint":"仅供指定用途共享"}]}',
+    '{"operations":{"read":1,"modify":0}}',
+    '{"auditUser":"audit_streetgov","auditTime":"2025-05-25 16:45:00"}',
+    NOW(),
+    NOW()
+);
+
+-- INSERT INTO data_objects (
+--     id, 
+--     data_content, 
+--     metadata_json, 
+--     location_info_json, 
+--     constraint_set_json, 
+--     propagation_control_json, 
+--     audit_info_json, 
+--     created_at, 
+--     updated_at
+-- ) VALUES (
+--     '880e8400-e29b-41d4-a716-667788990011',
+--     '{"entity":"低保申请数据","status":"待生成分类分级值","feedback":"","metadata":null,"dataItems":[{"姓名":"李四","性别":"男","年龄":62,"身份证号":"330105196204153456","户籍性质":"农业户口","家庭收入":1100,"家庭人口":1,"残疾情况":"三级残疾","申请时间":"2025-04-28","审核状态":"初审通过","重要程度":"重要"},{"姓名":"周八","性别":"女","年龄":36,"身份证号":"330108198901253210","户籍性质":"非农业户口","家庭收入":1800,"家庭人口":3,"残疾情况":"无","申请时间":"2025-04-29","审核状态":"待审核","重要程度":"一般"}],"data":{}}',
+--     '{"dataName":"低保申请初审信息表","sourceUnit":"XX街道社区事务受理服务中心","contactPerson":"王科员","contactPhone":"13588887777","resourceSummary":"用于记录辖区内居民申请最低生活保障的初审信息","fieldClassification":"社会保障数据","headers":["姓名","性别","年龄","身份证号","户籍性质","家庭收入","家庭人口","残疾情况","申请时间","审核状态","重要程度"]}',
+--     '{"databaseName":"社会事务管理系统","tableName":"LowIncomeApplication","selectFields":"Name,Gender,Age,IDCard,HouseholdType,FamilyIncome,FamilySize,Disability,ApplicationTime,Status,Importance"}',
+--     '{"constraints":[{"formatConstraint":"json","accessConstraint":"实名用户","pathConstraint":"需经治理方授权","regionConstraint":"政务专网","shareConstraint":"需明确用途申请"}]}',
+--     '{"operations":{"read":1,"modify":0}}',
+--     '{"auditUser":"audit_community","auditTime":"2025-05-22 11:20:00"}',
+--     NOW(),
+--     NOW()
+-- );
 
 ALTER TABLE data_objects ADD COLUMN db_grade DOUBLE;
 
@@ -256,6 +292,15 @@ ALTER TABLE data_objects
 ADD COLUMN industry_category VARCHAR(255),
 ADD COLUMN processing_time_category VARCHAR(255),
 ADD COLUMN data_source_category VARCHAR(255);
+
+-- UPDATE data_objects SET total_grade_value = '117.5' WHERE id = '123e4567-e89b-12d3-a456-426614174000';
+
+-- UPDATE data_objects SET total_grade_value = '113.2' WHERE id = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
+-- UPDATE data_objects SET total_grade_value = '108.6' WHERE id = 'a1b2c3d4-5678-90ef-1234-567890000005';
+
+UPDATE data_objects SET total_grade_value = '118.4'  WHERE id = 'b3f921c2-9d84-47e1-8c62-17f4a8a2fc1a';
+
 
 
 -- CREATE TABLE users (

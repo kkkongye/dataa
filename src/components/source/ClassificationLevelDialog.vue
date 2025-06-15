@@ -61,7 +61,7 @@
       <el-tab-pane label="分级" name="level">
         <!-- 分级选项卡内容 -->
         <div class="level-form">
-          <div class="level-item">
+          <!-- <div class="level-item">
             <span class="label">库分级值：</span>
             <span class="value">{{ dbGrade }}</span>
             <el-popover
@@ -80,12 +80,12 @@
                   分别对应分级值:100、200、300;</p>
               </div>
             </el-popover>
-          </div>
-
+          </div> -->
+          
           <div class="level-item">
-            <span class="label">表分级值：</span>
-            <span class="value">{{ tableGrade }}</span>
-            <el-popover
+            <span class="label">列分级值：</span>
+            <!-- <span class="value">{{ columnGradeValue }}</span> -->
+            <!-- <el-popover
               placement="right"
               :width="300"
               trigger="click"
@@ -94,19 +94,20 @@
                 <el-link type="primary" class="help-link">说明</el-link>
               </template>
               <div class="help-content">
-                <h4>表分级值说明</h4>
-                <p>由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;
-                  其中根据表内记录的数量分为:1~999的小型数据表、
-                  1000~1000000的中型数据表、1000000以上的大型数据表，
-                  分别对应分级值10、20、30;</p>
+                <h4>列分级值说明</h4>
+                <p>根据字段的敏感程度来确定数据的级别;</p>
               </div>
-            </el-popover>
+            </el-popover> -->
+            <el-link type="primary" class="help-link" @click="showColumnDetailDialog">查看详情</el-link>
           </div>
           
+          <div class="grading-rule-card">① 根据字段的敏感程度来确定数据的级别;</div>
+
+
           <div class="level-item">
             <span class="label">行分级值：</span>
-            <span class="value">{{ rowGradeValue }}</span>
-            <el-popover
+            <!-- <span class="value">{{ rowGradeValue }}</span> -->
+            <!-- <el-popover
               placement="right"
               :width="300"
               trigger="click"
@@ -116,15 +117,15 @@
               </template>
               <div class="help-content">
                 <h4>行分级值说明</h4>
-                <p>数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的最大值累加，
-                  得到行分级值默认一般记录的权重为:1(默认值);
-                  重要记录的权重为:2;核心记录的权重为:3;</p>
+                <p>数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</p>
               </div>
-            </el-popover>
+            </el-popover> -->
             
             <el-link type="primary" class="help-link" @click="showRowDetailDialog">查看详情</el-link>
             <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link>
           </div>
+          
+          <div class="grading-rule-card">② 数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</div>
           
           <!-- 权重修改表单 -->
           <div v-if="showWeightForm" class="weight-form">
@@ -146,9 +147,9 @@
           </div>
           
           <div class="level-item">
-            <span class="label">列分级值：</span>
-            <span class="value">{{ columnGradeValue }}</span>
-            <el-popover
+            <span class="label">表分级值：</span>
+            <span class="value">{{ tableGrade }}</span>
+            <!-- <el-popover
               placement="right"
               :width="300"
               trigger="click"
@@ -157,20 +158,18 @@
                 <el-link type="primary" class="help-link">说明</el-link>
               </template>
               <div class="help-content">
-                <h4>列分级值说明</h4>
-                <p>根据字段的敏感程度来确定数据的级别，可分为4级，由高至低分别为:敏感数据(L4级)、
-                  较敏感数据(L3 级)、低敏感数据(L2级)、不敏感数据(L1级)。
-                  分别对应字段分级值:0.8、0.6、0.4、0.2</p>
+                <h4>表分级值说明</h4>
+                <p>由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</p>
               </div>
-            </el-popover>
-            <el-link type="primary" class="help-link" @click="showColumnDetailDialog">查看详情</el-link>
+            </el-popover> -->
           </div>
+          
+          <div class="grading-rule-card">③ 由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</div>
+          
         </div>
 
         <div class="level-result">
-          <div class="formula">计算公式：库分级值 + 表分级值 + 行分级值 + 列分级值</div>
-          <div class="calculation">{{ dbGrade }} + {{ tableGrade }} + {{ rowGradeValue }} + {{ columnGradeValue }}</div>
-          <div class="result-value">分级值计算得：{{ totalGradeValue }}</div>
+          <div class="result-value">最终该<b>表分级值</b>计算得：{{ tableGrade }}</div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -206,12 +205,26 @@
           />
           <!-- 行分级值列 -->
           <el-table-column
-            label="行分级值"
+            label="行权重"
             align="center"
             min-width="100"
           >
             <template #default="scope">
-              <el-tag :type="getGradeTagType(scope.row.rowGradeValue)">{{ scope.row.rowGradeValue }}</el-tag>
+              <el-tag :type="
+                scope.row.重要程度 === '核心'
+                  ? 'danger'
+                  : scope.row.重要程度 === '重要'
+                    ? 'warning'
+                    : 'success'
+              ">
+                {{
+                  scope.row.重要程度 === '核心'
+                    ? 3
+                    : scope.row.重要程度 === '重要'
+                      ? 2
+                      : 1
+                }}
+              </el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -1296,5 +1309,19 @@ const getGradeTagType = (value) => {
   border-top: 1px solid #dcdfe6;
   padding-top: 8px;
   padding-bottom: 8px;
+}
+
+.grading-rule-card {
+  background: #f8fafd;
+  border-radius: 8px;
+  padding: 10px 18px;
+  margin-bottom: 12px;
+  margin-left: 140px;
+  margin-right: 20px;
+  font-size: 15px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(64,158,255,0.06);
 }
 </style> 

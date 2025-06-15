@@ -44,7 +44,7 @@
           三维数据可视化
         </el-button>
         <el-button type="primary" plain @click="$emit('show-application-list')" style="margin-left: 8px;">申请列表</el-button>
-        <el-button type="primary" @click="$emit('create')">新建数字对象</el-button>
+        <el-button type="primary" @click="$emit('create')">新建数据对象</el-button>
       </div>
     </div>
     

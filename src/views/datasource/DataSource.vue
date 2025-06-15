@@ -59,7 +59,7 @@
   <!-- 使用Element Plus直接实现的编辑对话框 -->
   <el-dialog
     v-model="editDialogVisible"
-    title="编辑数字对象"
+    title="编辑数据对象"
     width="40%"
     :close-on-click-modal="false"
     draggable
@@ -196,7 +196,7 @@
   <!-- 新建对象弹窗 -->
   <CreateObjectDialog
     v-model:visible="createDialogVisible"
-    :title="'新建数字对象'"
+    :title="'新建数据对象'"
     v-model:modelValue="createForm"
     @save="saveCreateObject"
     @cancel="cancelCreate"

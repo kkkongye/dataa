@@ -185,7 +185,7 @@ const props = defineProps({
   // 对话框标题
   title: {
     type: String,
-    default: '新建数字对象'
+    default: '新建数据对象'
   },
   // 表单数据
   modelValue: {
@@ -751,7 +751,7 @@ const handleSave = () => {
       // 关闭对话框
       dialogVisible.value = false;
       // 显示成功消息
-      ElMessage.success('数字对象创建成功');
+      ElMessage.success('数据对象创建成功');
       // 重置表单
       resetForm();
     } else {

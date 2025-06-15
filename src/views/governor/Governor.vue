@@ -50,7 +50,7 @@
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="100" align="center">
+            <el-table-column prop="entity" label="实体" width="120" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
               </template>
@@ -382,18 +382,16 @@ onMounted(() => {
 // 计算实际数据量
 const totalCount = computed(() => {
   let result = tableData.value;
+  // 始终排除"待生成分类分级值"
+  result = result.filter(item => item.status !== '待生成分类分级值');
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验');
-  } else if (currentStatus.value === '待生成分类分级值') {
-    result = result.filter(item => item.status === '待生成分类分级值');
-  } else if (currentStatus.value) {
+  } else if (currentStatus.value && currentStatus.value !== '待生成分类分级值') {
     result = result.filter(item => item.status === currentStatus.value);
   }
-  
   if (searchKeyword.value) {
     result = advancedSearch(result, searchKeyword.value);
   }
-  
   return result.length;
 });
 
