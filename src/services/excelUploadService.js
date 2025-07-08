@@ -8,7 +8,6 @@ import axios from 'axios';
  */
 const checkApiConnection = async () => {
   try {
-    // 使用导入的testApiConnection进行基础连接测试
     const isConnected = await testApiConnection();
     
     if (isConnected) {
@@ -27,7 +26,7 @@ const checkApiConnection = async () => {
   } catch (error) {
     console.error('API连接测试失败:', error);
     
-    // 详细记录错误信息
+
     let errorDetails = {
       message: error.message || '未知错误'
     };
@@ -78,9 +77,6 @@ const createMockSuccessResponse = (file) => {
  */
 const uploadExcelFile = async (file) => {
   try {
-    // 开始前先测试API连接
-    console.log('开始上传Excel文件', file.name, '大小:', file.size);
-    console.log('目标URL:', `${API_URL}/objects/excel`);
     
     const apiConnectionTest = await checkApiConnection();
     console.log('API连接测试结果:', apiConnectionTest);
@@ -91,12 +87,10 @@ const uploadExcelFile = async (file) => {
     
     const formData = new FormData();
     formData.append('file', file);
-    // 添加显式的文件名
     formData.append('filename', file.name);
-    // 添加时间戳，避免缓存问题
     formData.append('timestamp', new Date().getTime());
     
-    // 显示URL配置
+
     const apiUrl = `${API_URL}/objects/excel`;
     console.log('正在上传到URL:', apiUrl);
     
@@ -110,10 +104,10 @@ const uploadExcelFile = async (file) => {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       },
-      timeout: 60000, // 增加超时时间到60秒
-      withCredentials: false, // 确保跨域请求不携带凭证
-      maxContentLength: 10 * 1024 * 1024, // 10MB 限制
-      maxBodyLength: 10 * 1024 * 1024 // 10MB 限制
+      timeout: 60000, 
+      withCredentials: false,
+      maxContentLength: 10 * 1024 * 1024, 
+      maxBodyLength: 10 * 1024 * 1024 
     });
     
     console.log('上传响应:', response);
@@ -122,7 +116,7 @@ const uploadExcelFile = async (file) => {
     let extractedData = {};
     
     if (response.data) {
-      // 提取文件ID - 检查多种可能的响应结构
+
       if (response.data.data && response.data.data.id) {
         extractedData.id = response.data.data.id;
       } else if (response.data.id) {
@@ -132,8 +126,7 @@ const uploadExcelFile = async (file) => {
       } else if (response.data.data && response.data.data.fileId) {
         extractedData.id = response.data.data.fileId;
       }
-      
-      // 提取其他可能有用的信息
+
       if (response.data.data) {
         if (response.data.data.url) extractedData.url = response.data.data.url;
         if (response.data.data.headers) extractedData.headers = response.data.data.headers;
@@ -156,8 +149,7 @@ const uploadExcelFile = async (file) => {
     
     let errorMessage = '上传Excel文件失败';
     let errorDetails = null;
-    
-    // 检查API_URL是否正确配置
+
     if (!API_URL || API_URL === 'undefined' || API_URL === 'null') {
       console.error('API_URL配置错误:', API_URL);
       errorMessage = '上传Excel文件失败: API地址未正确配置';
@@ -173,8 +165,7 @@ const uploadExcelFile = async (file) => {
         shouldTryLocalFallback: true
       };
     }
-    
-    // 检查并启用MOCK_ENABLED模式进行本地处理
+
     if (MOCK_ENABLED && AUTO_FALLBACK_TO_MOCK) {
       console.log('[Mock模式] 上传失败，使用模拟数据');
       const mockResponse = createMockSuccessResponse(file);
@@ -193,21 +184,16 @@ const uploadExcelFile = async (file) => {
     }
     
     if (error.response) {
-      // 服务器返回了错误响应
+
       console.error('服务器错误响应:');
       console.error('- 状态码:', error.response.status);
       
       if (error.response.status === 500) {
         errorMessage = '服务器内部错误';
-        
-        // 尝试从错误响应中获取更详细的错误信息
         if (error.response.data) {
           if (typeof error.response.data === 'string') {
-            // 响应可能是HTML页面或纯文本
             const errorText = error.response.data.substring(0, 200) + '...';
             errorMessage += `: ${errorText}`;
-            
-            // 尝试从HTML错误页面中提取有用信息
             const match = error.response.data.match(/<h1>(.*?)<\/h1>/i);
             if (match && match[1]) {
               errorMessage = `服务器错误: ${match[1]}`;
@@ -255,7 +241,6 @@ const uploadExcelFile = async (file) => {
         }
       }
     } else if (error.request) {
-      // 请求已发送但没有收到响应
       console.error('无响应错误:');
       console.error('- 请求详情:', error.request);
       
@@ -265,14 +250,13 @@ const uploadExcelFile = async (file) => {
         message: '未收到服务器响应，请确认后端服务已启动'
       };
       
-      // 检查后端URL是否配置正确
       console.log('检查后端URL配置:', API_URL);
       if (API_URL.includes('localhost') || API_URL.includes('127.0.0.1')) {
         console.warn('使用的是本地开发URL:', API_URL);
         errorDetails.message += '。您正在使用本地开发环境地址，请确保后端服务正在本地运行。';
       }
     } else {
-      // 请求设置错误
+
       console.error('请求配置错误:', error.message);
       
       errorMessage = `请求错误: ${error.message}`;
@@ -281,8 +265,7 @@ const uploadExcelFile = async (file) => {
         message: error.message
       };
     }
-    
-    // 尝试检查是否是CORS问题
+
     if (error.message && error.message.includes('Network Error')) {
       console.warn('可能存在跨域(CORS)问题');
       errorMessage = '网络错误，可能是跨域(CORS)限制导致';
@@ -291,8 +274,7 @@ const uploadExcelFile = async (file) => {
         message: '请确认后端已正确配置CORS'
       };
     }
-    
-    // 用于尝试本地解析的标记
+
     const shouldTryLocalFallback = true;
     
     return {
@@ -311,14 +293,13 @@ const uploadExcelFile = async (file) => {
  */
 const testExcelUploadEndpoint = async () => {
   try {
-    // 创建一个最小的Excel文件模拟
+
     const smallFile = new File(
       [new Uint8Array([80, 75, 3, 4, 20, 0, 6, 0])], // 简单的Excel文件魔数
       'test.xlsx',
       { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
     );
     
-    // 发送OPTIONS请求检查接口是否可用
     const response = await axios({
       method: 'OPTIONS',
       url: `${API_URL}/objects/excel`,
@@ -340,7 +321,6 @@ const testExcelUploadEndpoint = async () => {
  * @returns {Promise<Object>} - 包含上传结果的Promise
  */
 const uploadExcelFileWithObjectId = async (objectId, file) => {
-  // 验证参数
   if (!objectId) {
     return {
       success: false,
@@ -356,18 +336,17 @@ const uploadExcelFileWithObjectId = async (objectId, file) => {
       data: null
     };
   }
-  
-  // 如果启用了mock模式，直接返回模拟数据
+
   if (MOCK_ENABLED) {
     try {
-      // 使用导入的testApiConnection函数测试API连接
+
       const isApiAvailable = await testApiConnection();
       
-      // 如果API不可用或设置了自动回退，返回模拟数据
+
       if (!isApiAvailable || AUTO_FALLBACK_TO_MOCK) {
         console.log('[Mock模式] 后端API不可用，使用模拟数据');
         const mockResponse = createMockSuccessResponse(file);
-        mockResponse.data.objectId = objectId; // 添加对象ID信息
+        mockResponse.data.objectId = objectId; 
         return mockResponse;
       }
     } catch (error) {
@@ -382,19 +361,19 @@ const uploadExcelFileWithObjectId = async (objectId, file) => {
 
   // 正常上传流程
   try {
-    // 创建FormData对象
+
     const formData = new FormData();
     formData.append('file', file);
     
     console.log('准备上传文件到对象ID:', objectId, '文件名:', file.name, '大小:', file.size);
     
-    // 发送上传请求
+
     const response = await axiosInstance.post(`/objects/${objectId}/excel`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      withCredentials: false, // 跨域请求不携带凭证
-      // 添加上传进度处理
+      withCredentials: false, 
+
       onUploadProgress: progressEvent => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         console.log(`上传进度: ${percentCompleted}%`);
@@ -420,33 +399,30 @@ const uploadExcelFileWithObjectId = async (objectId, file) => {
     }
   } catch (error) {
     console.error('Excel文件上传错误详情:', error);
-    
-    // 如果启用了自动回退到模拟模式，在错误时返回模拟成功响应
+
     if (MOCK_ENABLED && AUTO_FALLBACK_TO_MOCK) {
       console.log('[Mock模式] 上传失败，回退到模拟数据');
       const mockResponse = createMockSuccessResponse(file);
       mockResponse.data.objectId = objectId;
       return mockResponse;
     }
-    
-    // 详细记录错误信息
+
     let errorMessage = '上传过程中发生错误';
     let errorDetails = {
       message: error.message || '未知错误'
     };
     
     if (error.response) {
-      // 服务器返回了错误状态码
+
       errorMessage = `服务器返回错误(${error.response.status}): ${error.response.data?.message || error.response.statusText}`;
       errorDetails.status = error.response.status;
       errorDetails.statusText = error.response.statusText;
       errorDetails.data = error.response.data;
     } else if (error.request) {
-      // 请求已发送但未收到响应
+
       errorMessage = '服务器未响应请求，请检查后端服务是否运行';
       errorDetails.request = '已发送请求但未收到响应';
     } else {
-      // 请求配置出错
       errorMessage = `请求配置错误: ${error.message}`;
     }
     

@@ -26,21 +26,18 @@ export const advancedSearch = (data, keyword) => {
   
   const searchTerm = keyword.toLowerCase();
   return data.filter(item => {
-    // 检查ID和实体
     if (
       (item.id?.toString().includes(searchTerm)) || 
       (item.entity?.toLowerCase().includes(searchTerm))
     ) {
       return true;
     }
-    
-    // 确保约束条件是数组并检查
+ 
     const constraints = ensureArray(item.constraint);
     if (constraints.some(c => c && typeof c === 'string' && c.toLowerCase().includes(searchTerm))) {
       return true;
     }
-    
-    // 确保传输控制操作是数组并检查
+
     const transferControls = ensureArray(item.transferControl);
     if (transferControls.some(t => t && typeof t === 'string' && t.toLowerCase().includes(searchTerm))) {
       return true;
@@ -62,21 +59,16 @@ export const advancedSearch = (data, keyword) => {
  */
 export const getFilteredData = (data, status, keyword, currentPage, pageSize) => {
   let result = [...data];
-  
-  // 状态过滤
+
   if (status) {
     result = result.filter(item => item.status === status);
   }
-  
-  // 关键词搜索
+
   if (keyword) {
     result = advancedSearch(result, keyword);
   }
-  
-  // 获取总数
+
   const totalCount = result.length;
-  
-  // 应用分页
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const pagedData = result.slice(startIndex, endIndex);

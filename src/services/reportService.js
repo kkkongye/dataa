@@ -13,11 +13,9 @@ const reportService = {
     try {
       console.log('开始获取数据问题报告，调用/api/baogao1接口');
       
-      // 调用baogao1接口触发报告生成
       await axios.get(`${API_URL}/baogao1`);
       console.log('成功调用baogao1接口');
-      
-      // 简单返回提示信息
+
       return `# 库存管理数据问题报告
 ===================================
 
@@ -30,7 +28,7 @@ const reportService = {
 ===================================`;
     } catch (error) {
       console.error('获取数据问题报告失败:', error);
-      // 出错时返回友好的错误信息
+
       return `# 数据问题报告获取失败
 ===================================
 

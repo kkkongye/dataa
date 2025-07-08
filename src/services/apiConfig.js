@@ -20,12 +20,12 @@ export const axiosInstance = axios.create({
 // 请求拦截器
 axiosInstance.interceptors.request.use(
   config => {
-    // 在每个请求中添加mock模式支持，方便测试
+
     if (MOCK_ENABLED && config.mock !== false) {
       config.headers['X-Mock-Mode'] = 'enabled';
     }
     
-    // 添加CORS支持
+
     config.headers['Access-Control-Allow-Origin'] = '*';
     config.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS';
     config.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization';
@@ -37,24 +37,24 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// 响应拦截器
+
 axiosInstance.interceptors.response.use(
   response => {
-    // 直接返回响应数据
+
     return response;
   },
   error => {
     if (error.message && error.message.includes('Network Error')) {
       console.warn('可能的CORS问题或网络连接失败:', error.message);
       
-      // 如果配置了自动回退到模拟模式并且原始请求未明确禁用模拟
+
       if (AUTO_FALLBACK_TO_MOCK && 
           error.config && 
           error.config.mock !== false) {
         
         console.log('自动回退到模拟模式，返回虚拟成功响应');
         
-        // 根据请求类型返回模拟数据
+   
         const mockData = {
           success: true,
           code: 200,
@@ -62,12 +62,10 @@ axiosInstance.interceptors.response.use(
           data: {}
         };
         
-        // 如果是状态更新请求，返回特定的模拟响应
         if (error.config.url && error.config.url.includes('/status')) {
           mockData.message = '状态更新成功（模拟响应）';
         }
-        
-        // 返回模拟的axios响应对象
+
         return Promise.resolve({
           data: mockData,
           status: 200,

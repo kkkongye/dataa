@@ -69,19 +69,18 @@ const handleLogin = async () => {
   }
   loading.value = true
   try {
-    // 调用后端登录接口
+
     const response = await axios.post(
       'http://localhost:8080/api/login',
       { username: loginForm.username, password: loginForm.password },
       { withCredentials: true }
     )
     if (response.data && response.data.code === 1) {
-        // 登录成功，保存用户信息和角色
         localStorage.setItem('role', loginForm.role)
         localStorage.setItem('username', loginForm.username)
       localStorage.setItem('userId', response.data.data.id?.toString?.() || '')
         ElMessage.success('登录成功')
-        // 根据角色跳转到不同页面
+
         switch (loginForm.role) {
           case 'datasource':
             router.push('/datasource')
@@ -106,7 +105,7 @@ const handleLogin = async () => {
   }
 }
 
-// 添加跳转到注册页面的方法
+
 const goToRegister = () => {
   router.push('/register')
 }

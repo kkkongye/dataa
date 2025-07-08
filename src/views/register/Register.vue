@@ -73,20 +73,18 @@ const handleRegister = async () => {
       password: registerForm.password,
       role: registerForm.role
     })
-    
-    // 打印完整的响应信息，用于调试
+
     console.log('注册响应数据:', response.data)
     
-    // 后端成功状态码是1，不是200
+
     if (response.data.code === 1 || response.data.msg === 'success' || response.data.data?.includes('成功')) {
-      // 使用type参数明确指定为success类型
+
       ElMessage({
         message: '注册成功，即将跳转到登录页面',
         type: 'success',
         duration: 2000
       })
-      
-      // 延迟跳转，让用户看到成功提示
+
       setTimeout(() => {
         router.push('/login')
       }, 2000)
