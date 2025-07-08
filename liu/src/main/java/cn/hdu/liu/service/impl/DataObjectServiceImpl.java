@@ -291,7 +291,7 @@ public class DataObjectServiceImpl implements DataObjectService {
 
             DataEntity dataEntity = new DataEntity();
             dataEntity.setEntity(origin);
-            dataEntity.setStatus("待检验");
+            dataEntity.setStatus("待生成分类分级值");
             dataEntity.setFeedback("");
 
             Metadata metadata = new Metadata();

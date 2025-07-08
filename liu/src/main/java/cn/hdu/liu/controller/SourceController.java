@@ -1,6 +1,6 @@
 package cn.hdu.liu.controller;
 
-//import cn.hdu.liu.blockchain.yuan.contract.Yuan;
+import cn.hdu.liu.blockchain.yuan.contract.Yuan;
 import cn.hdu.liu.dcbds.hdu.Entity.*;
 import cn.hdu.liu.dcbds.hdu.Utils.Common;
 import cn.hdu.liu.dcbds.hdu.Utils.Sm2Utils;
@@ -20,14 +20,13 @@ import cn.hdu.liu.service.DataObjectService;
 import cn.hutool.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-//import com.thanos.web3j.abi.datatypes.Utf8String;
-//import com.thanos.web3j.config.SystemConfig;
-//import com.thanos.web3j.crypto.Credentials;
-//import com.thanos.web3j.model.ThanosTransactionReceipt;
-//import com.thanos.web3j.protocol.Web3j;
-//import com.thanos.web3j.protocol.manage.Web3Manager;
-//import com.thanos.web3j.utils.ConfigResourceUtil;
-//import com.thanos.common.crypto.key.asymmetric.SecureKey;
+import com.thanos.web3j.abi.datatypes.Utf8String;
+import com.thanos.web3j.config.SystemConfig;
+import com.thanos.web3j.crypto.Credentials;
+import com.thanos.web3j.model.ThanosTransactionReceipt;
+import com.thanos.web3j.protocol.Web3j;
+import com.thanos.web3j.protocol.manage.Web3Manager;
+import com.thanos.web3j.utils.ConfigResourceUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -101,7 +100,7 @@ public class SourceController {
     ThanosTransactionReceipt receipt = yuan.register(new Utf8String("123456"), (Set) null).get();
     int ret = receipt.hashCode();
 
- **/
+**/
 
     @Autowired
     private DPService dpService;
@@ -191,7 +190,6 @@ public class SourceController {
     Sm2KeyEntity sduKeyPair = Sm2Utils.generateSmKey();
     String sduId = Sm3Utils.encrypt(sduKeyPair.getPublicKey().getEncoded());
 
-    Blockchain myBlockchain = new Blockchain(4);
 
     private JSONObject rps = new JSONObject();
     private JSONObject hp_id = new JSONObject();

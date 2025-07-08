@@ -101,6 +101,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.netease.blockchain.thanos</groupId>
+            <artifactId>thanos-web3j</artifactId>
+            <version>1.7.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>com.example</groupId>
             <artifactId>jpbc-api</artifactId>
             <version>1.0</version>

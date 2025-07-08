@@ -263,6 +263,9 @@ onMounted(() => {
     console.log('使用方收到数据变化:', newData)
     // 无需手动更新tableData，因为是响应式引用
   })
+  
+  // 页面加载后自动显示三维数据可视化
+  showVisualization()
 })
 
 // 计算实际数据量
@@ -1286,6 +1289,7 @@ const handleViewDirectoryItem = (item) => {
 
 // 添加三维可视化相关
 const visualizationVisible = ref(false)
+// 显示可视化方法
 const showVisualization = () => {
   visualizationVisible.value = true
 }
@@ -1376,10 +1380,8 @@ function isSelectFieldsLong(selectFields) {
   border-radius: 4px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  height: calc(100vh - 92px);
+  height: 100%;
   width: 100%;
-  box-sizing: border-box;
-  overflow: auto;
 }
 
 /* 状态筛选按钮区域 */

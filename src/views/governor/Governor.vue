@@ -70,7 +70,7 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column prop="constraint" label="约束条件" min-width="450" align="center">
+            <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
               <template #default="scope">
                 <div class="constraint-container">
                   <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -95,7 +95,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="transferControl" label="传输控制操作" min-width="150" align="center">
+            <el-table-column prop="transferControl" label="传输控制操作" min-width="200" align="center">
               <template #default="scope">
                 <div class="control-container">
                   <template v-if="scope.row.transferControl && scope.row.transferControl.length">

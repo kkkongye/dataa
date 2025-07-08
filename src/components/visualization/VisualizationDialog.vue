@@ -11,7 +11,19 @@
     append-to-body
     destroy-on-close
     :close-on-click-modal="false"
+    :show-close="false"
   >
+    <!-- 自定义标题栏，包含"我的数据对象列表"按钮 -->
+    <template #header>
+      <div class="custom-header">
+        <div class="dialog-title">三维数据可视化</div>
+        <el-button type="primary" class="list-button" @click="handleClose">
+          <el-icon><Document /></el-icon>
+          返回我的数据对象列表
+        </el-button>
+      </div>
+    </template>
+    
     <div class="visualization-content" ref="visualizationContent">
       <el-alert
         v-if="showManualRenderOption"
@@ -39,6 +51,7 @@
 import { ref, watch, nextTick } from 'vue';
 import DataCube from './DataCube.vue';
 import { ElMessage } from 'element-plus';
+import { Document } from '@element-plus/icons-vue';
 
 const props = defineProps({
   visible: {
@@ -146,6 +159,25 @@ const handleDialogOpened = async () => {
 .visualization-dialog {
   display: flex;
   flex-direction: column;
+}
+
+/* 自定义标题栏样式 */
+.custom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+}
+
+.dialog-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.list-button {
+  margin-left: auto;
 }
 
 .visualization-content {

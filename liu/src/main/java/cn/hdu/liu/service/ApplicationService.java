@@ -136,4 +136,39 @@ public class ApplicationService {
                 true
         );
     }
+
+    @Transactional
+    public void rejectBySource(Long recordId) {
+        ApplicationRecord record = applicationRecordMapper.selectById(recordId);
+        if (record == null) {
+            throw new RuntimeException("申请记录不存在: " + recordId);
+        }
+
+        applicationRecordMapper.updateSourceAgreement(recordId, false);
+
+        // 更新展示表状态
+        displayMapper.updateAgreementStatus(
+                record.getObjectId(),
+                false,
+                record.getGovernanceAgreed() // 保持治理方原有状态
+        );
+    }
+
+    @Transactional
+    public void rejectByGovernance(Long recordId) {
+        ApplicationRecord record = applicationRecordMapper.selectById(recordId);
+        if (record == null) {
+            throw new RuntimeException("申请记录不存在: " + recordId);
+        }
+
+        applicationRecordMapper.updateGovernanceAgreement(recordId, false);
+
+        // 更新展示表状态
+        displayMapper.updateAgreementStatus(
+                record.getObjectId(),
+                record.getSourceAgreed(), // 保持数源方原有状态
+                false
+        );
+    }
+
 }

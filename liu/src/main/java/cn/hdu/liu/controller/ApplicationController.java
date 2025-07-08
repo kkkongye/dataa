@@ -64,4 +64,18 @@ public class ApplicationController {
         applicationService.approveByGovernance(recordId);
         return Result.success("治理方已同意");
     }
+
+    // 数源方拒绝接口
+    @PostMapping("/source/reject/{recordId}")
+    public Result rejectBySource(@PathVariable Long recordId) {
+        applicationService.rejectBySource(recordId);
+        return Result.success("数源方已拒绝");
+    }
+
+    // 治理方拒绝接口
+    @PostMapping("/governance/reject/{recordId}")
+    public Result rejectByGovernance(@PathVariable Long recordId) {
+        applicationService.rejectByGovernance(recordId);
+        return Result.success("治理方已拒绝");
+    }
 }
