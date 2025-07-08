@@ -1,6 +1,5 @@
 <template>
   <div class="datasource-container">
-    <!-- 头部导航 -->
     <AppHeader role-name="税务局(数源方)" @logout="logout" />
     
     <!-- API错误提示 -->
@@ -56,7 +55,6 @@
     </div>
   </div>
   
-  <!-- 使用Element Plus直接实现的编辑对话框 -->
   <el-dialog
     v-model="editDialogVisible"
     title="编辑数据对象"
@@ -260,18 +258,10 @@ const selectedRows = ref([])
 const normalWeight = ref(1.0)
 const importantWeight = ref(2.0)
 const criticalWeight = ref(3.0)
-
-// 添加计算属性判断是否为已合格状态
 const isQualifiedStatus = computed(() => currentStatus.value === '已合格')
-
-// 编辑对话框可见性
 const editDialogVisible = ref(false)
-// 新建对话框可见性
 const createDialogVisible = ref(false)
-// 当前编辑的对象ID
 const currentEditId = ref('') 
-
-
 const metadataDataName = ref('')
 const metadataSourceUnit = ref('')
 const metadataContactPerson = ref('')
@@ -306,22 +296,16 @@ const editForm = reactive({
   dataItems: []
 })
 
-// 记录编辑索引
 const editingIndex = ref(-1)
-// 表单引用
 const editFormRef = ref(null)
 const createFormRef = ref(null)
-
-// 表格数据 - 从共享服务获取
 const tableData = ref(dataObjectService.getAllDataObjects())
 
-// 排序状态
 const sortState = reactive({
   prop: '',
   order: ''
 })
 
-// 确保数据是数组格式
 const ensureArray = (value) => {
   if (Array.isArray(value)) {
     return [...value]
@@ -329,11 +313,9 @@ const ensureArray = (value) => {
   return value ? [value] : []
 }
 
-// 根据状态和搜索条件过滤数据
 const filteredTableData = computed(() => {
   let result = tableData.value
 
-  // 状态过滤
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验')
   } else if (currentStatus.value === '待生成分类分级值') {
@@ -342,7 +324,6 @@ const filteredTableData = computed(() => {
     result = result.filter(item => item.status === currentStatus.value)
   }
 
-  // 关键字搜索
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     result = result.filter(item => {
@@ -367,8 +348,6 @@ const filteredTableData = computed(() => {
       return false
     })
   }
-
-  // 排序
   if (sortState.prop === 'id') {
     if (sortState.order === 'ascending') {
       result = [...result].sort((a, b) => a.id - b.id)
@@ -377,27 +356,22 @@ const filteredTableData = computed(() => {
     }
   }
 
-  
   totalCount.value = result.length
   return result
 })
 
-// 处理表格选择变更
 const handleSelectionChange = (rows) => {
   selectedRows.value = rows
 }
 
-// 编辑指定的对象
 const handleEdit = async (row) => {
-  // 克隆对象以避免直接修改原始引用
   const sourceObj = JSON.parse(JSON.stringify(row))
   
   resetEditForm()
   
   editForm.id = sourceObj.id
   editForm.entity = sourceObj.entity
-  
-  // 处理定位信息
+
   if (sourceObj.locationInfoJson) {
     try {
       const infoObj = typeof sourceObj.locationInfoJson === 'string'
@@ -412,7 +386,6 @@ const handleEdit = async (row) => {
       }
       editForm.locationInfoInput = [databaseName, tableName, ...fieldsArr].filter(Boolean).join(',');
     } catch (e) {
-      // fallback to old logic
       if (sourceObj.locationInfo && typeof sourceObj.locationInfo === 'object') {
         const { databaseName = '', tableName = '', selectFields = '' } = sourceObj.locationInfo
         let fieldsArr = []
@@ -443,12 +416,10 @@ const handleEdit = async (row) => {
     editForm.locationInfoInput = ''
   }
   
-  // 处理元数据
   editForm.metadata = extractMetadata(sourceObj)
   
   editForm.constraint = []
-  
-  // 先处理前端单独字段
+
   if (sourceObj.formatConstraint) {
     editForm.formatConstraint = sourceObj.formatConstraint
     if (!editForm.constraint.includes(`格式约束:${sourceObj.formatConstraint}`)) {
@@ -484,10 +455,10 @@ const handleEdit = async (row) => {
     }
   }
   
-  // 处理约束条件数组
+
   if (sourceObj.constraint) {
     if (Array.isArray(sourceObj.constraint)) {
-      // 将所有约束条件添加到数组
+
       sourceObj.constraint.forEach(constraint => {
         if (!editForm.constraint.includes(constraint)) {
           editForm.constraint.push(constraint)
@@ -510,8 +481,7 @@ const handleEdit = async (row) => {
       if (!editForm.constraint.includes(constraint)) {
         editForm.constraint.push(constraint)
       }
-      
-      // 处理单个约束字符串
+
       if (constraint.includes('格式约束:')) {
         editForm.formatConstraint = constraint.split(':')[1]
       } else if (constraint.includes('访问权限:')) {
@@ -525,16 +495,14 @@ const handleEdit = async (row) => {
       }
     }
   }
-  
-  // 处理传输控制操作
+
   if (sourceObj.transferControl) {
     editForm.transferControl = Array.isArray(sourceObj.transferControl) ? 
       sourceObj.transferControl : [sourceObj.transferControl]
   } else {
     editForm.transferControl = []
   }
-  
-  // 确保传输控制为数组
+
   if (!Array.isArray(editForm.transferControl)) {
     editForm.transferControl = []
   }
@@ -559,8 +527,7 @@ const handleEdit = async (row) => {
   
   editForm.status = sourceObj.status || ''
   editForm.feedback = sourceObj.feedback || ''
-  
-  // 如果状态为'不合格'或'已合格'，自动改为'待检验'，但不清空feedback
+
   if (sourceObj.status === '不合格' || sourceObj.status === '已合格') {
     editForm.status = '待检验';
     if (editForm.dataEntity && typeof editForm.dataEntity === 'object') {
@@ -571,11 +538,9 @@ const handleEdit = async (row) => {
   editForm.auditInfo = sourceObj.auditInfo || ''
   
   editForm.excelData = sourceObj.excelData || null
-  
-  // 首先设置本地dataItems
+
   editForm.dataItems = sourceObj.dataItems || []
   
-  // 处理编辑数据中的数据内容
   if (sourceObj.dataContent) {
     try {
       let contentObj = null
@@ -584,8 +549,7 @@ const handleEdit = async (row) => {
         try {
           contentObj = JSON.parse(sourceObj.dataContent);
         } catch (jsonError) {
-          // 保留警告日志
-          console.warn(`JSON解析失败: ${jsonError}，尝试正则提取`);
+
           
           const feedbackMatch = sourceObj.dataContent.match(/"feedback"\s*:\s*"([^"]*)"/);
           if (feedbackMatch && feedbackMatch[1]) {
@@ -611,19 +575,16 @@ const handleEdit = async (row) => {
         } else if (contentObj.data && contentObj.data.feedback) {
           editForm.feedback = contentObj.data.feedback;
         }
-        
-        // 提取dataItems如果存在
+
         if (contentObj.dataItems && Array.isArray(contentObj.dataItems)) {
           editForm.dataItems = contentObj.dataItems;
         }
       }
     } catch (e) {
-      // 保留错误日志
       console.warn(`解析 ${sourceObj.entity} 的dataContent失败:`, e);
     }
   }
   
-  // 尝试从后端获取最新的dataItems数据
   try {
     const apiUrl = 'http://localhost:8080/api/objects/list';
     const response = await axios.get(apiUrl);
@@ -631,7 +592,7 @@ const handleEdit = async (row) => {
     let targetObject = null;
     let fetchedDataItems = null;
     
-    // 查找目标对象
+    
     if (response.data && Array.isArray(response.data)) {
       targetObject = response.data.find(item => item.id === sourceObj.id);
     } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
@@ -640,12 +601,10 @@ const handleEdit = async (row) => {
       targetObject = response.data.data.find(item => item.id === sourceObj.id);
     }
     
-    // 提取dataItems
     if (targetObject) {
       if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         fetchedDataItems = targetObject.dataItems;
       } else if (targetObject.dataContent) {
-        // 尝试从dataContent中解析
         try {
           const dataContent = typeof targetObject.dataContent === 'string' 
             ? JSON.parse(targetObject.dataContent) 
@@ -659,12 +618,11 @@ const handleEdit = async (row) => {
         }
       }
       
-      // 如果成功获取到dataItems，使用它
+
       if (fetchedDataItems && fetchedDataItems.length > 0) {
         editForm.dataItems = fetchedDataItems;
       }
     } else if (response.data && response.data.dataItems && Array.isArray(response.data.dataItems)) {
-      // 尝试从全局dataItems中过滤匹配的数据
       const filteredItems = response.data.dataItems.filter(item => 
         item.objectId === sourceObj.id || 
         item.id === sourceObj.id ||
@@ -679,10 +637,10 @@ const handleEdit = async (row) => {
     console.error(`获取dataItems失败:`, error);
   }
   
-  // 显示编辑对话框
+
   editDialogVisible.value = true
   
-  // 回填权重
+
   if (sourceObj.weights) {
     normalWeight.value = sourceObj.weights.normalWeight || 1.0
     importantWeight.value = sourceObj.weights.importantWeight || 2.0
@@ -698,7 +656,7 @@ const handleEdit = async (row) => {
       criticalWeight: 3.0
     }
   }
-  // 最后强制修正状态，避免被覆盖
+
   if (sourceObj.status === '不合格' || sourceObj.status === '已合格') {
     editForm.status = '待检验';
     if (editForm.dataEntity && typeof editForm.dataEntity === 'object') {
@@ -707,19 +665,18 @@ const handleEdit = async (row) => {
   }
 }
 
-// 取消编辑
+
 const cancelEdit = () => {
   editDialogVisible.value = false
   currentEditId.value = ''
   editingIndex.value = -1
 }
 
-// 保存编辑的对象
+
 const saveEditObject = async (updatedObject) => {
   const objectId = updatedObject.id
   
   try {
-    // 如果对象没有dataItems或dataItems为空数组，尝试从后端获取
     if (!updatedObject.dataItems || updatedObject.dataItems.length === 0) {
       try {
         const apiUrl = 'http://localhost:8080/api/objects/list';
@@ -728,7 +685,7 @@ const saveEditObject = async (updatedObject) => {
         let targetObject = null;
         let fetchedDataItems = null;
         
-        // 查找目标对象
+
         if (response.data && Array.isArray(response.data)) {
           targetObject = response.data.find(item => item.id === objectId);
         } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
@@ -736,13 +693,12 @@ const saveEditObject = async (updatedObject) => {
         } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
           targetObject = response.data.data.find(item => item.id === objectId);
         }
-        
-        // 提取dataItems
+
         if (targetObject) {
           if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
             fetchedDataItems = targetObject.dataItems;
           } else if (targetObject.dataContent) {
-            // 尝试从dataContent中解析
+
             try {
               const dataContent = typeof targetObject.dataContent === 'string' 
                 ? JSON.parse(targetObject.dataContent) 
@@ -756,7 +712,6 @@ const saveEditObject = async (updatedObject) => {
             }
           }
           
-          // 如果成功获取到dataItems，使用它
           if (fetchedDataItems && fetchedDataItems.length > 0) {
             updatedObject.dataItems = fetchedDataItems;
           }
@@ -765,8 +720,7 @@ const saveEditObject = async (updatedObject) => {
         console.error(`获取dataItems失败:`, error);
       }
     }
-    
-    // 修复位置信息
+
     if (updatedObject.locationInfo) {
       if (typeof updatedObject.locationInfo === 'object' && 
           (updatedObject.locationInfo.row === undefined || updatedObject.locationInfo.col === undefined)) {
@@ -777,15 +731,15 @@ const saveEditObject = async (updatedObject) => {
       }
     }
     
-    // 修复元数据
+
     if (!updatedObject.metadata) {
       updatedObject.metadata = createDefaultMetadata(updatedObject.entity)
     }
     
-    // 构建数据内容
+
     let dataContent = {}
     try {
-      // 尝试解析现有的dataContent
+
       if (typeof updatedObject.dataContent === 'string') {
         dataContent = JSON.parse(updatedObject.dataContent)
       } else if (updatedObject.dataContent) {
@@ -796,16 +750,15 @@ const saveEditObject = async (updatedObject) => {
       dataContent = {}
     }
     
-    // 更新dataContent
+
     dataContent.entity = updatedObject.entity
     dataContent.status = updatedObject.status
     dataContent.feedback = updatedObject.feedback
     
-    // 保留dataItems
+
     if (updatedObject.dataItems && updatedObject.dataItems.length > 0) {
       dataContent.dataItems = updatedObject.dataItems
     } else {
-      // 如果updatedObject.dataItems为空，尝试保留dataContent中可能存在的dataItems
       if (dataContent.dataItems && Array.isArray(dataContent.dataItems) && dataContent.dataItems.length > 0) {
         updatedObject.dataItems = dataContent.dataItems;
       }
@@ -888,7 +841,7 @@ const saveEditObject = async (updatedObject) => {
   }
 }
 
-// 删除对象
+
 const handleDelete = (row) => {
   const objectId = row.id;
   
@@ -899,17 +852,13 @@ const handleDelete = (row) => {
   }).then(async () => {
     try {
       const result = await dataObjectService.deleteDataObjectViaApi(objectId)
-      
-      // 无论API结果如何，都删除本地数据并提示成功
       dataObjectService.deleteDataObject(objectId)
       ElMessage.success(`已删除: ${row.entity}`)
       
-      // 刷新数据
       refreshData()
     } catch (error) {
       console.error('删除对象时出错:', error)
-      
-      // 尝试从本地删除并显示成功信息
+
       try {
         dataObjectService.deleteDataObject(objectId)
         ElMessage.success(`已删除: ${row.entity}`)
@@ -923,13 +872,11 @@ const handleDelete = (row) => {
   })
 }
 
-// 退出登录
 const logout = () => {
   localStorage.removeItem('role')
   router.push('/login')
 }
 
-// 显示创建对象对话框
 const showCreateDialog = () => {
   console.log('触发显示创建对话框')
   createDialogVisible.value = true
@@ -1028,17 +975,16 @@ const formRules = {
   ]
 }
 
-// 添加手动保存编辑表单的方法
+// 保存编辑表单的方法
 const handleSaveEditManually = () => {
-  // 验证表单
+
   if (editFormRef.value) {
-    // 先检查是否有必填字段为空
+
     if (!editForm.entity) {
       ElMessage.warning('请输入实体名称');
       return;
     }
-    
-    // 保存前检查定位信息是否合理
+
     if (editForm.locationInfo) {
       if ((editForm.locationInfo.row && !editForm.locationInfo.col) || 
           (!editForm.locationInfo.row && editForm.locationInfo.col)) {
@@ -1046,22 +992,19 @@ const handleSaveEditManually = () => {
         return;
       }
     }
-    
-    // 进行表单验证
+
     editFormRef.value.validate((valid, fields) => {
       if (valid) {
-        // 构建约束条件数组
+
         const constraintArray = []
         if (editForm.formatConstraint) constraintArray.push(`格式约束:${editForm.formatConstraint}`)
         if (editForm.accessConstraint) constraintArray.push(`访问权限:${editForm.accessConstraint}`)
         if (editForm.pathConstraint) constraintArray.push(`传输路径约束:${editForm.pathConstraint}`)
         if (editForm.regionConstraint) constraintArray.push(`地域性约束:${editForm.regionConstraint}`)
         if (editForm.shareConstraint) constraintArray.push(`共享约束:${editForm.shareConstraint}`)
-        
-        // 更新约束数组
+
         editForm.constraint = constraintArray
-        
-        // 构建传播控制对象，与transferControl数组对应
+
         const propagationControl = {
           canRead: editForm.transferControl.includes('可读'),
           canModify: editForm.transferControl.includes('可修改'),
@@ -1069,10 +1012,7 @@ const handleSaveEditManually = () => {
           canShare: editForm.transferControl.includes('可共享'),
           canDelegate: editForm.transferControl.includes('可委托')
         }
-        
-        // 保存前日志输出
-        console.log('[编辑保存] editForm.status:', editForm.status);
-        // 构建更新后的对象
+
         let statusToSave = editForm.status;
         if (statusToSave === '待校验') {
           statusToSave = '待检验';
@@ -1107,16 +1047,11 @@ const handleSaveEditManually = () => {
           excelData: editForm.excelData,
           dataItems: editForm.dataItems || [],
           locationInfoInput: editForm.locationInfoInput,
-          // 保证dataEntity.status也为待检验
           dataEntity: {
             ...(editForm.dataEntity || {}),
             status: statusToSave
           }
         }
-        console.log('[编辑保存] updatedObject.status:', updatedObject.status);
-        console.log('[编辑保存] updatedObject.dataEntity.status:', updatedObject.dataEntity && updatedObject.dataEntity.status);
-        
-        // 如果有 locationInfoInput，解析并添加到 locationInfo
         if (editForm.locationInfoInput) {
           const arr = editForm.locationInfoInput.split(',').map(s => s.trim())
           if (arr.length >= 2) {
@@ -1128,24 +1063,18 @@ const handleSaveEditManually = () => {
             }
           }
         }
-        
-        console.log('准备保存更新的对象:', updatedObject)
-        
-        // 调用保存函数
+
         saveEditObject(updatedObject)
-        
-        // 关闭对话框
+
         editDialogVisible.value = false
       } else {
-        // 显示具体的验证错误
+
         console.error('表单验证错误:', fields);
-        
-        // 获取第一个错误字段的信息
+
         let firstErrorField = '';
         let firstErrorMessage = '';
         
         if (fields) {
-          // 遍历错误字段
           for (const key in fields) {
             if (fields[key] && fields[key][0]) {
               firstErrorField = key;
@@ -1155,7 +1084,6 @@ const handleSaveEditManually = () => {
           }
         }
         
-        // 显示具体的错误提示
         if (firstErrorField && firstErrorMessage) {
           ElMessage.warning(`${firstErrorMessage} (字段: ${firstErrorField})`);
         } else {
@@ -1165,7 +1093,6 @@ const handleSaveEditManually = () => {
       }
     })
   } else {
-    console.error('表单引用不存在')
     ElMessage.error('表单引用不存在，无法验证表单')
   }
 }
@@ -1189,7 +1116,7 @@ const previewForm = reactive({
   totalGradeValue: '',
   classificationValue: '',
   levelValue: '',
-  metadata: null, // 添加元数据字段
+  metadata: null, 
   locationInfoJson: '',
   selectFields: ''
 })
@@ -1198,11 +1125,11 @@ const previewForm = reactive({
 const excelTableColumns = ref([])
 const excelTableData = ref([])
 const isExcelLoading = ref(false)
-const excelSheets = ref([]) // 存储工作表名称
-const activeSheet = ref('') // 当前激活的工作表
-const currentWorkbook = ref(null) // 当前工作簿对象
+const excelSheets = ref([]) 
+const activeSheet = ref('') 
+const currentWorkbook = ref(null) 
 
-// 在script setup部分添加新的变量和方法
+
 const currentExcelFile = ref(null)
 
 /**
@@ -1217,65 +1144,52 @@ const currentExcelFile = ref(null)
 const previewEntity = (row) => {
   console.log('预览实体数据:', row)
   
-  // 设置预览表单数据
+
   previewForm.id = row.id
   previewForm.entity = row.entity
   previewForm.locationInfo = row.locationInfo
-  previewForm.locationInfoJson = row.locationInfoJson // 确保locationInfoJson被正确传递
+  previewForm.locationInfoJson = row.locationInfoJson
   previewForm.constraint = ensureArray(row.constraint)
   previewForm.transferControl = ensureArray(row.transferControl)
   previewForm.status = row.status
-  
-  // 清空分类分级值，等待API数据填充
+
   previewForm.totalCategoryValue = ''
   previewForm.totalGradeValue = ''
   previewForm.classificationValue = ''
   previewForm.levelValue = ''
-  
-  // 解析元数据 - 直接使用原始元数据，不尝试提取
+
   if (row.metadata && typeof row.metadata === 'object') {
-    console.log('使用原始元数据，不进行提取:', row.metadata)
     previewForm.metadata = { ...row.metadata }
   } else {
-    // 如果没有元数据，才使用提取方法
-    console.log('原始元数据不存在，尝试提取')
+
     previewForm.metadata = extractMetadata(row)
   }
-  console.log('已设置预览元数据:', previewForm.metadata)
-  
-  // 清空当前Excel数据
+
   currentExcelFile.value = null
   excelTableData.value = []
   excelTableColumns.value = []
   excelSheets.value = []
   
-  // 显示预览对话框
   previewDialogVisible.value = true
   
-  // 检查是否有本地缓存的Excel数据
   if (row.excelData) {
-    console.log('有本地Excel数据，优先使用本地数据')
     ElMessage.info('正在准备Excel数据，请稍候...')
     isExcelLoading.value = true
-    
-    // 使用setTimeout避免UI阻塞
+  
     setTimeout(() => {
       try {
         currentExcelFile.value = row.excelData
       } catch (error) {
-        console.error('加载本地Excel数据出错:', error)
-        // 本地数据加载失败，尝试从API获取
         fetchExcelDataFromApi(row.id)
       }
     }, 100)
   } else {
     console.log('没有本地Excel数据，尝试从API获取')
-    // 从API获取Excel数据
+
     fetchExcelDataFromApi(row.id)
   }
 }
 
-// 从API获取Excel数据
 const fetchExcelDataFromApi = async (objectId) => {
   if (!objectId) {
     ElMessage.warning('无法获取对象ID，无法显示Excel数据')
@@ -1283,18 +1197,17 @@ const fetchExcelDataFromApi = async (objectId) => {
   }
   
   isExcelLoading.value = true
-  
-  // 使用对象列表API
+
   const apiUrl = 'http://localhost:8080/api/objects/list'
   
   try {
     const response = await axios.get(apiUrl)
     
-    // 从响应中查找特定ID的对象数据
+
     let targetObject = null
     let dataItems = null
     
-    // 1. 首先在列表中查找目标对象
+
     if (response.data && Array.isArray(response.data)) {
       targetObject = response.data.find(item => item.id === objectId)
     } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
@@ -1303,16 +1216,13 @@ const fetchExcelDataFromApi = async (objectId) => {
       targetObject = response.data.data.find(item => item.id === objectId)
     }
     
-    // 2. 如果找到了目标对象，尝试提取其dataItems和分类分级值
+
     if (targetObject) {
-      // 提取分类分级值
       extractClassificationValues(targetObject)
       
-      // 从对象中提取dataItems
       if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
       } else if (targetObject.dataContent) {
-        // 尝试从dataContent中解析
         try {
           const dataContent = typeof targetObject.dataContent === 'string' 
             ? JSON.parse(targetObject.dataContent) 
@@ -1326,9 +1236,7 @@ const fetchExcelDataFromApi = async (objectId) => {
         }
       }
     } 
-    // 3. 如果找不到目标对象，尝试从全局dataItems中过滤
     else if (response.data && response.data.dataItems && Array.isArray(response.data.dataItems)) {
-      // 尝试从全局dataItems中查找与对象ID相关的数据
       dataItems = response.data.dataItems.filter(item => 
         item.objectId === objectId || 
         item.id === objectId ||
@@ -1336,32 +1244,26 @@ const fetchExcelDataFromApi = async (objectId) => {
       )
     }
     
-    // 4. 如果仍然没有找到数据，使用带有对象ID的模拟数据
     if (!dataItems || dataItems.length === 0) {
       ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
       
-      // 根据对象ID生成不同的模拟数据
       dataItems = generateMockDataForObject(objectId)
     }
     
-    // 创建Excel数据
     createExcelFromDataItems(dataItems)
   } catch (error) {
     console.error('获取Excel数据失败:', error.message)
     ElMessage.error(`获取Excel数据失败: ${error.message}`)
     isExcelLoading.value = false
     
-    // 使用带有对象ID的模拟数据
     const mockData = generateMockDataForObject(objectId)
     createExcelFromDataItems(mockData)
   }
 }
 
-// 提取对象中的分类分级值
 const extractClassificationValues = (obj) => {
   if (!obj) return
   
-  // 直接提取顶层字段
   if (obj.totalCategoryValue !== undefined) {
     previewForm.totalCategoryValue = obj.totalCategoryValue
   } else if (obj.classificationValue !== undefined) {
@@ -1374,14 +1276,13 @@ const extractClassificationValues = (obj) => {
     previewForm.levelValue = obj.levelValue
   }
   
-  // 尝试从dataContent中获取
   if (obj.dataContent) {
     let dataContent = obj.dataContent
     if (typeof dataContent === 'string') {
       try {
         dataContent = JSON.parse(dataContent)
       } catch (e) {
-        // 忽略解析错误
+          // 忽略解析错误
       }
     }
     
@@ -1401,12 +1302,10 @@ const extractClassificationValues = (obj) => {
   }
 }
 
-// 根据对象ID生成不同的模拟数据
+// 生成不同的模拟数据
 const generateMockDataForObject = (objectId) => {
-  // 获取ID的最后两位作为数字（用于生成不同的数据）
   const idNum = parseInt(objectId.slice(-2), 10) || 1
   
-  // 根据ID生成不同类型的数据
   if (objectId.includes('user') || objectId.includes('用户')) {
     return [
       { "用户ID": "U10001", "用户名": "张三", "年龄": "28", "性别": "男", "注册日期": "2023-01-15" },
@@ -1440,7 +1339,7 @@ const generateMockDataForObject = (objectId) => {
       { "仓库编号": "WH002", "产品ID": "P30005", "产品名称": "Apple Watch", "库存数量": "180", "更新日期": "2023-07-01" }
     ]
   } else {
-    // 通用数据
+ 
     return [
       { "姓名": `${idNum}-张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
       { "姓名": `${idNum}-李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
@@ -1454,19 +1353,16 @@ const generateMockDataForObject = (objectId) => {
 // 创建Excel数据
 const createExcelFromDataItems = (dataItems) => {
   try {
-    // 创建工作簿和工作表
+ 
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(dataItems)
     XLSX.utils.book_append_sheet(wb, ws, "数据")
     
-    // 转换为二进制数据
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    
-    // 设置Excel文件
+ 
     currentExcelFile.value = blob
-    
-    // 更新表格数据，用于直接显示
+
     excelTableData.value = dataItems
     excelTableColumns.value = dataItems.length > 0 ? Object.keys(dataItems[0]).map(key => ({
       label: key,
@@ -1511,14 +1407,10 @@ const getMockDataItems = (objectId) => {
 const handleExcelDataLoaded = (data) => {
   console.log('Excel数据加载完成:', data)
   
-  // 检查是否为真实上传的Excel文件或API获取的数据
+
   const isUserUploadedFile = tableData.value.some(row => 
     row.id === previewForm.id && row.excelData && row.excelData === currentExcelFile.value);
-
-  // 如果是从API获取的数据，我们也需要显示
   const isApiData = excelTableData.value && excelTableData.value.length > 0;
-  
-  // 只有当不是用户上传的文件且不是API数据时才禁用数据显示
   if (!isUserUploadedFile && !isApiData) {
     console.warn('检测到非用户上传且非API获取的Excel数据，已屏蔽');
     excelTableColumns.value = [];
@@ -1529,16 +1421,13 @@ const handleExcelDataLoaded = (data) => {
     return;
   }
   
-  // 可以在这里处理加载完的数据，例如根据定位信息高亮显示特定单元格
   const { headers, data: excelRows, sheets } = data;
-  
-  // 如果是API数据，我们已经在fetchExcelDataFromApi中设置了excelTableData和excelTableColumns
-  // 这里我们只需要更新sheets信息
+
   if (isApiData) {
     excelSheets.value = sheets || [];
     console.log('使用API获取的数据，保留已有表格数据');
   } else {
-    // 否则，使用从Excel文件加载的数据
+
     excelTableColumns.value = headers || [];
     excelTableData.value = excelRows || [];
     excelSheets.value = sheets || [];
@@ -1561,20 +1450,18 @@ const handleExcelError = (error) => {
   ElMessage.error(`加载Excel时出错: ${error}`)
 }
 
-// 处理导出功能
 const handleExport = () => {
   ElMessage.success('导出功能待实现')
 }
 
-// 清除所有测试数据
 const clearAllTestData = () => {
   console.log('清除所有测试数据')
-  // 确保所有表格行的excelData为null
+
   tableData.value.forEach(row => {
     row.excelData = null
   })
   
-  // 清空当前Excel文件和相关数据
+
   currentExcelFile.value = null
   excelTableData.value = []
   excelTableColumns.value = []
@@ -2572,13 +2459,12 @@ const parseLocationInfoString = (locationInfoString) => {
   }
   
   try {
-    // 处理标准的格式化字符串，例如 (entityName, row, col)
+
     const locString = locationInfoString.toString().trim();
     if (locString.startsWith('(') && locString.endsWith(')')) {
-      // 去掉括号并分割
       const parts = locString.substring(1, locString.length - 1).split(',').map(s => s.trim());
       if (parts.length >= 3) {
-        // 第一部分是实体名称，第二部分是行，第三部分是列
+
         return { 
           row: parts[1], 
           col: parts[2] 
@@ -2586,7 +2472,6 @@ const parseLocationInfoString = (locationInfoString) => {
       }
     }
     
-    // 处理简单格式的"行x列"字符串
     if (locString.includes('行') && locString.includes('列')) {
       const rowMatch = locString.match(/(\d+)[^\d]*行/);
       const colMatch = locString.match(/(\d+)[^\d]*列/);
@@ -2600,7 +2485,7 @@ const parseLocationInfoString = (locationInfoString) => {
     console.warn('解析位置信息字符串失败:', e);
   }
   
-  // 返回默认空值
+
   return { row: '', col: '' };
 };
 
@@ -2608,11 +2493,9 @@ const parseLocationInfoString = (locationInfoString) => {
 const handleRefreshClick = () => {
   console.log('手动刷新数据');
   ElMessage.info('正在刷新数据...');
-  
-  // 刷新数据
+
   refreshData();
-  
-  // 强制处理特定实体的反馈信息
+
   setTimeout(() => {
     console.log('检查并强制设置客户反馈实体的反馈信息');
     if (tableData.value && tableData.value.length) {
@@ -2664,32 +2547,26 @@ const handleDataUpdate = (newData) => {
   try {
     console.log('收到数据更新事件，数据项数量:', newData ? newData.length : 0);
     
-    // 检查数据是否为空
+
     if (!newData || newData.length === 0) {
       console.warn('接收到的更新数据为空，尝试从dataObjectService获取数据');
-      // 尝试从服务获取所有数据，而不是使用可能为空的newData
       tableData.value = dataObjectService.getAllDataObjects();
     } else {
-      // 更新表格数据
       tableData.value = newData;
     }
-    
-    // 无论何种情况，都确保数据同步到服务
+
     dataObjectService.syncDataObjects(tableData.value);
-    
-    // 检查表格数据是否为空
+
     if (!tableData.value || tableData.value.length === 0) {
       console.warn('同步后表格数据仍为空，尝试刷新数据');
-      // 数据同步后如果仍然为空，尝试重新获取
       refreshData();
     } else {
-      // 更新总数
+
       totalCount.value = getFilteredDataCount();
     }
   } catch (error) {
-    console.error('处理数据更新时出错:', error);
+
     ElMessage.warning('数据更新处理失败，尝试刷新页面');
-    // 出错时自动尝试刷新数据
     refreshData();
   }
 }
@@ -2705,27 +2582,24 @@ const getFilteredDataCount = () => {
   return count;
 }
 
-// 获取对象键值对
+
 const getObjectKeys = (dataArray) => {
   if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) {
     return [];
   }
   
-  // 获取所有对象的所有键
   const keySets = dataArray.map(item => {
     if (item && typeof item === 'object') {
       return Object.keys(item);
     }
     return [];
   });
-  
-  // 合并所有键集并去重
+
   const allKeys = [...new Set(keySets.flat())];
   
   return allKeys;
 }
 
-// 处理导出Excel功能
 const handleExportExcel = () => {
   if (excelTableData.value.length === 0) {
     ElMessage.warning('没有数据可导出');
@@ -2733,19 +2607,13 @@ const handleExportExcel = () => {
   }
   
   try {
-    // 创建工作簿
+
     const wb = XLSX.utils.book_new();
-    
-    // 创建工作表
     const ws = XLSX.utils.json_to_sheet(excelTableData.value);
-    
-    // 添加工作表到工作簿
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
     
-    // 导出文件名
     const fileName = `${previewForm.entity || 'excel_data'}.xlsx`;
     
-    // 保存文件
     XLSX.writeFile(wb, fileName);
     
     ElMessage.success(`已成功导出 ${fileName}`);
@@ -2765,8 +2633,7 @@ const showVisualization = () => {
 
 const applicationListVisible = ref(false)
 
-// 在script部分添加这两个函数
-// 获取定位信息对象
+
 function getLocationInfoObj(locationInfo, locationInfoJson) {
   // 优先用 locationInfo
   if (typeof locationInfo === 'string') {
@@ -2787,16 +2654,16 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
   return locationInfo
 }
 
-// 判断select字段是否过长
+
 function isSelectFieldsLong(selectFields) {
   return typeof selectFields === 'string' && selectFields.length > 30
 }
 
-// 分类分级对话框相关状态
+
 const classificationLevelDialogVisible = ref(false)
 const classificationLevelData = ref({})
 
-// 打开分类分级对话框
+
 const openClassificationLevelDialog = () => {
   classificationLevelData.value = {
     classificationValue: editForm.classificationValue || editForm.totalCategoryValue || '',
@@ -2814,7 +2681,7 @@ const openClassificationLevelDialog = () => {
 
 // 分类分级对话框确认回调
 const handleClassificationLevelConfirm = async (data) => {
-  // 只在这里单独上传分类分级值，不在保存编辑对象时上传
+
   editForm.classificationValue = data.classificationValue
   editForm.totalCategoryValue = data.classificationValue
   editForm.industryCategory = data.industryCategory

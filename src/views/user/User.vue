@@ -272,12 +272,10 @@ onMounted(() => {
 const totalCount = computed(() => {
   let result = tableData.value;
   
-  // 如果已解密且有指定的对象ID列表，则只计算匹配ID的条目数
   if (isDecrypted.value && decryptedObjectIds.value.length > 0) {
     result = result.filter(item => decryptedObjectIds.value.includes(item.id));
     return result.length;
   } else if (isDecrypted.value && decryptedObjectId.value) {
-    // 兼容旧代码，如果decryptedObjectIds为空但有单个ID
     result = result.filter(item => item.id === decryptedObjectId.value);
     return result.length;
   }
@@ -297,23 +295,18 @@ const totalCount = computed(() => {
 const filteredTableData = computed(() => {
   let result = tableData.value;
 
-  // 如果已解密且有指定的对象ID列表，则只显示这些ID的对象
   if (isDecrypted.value && decryptedObjectIds.value.length > 0) {
     result = result.filter(item => decryptedObjectIds.value.includes(item.id));
   } else if (isDecrypted.value && decryptedObjectId.value) {
-    // 兼容旧代码，如果decryptedObjectIds为空但有单个ID
     result = result.filter(item => item.id === decryptedObjectId.value);
   } else if (currentStatus.value) {
-    // 状态过滤
     result = result.filter(item => item.status === currentStatus.value);
   }
 
-  // 关键字搜索
   if (searchKeyword.value) {
     result = advancedSearch(result, searchKeyword.value);
   }
 
-  // 分页处理
   const startIndex = (currentPage.value - 1) * pageSize.value;
   const endIndex = startIndex + pageSize.value;
   return result.slice(startIndex, endIndex);
@@ -343,7 +336,6 @@ const getStatusClass = (status) => {
 const handleEdit = (row) => {
   editingIndex.value = tableData.value.findIndex(item => item.id === row.id)
   
-  // 深拷贝行数据到编辑表单
   Object.keys(editForm).forEach(key => {
     editForm[key] = row[key]
   })
@@ -354,7 +346,6 @@ const handleEdit = (row) => {
 // 取消编辑
 const cancelEdit = () => {
   editDialogVisible.value = false
-  // 重置表单
   Object.keys(editForm).forEach(key => {
     editForm[key] = ''
   })
@@ -363,12 +354,10 @@ const cancelEdit = () => {
 
 // 保存编辑
 const saveEdit = () => {
-  // 如果状态为"已合格"，清空反馈意见
   if (editForm.status === '已合格') {
     editForm.feedback = ''
   }
   
-  // 更新表格数据
   if (editingIndex.value > -1) {
     tableData.value[editingIndex.value] = { ...editForm }
   }
@@ -412,10 +401,8 @@ const decryptForm = reactive({
 const decryptFormRules = {
   objectId: [{ required: true, message: '请输入数据对象ID', trigger: 'blur' }],
 }
-// 存储解密后的对象ID列表
 const decryptedObjectIds = ref([])
 
-// 添加新的响应式变量
 const isRequestingToken = ref(false)
 const isGeneratingCapsule = ref(false)
 
@@ -438,7 +425,7 @@ const handleDecrypt = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    // 调用解密API（如有需要）
+    
     isDecrypted.value = true
     const idList = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id)
     decryptedObjectIds.value = idList
@@ -456,7 +443,6 @@ const handleDecrypt = async () => {
 
 // 修改申请token的处理函数
 const handleRequestToken = async () => {
-  // 检查是否已填写数字对象ID
   if (!decryptForm.objectId) {
     ElMessage.warning('请先填写数据对象ID')
     return
@@ -465,7 +451,6 @@ const handleRequestToken = async () => {
   isRequestingToken.value = true
   
   try {
-    // 使用后端API获取token
     const apiUrl = 'http://localhost:8080/api/getToken'
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -496,7 +481,6 @@ const handleRequestToken = async () => {
   }
 }
 
-// 添加生成数据胶囊的处理函数
 const handleGenerateCapsule = async () => {
   if (!decryptForm.objectId) {
     ElMessage.warning('请选择数据对象ID')
@@ -504,7 +488,6 @@ const handleGenerateCapsule = async () => {
   }
   isGeneratingCapsule.value = true
   try {
-    // 调用后端API生成数据胶囊
     const ids = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id).join(',')
     const apiUrl = `http://localhost:8080/api/selectIds?ids=${encodeURIComponent(ids)}`
     const response = await fetch(apiUrl, {
@@ -546,45 +529,38 @@ const previewForm = reactive({
   metadata: null
 })
 
-// 存储当前预览的Excel二进制数据
 const excelBinaryData = ref(null)
-
-// Excel表格数据
 const excelTableData = ref([])
 const isExcelLoading = ref(false)
 
-// 处理Excel数据加载完成事件
 const handleExcelDataLoaded = (data) => {
   console.log('Excel数据加载完成:', data)
 }
 
-// 处理Excel加载错误事件
 const handleExcelError = (error) => {
   console.error('Excel加载错误:', error)
   ElMessage.error('加载Excel数据时出错: ' + error)
 }
 
-// 获取对象的所有键
 const getObjectKeys = (dataArray) => {
   if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) {
     return [];
   }
   
-  // 获取所有对象的所有键
+
   const keySets = dataArray.map(item => {
     if (item && typeof item === 'object') {
       return Object.keys(item);
     }
     return [];
   });
-  
-  // 合并所有键集并去重
+
   const allKeys = [...new Set(keySets.flat())];
   
   return allKeys;
 }
 
-// 处理导出Excel功能
+
 const handleExportExcel = () => {
   if (excelTableData.value.length === 0) {
     ElMessage.warning('没有数据可导出');
@@ -592,19 +568,13 @@ const handleExportExcel = () => {
   }
   
   try {
-    // 创建工作簿
+
     const wb = XLSX.utils.book_new();
-    
-    // 创建工作表
     const ws = XLSX.utils.json_to_sheet(excelTableData.value);
-    
-    // 添加工作表到工作簿
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    
-    // 导出文件名
+
     const fileName = `${previewForm.entity || 'excel_data'}.xlsx`;
-    
-    // 保存文件
+
     XLSX.writeFile(wb, fileName);
     
     ElMessage.success(`已成功导出 ${fileName}`);
@@ -614,30 +584,22 @@ const handleExportExcel = () => {
   }
 }
 
-// 从API获取Excel数据
 const fetchExcelDataFromApi = async (objectId) => {
   if (!objectId) {
-    console.error('【Excel数据】错误: 无法获取对象ID')
     ElMessage.warning('无法获取对象ID，无法显示Excel数据')
     return
   }
-  
-  console.log(`【Excel数据】正在从API获取数据，对象ID:`, objectId)
   isExcelLoading.value = true
-  
-  // 使用对象列表API
   const apiUrl = 'http://localhost:8080/api/objects/list'
-  console.log('【Excel数据】API请求URL:', apiUrl)
+
   
   try {
     const response = await axios.get(apiUrl)
-    console.log('【Excel数据】API响应状态码:', response.status)
     
-    // 从响应中查找特定ID的对象数据
+
     let targetObject = null
     let dataItems = null
     
-    // 1. 首先在列表中查找目标对象
     if (response.data && Array.isArray(response.data)) {
       targetObject = response.data.find(item => item.id === objectId)
     } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
@@ -646,19 +608,18 @@ const fetchExcelDataFromApi = async (objectId) => {
       targetObject = response.data.data.find(item => item.id === objectId)
     }
     
-    // 2. 如果找到了目标对象，尝试提取其dataItems和分类分级值
     if (targetObject) {
       console.log(`【Excel数据】找到ID为${objectId}的对象:`, targetObject)
       
-      // 提取分类分级值
+
       extractClassificationValues(targetObject)
       
-      // 从对象中提取dataItems
+
       if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
         console.log(`【Excel数据】从对象中直接提取到${dataItems.length}条dataItems`)
       } else if (targetObject.dataContent) {
-        // 尝试从dataContent中解析
+
         try {
           const dataContent = typeof targetObject.dataContent === 'string' 
             ? JSON.parse(targetObject.dataContent) 
@@ -673,9 +634,8 @@ const fetchExcelDataFromApi = async (objectId) => {
         }
       }
     } 
-    // 3. 如果找不到目标对象，尝试从全局dataItems中过滤
+
     else if (response.data && response.data.dataItems && Array.isArray(response.data.dataItems)) {
-      // 尝试从全局dataItems中查找与对象ID相关的数据
       dataItems = response.data.dataItems.filter(item => 
         item.objectId === objectId || 
         item.id === objectId ||
@@ -689,13 +649,11 @@ const fetchExcelDataFromApi = async (objectId) => {
         dataItems = response.data.dataItems
       }
     }
-    
-    // 4. 如果仍然没有找到数据，使用带有对象ID的模拟数据
+
     if (!dataItems || dataItems.length === 0) {
       console.log(`【Excel数据】未找到ID为${objectId}的对象数据，使用模拟数据`)
       ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
-      
-      // 根据对象ID生成不同的模拟数据
+
       dataItems = generateMockDataForObject(objectId)
     }
     
@@ -808,19 +766,16 @@ const generateMockDataForObject = (objectId) => {
 // 创建Excel数据
 const createExcelFromDataItems = (dataItems) => {
   try {
-    // 创建工作簿和工作表
+
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(dataItems)
     XLSX.utils.book_append_sheet(wb, ws, "数据")
     
-    // 转换为二进制数据
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    
-    // 设置Excel文件
+
     excelBinaryData.value = blob
-    
-    // 更新表格数据，用于直接显示
+
     excelTableData.value = dataItems
     
     isExcelLoading.value = false
@@ -842,30 +797,25 @@ const previewEntity = (row) => {
   previewForm.transferControl = row.transferControl
   previewForm.status = row.status || ''
   
-  // 清空分类分级值，等待API数据填充
+
   previewForm.totalCategoryValue = ''
   previewForm.totalGradeValue = ''
   previewForm.classificationValue = ''
   previewForm.levelValue = ''
-  
-  // 提取元数据
   previewForm.metadata = extractMetadata(row)
   
-  // 清空当前Excel数据
   excelBinaryData.value = null
   excelTableData.value = []
   
-  // 显示预览对话框
   previewDialogVisible.value = true
-  
-  // 从API获取Excel数据
+
   fetchExcelDataFromApi(row.id)
 }
 
 // 处理元数据字符串的函数
 const processMetadataString = (metadataString) => {
   if (!metadataString) {
-    return {  // 返回一个默认的元数据对象，而不是空对象
+    return { 
       dataName: '未知数据',
       sourceUnit: '未知来源',
       contactPerson: '未指定',
@@ -874,52 +824,41 @@ const processMetadataString = (metadataString) => {
       fieldClassification: '未分类'
     }
   }
-  
-  // 检查是否已经是对象
+
   if (typeof metadataString === 'object') {
     return metadataString
   }
-  
-  // 修复JSON字符串中可能存在的常见问题
+
   let cleanString = metadataString.toString()
   
   try {
-    // 处理双重转义的情况 (例如: "{\"key\":\"value\"}")
-    
-    // 首先尝试去掉外层引号，处理字符串形式的JSON
     if (cleanString.startsWith('"') && cleanString.endsWith('"')) {
       const unquoted = cleanString.slice(1, -1).replace(/\\"/g, '"')
       cleanString = unquoted
     }
-    
-    // 处理被转义多次的情况
+
     if (cleanString.includes('\\\"') || cleanString.includes('\\\\')) {
       cleanString = cleanString.replace(/\\\\/g, '\\').replace(/\\"/g, '"')
     }
-    
-    // 修复结尾多余的]}问题
+
     if (cleanString.includes('"]}"') && !cleanString.endsWith('"}')) {
       cleanString = cleanString.replace('"]}"', '"}')
     }
     if (cleanString.includes('"]}",')) {
       cleanString = cleanString.replace('"]}",', '"}')
     }
-    
-    // 修复开头缺少{的问题
+
     if (!cleanString.startsWith('{') && cleanString.includes('":"')) {
       cleanString = '{' + cleanString
     }
-    
-    // 修复结尾缺少}的问题
+
     if (!cleanString.endsWith('}') && cleanString.includes('":"')) {
       cleanString = cleanString + '}'
     }
-    
-    // 尝试直接解析清理后的字符串
+
     try {
       const parsed = JSON.parse(cleanString)
-      
-      // 确保返回对象包含预期的字段
+
       return {
         dataName: parsed.dataName || '未知数据',
         sourceUnit: parsed.sourceUnit || '未知来源',
@@ -930,7 +869,6 @@ const processMetadataString = (metadataString) => {
         headers: parsed.headers || []
       }
     } catch (parseError) {
-      // 尝试使用正则表达式提取键值对
       const keyValuePairs = {}
       const regex = /"([^"]+)"\s*:\s*"([^"]*)"/g
       let match
@@ -949,8 +887,7 @@ const processMetadataString = (metadataString) => {
           fieldClassification: keyValuePairs.fieldClassification || '未分类'
         }
       }
-      
-      // 如果所有尝试都失败，返回默认元数据
+
       return {
         dataName: '解析错误',
         sourceUnit: '数据部',
@@ -972,15 +909,13 @@ const processMetadataString = (metadataString) => {
   }
 }
 
-// 检查数据的各种可能位置，提取元数据
 const extractMetadata = (row) => {
   if (!row) {
     return createDefaultMetadata('未知实体')
   }
-  
-  // 直接检查row中的metadata对象
+
   if (row.metadata && typeof row.metadata === 'object') {
-    // 确保所有必要字段都存在
+
     return {
       dataName: row.metadata.dataName || row.entity || '未知数据',
       sourceUnit: row.metadata.sourceUnit || '数据部',
@@ -991,8 +926,7 @@ const extractMetadata = (row) => {
       headers: Array.isArray(row.metadata.headers) ? row.metadata.headers : []
     }
   }
-  
-  // 检查row中的metadataJson字段
+
   if (row.metadataJson) {
     try {
       const parsedMetadata = processMetadataString(row.metadataJson)
@@ -1002,10 +936,9 @@ const extractMetadata = (row) => {
     }
   }
   
-  // 检查dataContent字段中的元数据
+
   if (row.dataContent) {
     try {
-      // 尝试解析dataContent
       const contentObj = typeof row.dataContent === 'string' ? 
         JSON.parse(row.dataContent) : row.dataContent
       
@@ -1013,12 +946,10 @@ const extractMetadata = (row) => {
         const parsedMetadata = processMetadataString(contentObj.metadataJson)
         return parsedMetadata
       }
-      
-      // 直接从dataContent中提取元数据字段
+
       if (contentObj && (contentObj.metadata || contentObj.dataName || contentObj.sourceUnit || 
           contentObj.contactPerson || contentObj.contactPhone)) {
-        
-        // 优先使用metadata对象（如果存在）
+
         if (contentObj.metadata && typeof contentObj.metadata === 'object') {
           return {
             dataName: contentObj.metadata.dataName || row.entity || '未知数据',
@@ -1049,10 +980,8 @@ const extractMetadata = (row) => {
   // 解析位置信息
   if (row.locationInfoJson) {
     try {
-      // 处理位置信息JSON字符串
       const locationInfo = JSON.parse(row.locationInfoJson)
       if (locationInfo && locationInfo.locations) {
-        // 更新locationInfo显示格式
         const locations = locationInfo.locations
         const locationStrings = locations.map(loc => 
           `${loc.sheet || '默认'}: ${loc.startRow || '1'}-${loc.endRow || '*'} 行, ${loc.startColumn || 'A'}-${loc.endColumn || '*'} 列`
@@ -1063,8 +992,7 @@ const extractMetadata = (row) => {
       console.warn('解析位置信息JSON失败:', e)
     }
   }
-  
-  // 创建默认元数据
+
   return createDefaultMetadata(row.entity)
 }
 
@@ -1074,7 +1002,7 @@ const createDefaultMetadata = (entityName) => {
   let sourceUnit = '数据部'
   let contactPerson = '王主任'
   
-  // 根据实体名称定制一些元数据
+
   if (entityName.includes('用户')) {
     sourceUnit = '用户管理部'
   } else if (entityName.includes('订单')) {
@@ -1103,23 +1031,20 @@ const createDefaultMetadata = (entityName) => {
 
 // 获取元数据字段值的辅助函数
 const getMetadataValue = (fieldName) => {
-  // 防止未定义
+
   if (!previewForm.metadata) return null
   
-  // 直接检查顶级对象
+
   if (previewForm.metadata[fieldName]) {
     return previewForm.metadata[fieldName]
   }
   
-  // 检查嵌套对象
+
   const checkNestedObject = (obj, field) => {
-    // 不是对象，返回null
+
     if (typeof obj !== 'object' || obj === null) return null
-    
-    // 直接检查当前对象是否有该字段
     if (obj[field] !== undefined) return obj[field]
-    
-    // 递归检查所有属性
+
     for (const key in obj) {
       if (typeof obj[key] === 'object' && obj[key] !== null) {
         const result = checkNestedObject(obj[key], field)
@@ -1130,7 +1055,7 @@ const getMetadataValue = (fieldName) => {
     return null
   }
   
-  // 尝试在嵌套对象中查找
+
   return checkNestedObject(previewForm.metadata, fieldName)
 }
 
@@ -1152,7 +1077,7 @@ const getCurrentDateTime = () => {
 const formatConstraintText = (text) => {
   if (!text) return text
   
-  // 如果包含冒号，分离前缀和内容
+
   if (text.includes(':')) {
     const parts = text.split(':')
     return `<span class="constraint-prefix">${parts[0]}:</span>${parts[1]}`
@@ -1167,14 +1092,10 @@ const handleDownload = () => {
     ElMessage.warning('请选择要下载的数据对象');
     return;
   }
-
-  // 对每个选中的对象进行处理
   selectedRows.value.forEach(row => {
     if (row.excelData) {
-      // 如果有Excel数据，直接下载
       downloadExcelFile(row);
     } else {
-      // 如果没有Excel数据，提示用户先点击实体名预览
       ElMessage.info(`${row.entity} 没有可下载的数据，请先点击实体名进行预览`);
     }
   });
@@ -1183,21 +1104,18 @@ const handleDownload = () => {
 // 下载Excel文件
 const downloadExcelFile = (row) => {
   try {
-    // 创建Blob对象
+
     const blob = new Blob([row.excelData], { 
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
     });
-    
-    // 创建下载链接
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `${row.entity}.xlsx`;
-    
-    // 添加到文档并触发点击
+
     document.body.appendChild(link);
     link.click();
-    
-    // 清理
+
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
     
@@ -1220,23 +1138,20 @@ const resetDecryption = () => {
     decryptedObjectIds.value = [];
     decryptForm.objectId = '';
     decryptForm.dataCapsule = '';
-    decryptDialogVisible.value = false; // 强制关闭解密弹窗
+    decryptDialogVisible.value = false;
   }).catch(() => {
-    // 用户取消操作
   });
 }
 
-// 从API获取最新数据
 const fetchLatestDataFromApi = async () => {
   try {
     ElMessage.info('正在从API获取最新数据...')
-    
-    // 使用API获取最新对象数据
+
     const apiUrl = 'http://localhost:8080/api/objects/list'
     const response = await axios.get(apiUrl)
     
     if (response.data) {
-      // 更新表格数据
+
       let newData = []
       
       if (Array.isArray(response.data)) {
@@ -1248,7 +1163,7 @@ const fetchLatestDataFromApi = async () => {
       }
       
       if (newData.length > 0) {
-        // 更新服务中的数据
+
         dataObjectService.updateDataObjects(newData)
         ElMessage.success(`成功获取${newData.length}条最新数据`)
       } else {
@@ -1261,12 +1176,10 @@ const fetchLatestDataFromApi = async () => {
   }
 }
 
-// 目录对话框
 const directoryDialogVisible = ref(false)
 
-// 显示目录对话框
 const showDirectoryDialog = () => {
-  // 先获取最新数据，再显示目录对话框
+
   fetchLatestDataFromApi()
     .then(() => {
       console.log('成功获取最新数据，显示目录对话框')
@@ -1280,24 +1193,19 @@ const showDirectoryDialog = () => {
 
 // 处理查看目录项目
 const handleViewDirectoryItem = (item) => {
-  // 关闭目录对话框
+
   directoryDialogVisible.value = false
-  
-  // 预览选中的实体
   previewEntity(item)
 }
 
 // 添加三维可视化相关
 const visualizationVisible = ref(false)
-// 显示可视化方法
 const showVisualization = () => {
   visualizationVisible.value = true
 }
 
 
-// 表头自定义样式方法
 const headerCellStyle = ({ column }) => {
-  // 需要淡蓝色的列prop
   const blueProps = [
     'id',
     'entity',
@@ -1317,7 +1225,7 @@ const headerCellStyle = ({ column }) => {
       padding: '10px 0'
     };
   }
-  // 其他列（如状态、反馈意见、操作）保持原灰色
+
   return {
     background: '#f5f7fa',
     color: '#606266',
@@ -1328,7 +1236,6 @@ const headerCellStyle = ({ column }) => {
   };
 };
 
-// 解析 locationInfo 字段为对象
 function getLocationInfoObj(locationInfo, locationInfoJson) {
   if (locationInfoJson) {
     try {
@@ -1344,7 +1251,6 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
   return null;
 }
 
-// 判断 selectFields 是否过长
 function isSelectFieldsLong(selectFields) {
   if (!selectFields) return false;
   return selectFields.length > 30;
