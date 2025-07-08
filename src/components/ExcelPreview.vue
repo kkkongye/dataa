@@ -148,26 +148,21 @@ const parseMetadataJson = (jsonString) => {
     }
     
     let metadata = {}
-    
-    // 处理不同格式的metadataJson
     if (typeof jsonString === 'string') {
       console.log('metadataJson是字符串类型')
       
       try {
-        // 1. 尝试直接解析标准JSON
+
         metadata = JSON.parse(jsonString)
         console.log('成功解析标准JSON字符串')
       } catch (parseError) {
         console.warn('标准JSON解析失败，尝试处理转义字符:', parseError)
-        
-        // 2. 处理各种转义的情况
+
         let processedString = jsonString
         
-        // 处理可能的反斜杠转义
         if (jsonString.includes('\\')) {
           try {
-            // 尝试处理双重转义的JSON字符串 
-            // 例如: "{\\\"key\\\":\\\"value\\\"}"
+
             processedString = jsonString.replace(/\\"/g, '"')
             metadata = JSON.parse(processedString)
             console.log('成功解析处理转义后的JSON字符串 (步骤1)')
@@ -175,8 +170,7 @@ const parseMetadataJson = (jsonString) => {
             console.warn('处理转义后解析失败 (步骤1):', error)
             
             try {
-              // 尝试删除开头和结尾的引号，并处理转义
-              // 例如: "{\\"key\\":\\"value\\"}" -> {"key":"value"}
+
               if (jsonString.startsWith('"') && jsonString.endsWith('"')) {
                 processedString = jsonString.substring(1, jsonString.length - 1).replace(/\\"/g, '"')
                 metadata = JSON.parse(processedString)
@@ -186,8 +180,7 @@ const parseMetadataJson = (jsonString) => {
               console.warn('处理转义后解析失败 (步骤2):', error2)
               
               try {
-                // 尝试将双反斜杠替换为单反斜杠
-                // 例如: {\\\"key\\\":\\\"value\\\"} -> {\"key\":\"value\"}
+
                 processedString = jsonString.replace(/\\\\/g, '\\')
                 metadata = JSON.parse(processedString)
                 console.log('成功解析处理转义后的JSON字符串 (步骤3)')
@@ -197,31 +190,22 @@ const parseMetadataJson = (jsonString) => {
             }
           }
         }
-        
-        // 3. 如果以上都失败，尝试正则表达式提取关键字段
+
         if (Object.keys(metadata).length === 0) {
           console.log('尝试使用正则表达式提取关键字段')
-          
-          // 匹配各种可能的格式，应对各种转义情况
+
           const patterns = [
-            // 匹配: "resourceSummary":"值"
             /resourceSummary[\\]*"*:[\\]*"*([^"\\,}]+)/,
-            // 匹配: resourceSummary=值
             /resourceSummary=([^,}]+)/,
-            // 匹配: "resourceSummary":值
             /resourceSummary[\\]*":([^",}]+)/
           ]
           
           const fieldPatterns = [
-            // 匹配: "fieldClassification":"值"
             /fieldClassification[\\]*"*:[\\]*"*([^"\\,}]+)/,
-            // 匹配: fieldClassification=值
             /fieldClassification=([^,}]+)/,
-            // 匹配: "fieldClassification":值
             /fieldClassification[\\]*":([^",}]+)/
           ]
           
-          // 尝试每种模式
           for (const pattern of patterns) {
             const match = jsonString.match(pattern)
             if (match && match[1]) {
@@ -243,7 +227,7 @@ const parseMetadataJson = (jsonString) => {
       }
     } else if (typeof jsonString === 'object') {
       console.log('metadataJson是对象类型')
-      // 已经是对象，直接使用
+
       metadata = jsonString
     }
     
@@ -271,25 +255,22 @@ const parseObjectData = () => {
 
   console.log('开始解析对象数据:', props.object)
   
-  // 创建元数据对象（如果不存在）
+
   if (!props.object.metadata) {
     props.object.metadata = {}
   }
-  
-  // 处理元数据 - 分多种情况
-  // 1. 直接使用对象中的resourceSummary和fieldClassification字段
+
   if (props.object.resourceSummary || props.object.fieldClassification) {
     console.log('对象顶层包含resourceSummary或fieldClassification字段')
     props.object.metadata.resourceSummary = props.object.resourceSummary || props.object.metadata.resourceSummary || ''
     props.object.metadata.fieldClassification = props.object.fieldClassification || props.object.metadata.fieldClassification || ''
   }
   
-  // 2. 从metadataJson字段中解析
+
   if (props.object.metadataJson) {
     console.log('发现metadataJson字段:', props.object.metadataJson)
-    // 解析元数据JSON，并合并到现有metadata对象
+
     const parsedMetadata = parseMetadataJson(props.object.metadataJson)
-    // 只有在解析得到的字段有值时才覆盖现有值
     Object.keys(parsedMetadata).forEach(key => {
       if (parsedMetadata[key]) {
         props.object.metadata[key] = parsedMetadata[key]
@@ -297,7 +278,7 @@ const parseObjectData = () => {
     })
   }
   
-  // 最后确保所有元数据字段都有默认值，避免模板中出现undefined
+
   const defaultMetadata = {
     dataName: props.object.entity || '',
     sourceUnit: '',
@@ -307,7 +288,7 @@ const parseObjectData = () => {
     fieldClassification: ''
   }
   
-  // 将默认值合并到metadata对象中
+中
   props.object.metadata = { ...defaultMetadata, ...props.object.metadata }
   
   console.log('最终使用的metadata对象:', props.object.metadata)
@@ -326,14 +307,12 @@ const parseObjectData = () => {
 // 解析Excel数据
 const parseExcelData = (excelData) => {
   try {
-    // 从二进制数据中解析Excel
+
     const workbook = XLSX.read(excelData, { type: 'binary' })
-    
-    // 获取第一个工作表
+
     const firstSheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[firstSheetName]
-    
-    // 转换为JSON
+
     const data = XLSX.utils.sheet_to_json(worksheet)
     
     if (data.length === 0) {
@@ -342,10 +321,9 @@ const parseExcelData = (excelData) => {
       return
     }
     
-    // 设置表格数据
+
     tableData.value = data
-    
-    // 设置表格列
+
     const firstRow = data[0]
     tableColumns.value = Object.keys(firstRow).map(key => ({
       prop: key,
@@ -367,19 +345,15 @@ const handleExport = () => {
   }
   
   try {
-    // 创建工作簿
+
     const wb = XLSX.utils.book_new()
     
-    // 创建工作表
+
     const ws = XLSX.utils.json_to_sheet(tableData.value)
-    
-    // 添加工作表到工作簿
+
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-    
-    // 导出文件名
     const fileName = `${props.object.entity || 'excel_data'}.xlsx`
-    
-    // 保存文件
+
     XLSX.writeFile(wb, fileName)
     
     ElMessage.success(`已成功导出 ${fileName}`)

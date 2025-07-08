@@ -77,32 +77,29 @@ watch(() => props.visible, (val) => {
   console.log('VisualizationDialog visible prop changed:', val);
   
   if (!val) {
-    // 如果对话框关闭，清除任何待执行的初始化定时器
+
     if (initializationTimer) {
       clearTimeout(initializationTimer);
       initializationTimer = null;
     }
-    // 重置状态
+
     showManualRenderOption.value = false;
     initializationAttempts = 0;
   }
 });
 
-// 处理对话框关闭
 const handleClose = () => {
   console.log('关闭对话框');
   emit('update:visible', false);
 };
 
-// 处理手动渲染
+
 const handleManualRender = async () => {
   console.log('手动渲染请求');
   if (dataCubeRef.value) {
     try {
-      // 首先等待一个小延迟
+
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // 调用DataCube组件的强制渲染方法
       dataCubeRef.value.forceRender();
       ElMessage.success('正在尝试手动渲染图表...');
       showManualRenderOption.value = false;
@@ -119,22 +116,18 @@ const handleManualRender = async () => {
 const handleDialogOpened = async () => {
   console.log('对话框已完全打开，准备初始化图表');
   initializationAttempts++;
-  
-  // 先等待一个UI刷新周期
+
   await nextTick();
   
   if (visualizationContent.value) {
     console.log(`对话框内容区域尺寸: ${visualizationContent.value.clientWidth}x${visualizationContent.value.clientHeight}`);
   }
-  
-  // 使用setTimeout在宏任务中初始化，确保DOM已完全渲染
+
   initializationTimer = setTimeout(async () => {
     try {
       if (dataCubeRef.value) {
         console.log('开始调用DataCube的初始化方法');
         dataCubeRef.value.initializeChart();
-        
-        // 设置超时检查，判断是否需要显示手动渲染选项
         setTimeout(() => {
           if (dataCubeRef.value && 
               ((initializationAttempts >= MAX_INIT_ATTEMPTS) || 
@@ -142,7 +135,7 @@ const handleDialogOpened = async () => {
             console.log('自动初始化失败，显示手动渲染选项');
             showManualRenderOption.value = true;
           }
-        }, 5000); // 5秒后检查
+        }, 5000); 
       } else {
         console.error('无法获取DataCube组件引用');
         showManualRenderOption.value = true;
@@ -151,7 +144,7 @@ const handleDialogOpened = async () => {
       console.error('初始化过程中发生错误:', error);
       showManualRenderOption.value = true;
     }
-  }, 300); // 给对话框动画完成一些额外时间
+  }, 300); 
 };
 </script>
 

@@ -271,34 +271,29 @@ const generateMockData = () => {
   const industries = Object.keys(industryValues);
   const securityLevels = ['低', '中', '高'];
   const securityColors = ['#91cc75', '#fac858', '#ee6666'];
-  
-  // 生成100个样本数据点
+
   for (let i = 0; i < 100; i++) {
     const industry = industries[Math.floor(Math.random() * industries.length)];
     const securityIndex = Math.floor(Math.random() * 3);
     const securityLevel = securityLevels[securityIndex];
     const value = industryValues[industry];
-    
-    // 生成过去30天内的随机日期
+
     const date = new Date();
     date.setDate(date.getDate() - Math.floor(Math.random() * 30));
     const timeValue = date.getTime();
-    
-    // 使用统一大小，基于滑块值
     const dataSize = pointSize.value;
-    
-    // 使用固定的透明度
+
     const completeness = 0.8;
     
-    // 生成随机分级值（新增）
+
     const gradeValue = Math.random() * 20;
     
     data.push({
       name: `数据${i+1}`,
       value: [
-        timeValue,           // X轴: 时间
-        industries.indexOf(industry),  // Y轴: 行业索引
-        value              // Z轴: 分类值
+        timeValue,          
+        industries.indexOf(industry),  
+        value             
       ],
       industry: industry,
       securityLevel: securityLevel,
@@ -319,7 +314,7 @@ const generateMockData = () => {
         resourceSummary: '未知',
         fieldClassification: '未知'
       },
-      gradeValue: gradeValue  // 添加分级值
+      gradeValue: gradeValue  
     });
   }
   
@@ -328,15 +323,13 @@ const generateMockData = () => {
 
 // 强制渲染方法
 const forceRender = async () => {
-  // 重置所有状态
+
   loading.value = true;
   error.value = false;
   errorMessage.value = '';
-  
-  // 等待下一个tick确保UI更新
+
   await nextTick();
-  
-  // 延迟一点时间确保DOM完成更新
+
   setTimeout(async () => {
     if (!chartContainer.value) {
       console.error('即使强制渲染也找不到容器');
@@ -346,33 +339,29 @@ const forceRender = async () => {
     }
     
     try {
-      // 如果已经有chart实例，销毁它
+
       if (chart) {
         chart.dispose();
         chart = null;
       }
-      
-      // 明确设置容器尺寸
+
       chartContainer.value.style.width = '96%';
       chartContainer.value.style.height = '75vh';
       chartContainer.value.style.visibility = 'visible';
       chartContainer.value.style.display = 'block';
       chartContainer.value.style.margin = '5px auto';
-      
-      // 确保容器在DOM中完全可见
+
       document.body.appendChild(chartContainer.value);
       document.body.removeChild(chartContainer.value);
       chartContainer.value.parentNode.appendChild(chartContainer.value);
-      
-      // 创建新的echarts实例
+
       chart = echarts.init(chartContainer.value);
       
-      // 获取后端数据
       const { data, industries } = await processBackendData();
       
       let chartData = data;
       if (data.length === 0) {
-        // 如果没有数据，使用模拟数据作为备选方案
+
         const mockData = generateMockData();
         chartData = mockData;
       }
@@ -447,9 +436,9 @@ const forceRender = async () => {
             fontSize: 12,
             interval: 'auto'
           },
-          minInterval: 1000 * 60 * 60, // 最小间隔设为1小时
-          maxInterval: 24 * 3600 * 1000 * 7, // 最大间隔设为7天
-          splitNumber: 3 // 设置分割段数，减少为3条
+          minInterval: 1000 * 60 * 60, 
+          maxInterval: 24 * 3600 * 1000 * 7,
+          splitNumber: 3 
         },
         yAxis3D: {
           type: 'category',
@@ -471,7 +460,7 @@ const forceRender = async () => {
           axisLine: {
             lineStyle: { 
               width: 3,
-              color: '#666666' // 将轴线颜色改为深灰色
+              color: '#666666' 
             }
           },
           axisLabel: {
@@ -494,7 +483,7 @@ const forceRender = async () => {
             inside: false,
             length: 6,
             lineStyle: {
-              color: '#666666', // 将刻度线颜色改为深灰色
+              color: '#666666',  
               width: 2
             }
           }
@@ -518,7 +507,7 @@ const forceRender = async () => {
           axisLine: {
             lineStyle: { 
               width: 3,
-              color: '#666666' // 将轴线颜色改为深灰色
+              color: '#666666' 
             }
           },
           min: 0,
@@ -538,7 +527,7 @@ const forceRender = async () => {
             show: true,
             lineStyle: { 
               width: 3,
-              color: '#666666' // 将轴线颜色改为深灰色
+              color: '#666666' 
             }
           },
           axisLabel: {
@@ -549,7 +538,7 @@ const forceRender = async () => {
           axisTick: {
             show: true,
             lineStyle: {
-              color: '#666666', // 将刻度线颜色改为深灰色
+              color: '#666666', 
               width: 2
             },
             length: 6
@@ -557,18 +546,18 @@ const forceRender = async () => {
           splitLine: {
             show: true,
             lineStyle: {
-              color: '#666666', // 将网格线颜色改为深灰色
+              color: '#666666', 
               width: 1.8,
-              opacity: 0.5 // 降低一点不透明度，使网格线不那么突兀
+              opacity: 0.5 
             }
           },
           splitArea: {
             show: true,
             areaStyle: {
-              color: ['rgba(255,255,255,0.02)', 'rgba(250,250,250,0.05)'] // 更轻微的区域分隔，保持白色背景
+              color: ['rgba(255,255,255,0.02)', 'rgba(250,250,250,0.05)'] 
             }
           },
-          environment: '#ffffff', // 确保背景为纯白色
+          environment: '#ffffff',
           viewControl: {
             projection: 'perspective',
             autoRotate: autoRotate.value,
@@ -603,7 +592,7 @@ const forceRender = async () => {
             }
           },
           postEffect: {
-            enable: false // 禁用后期效果，可能导致背景变灰
+            enable: false 
           },
           temporalSuperSampling: {
             enable: true
@@ -940,7 +929,7 @@ const initChart = async () => {
           }
         },
         postEffect: {
-          enable: false // 禁用后期效果，可能导致背景变灰
+          enable: false 
         },
         temporalSuperSampling: {
           enable: true
@@ -971,20 +960,17 @@ const initChart = async () => {
         }
       }]
     };
-    
-    // 设置图表选项
+
     chart.setOption(option);
-    
-    // 添加窗口大小改变时自动调整图表大小的事件监听
+
     window.addEventListener('resize', resizeChart);
     
     loading.value = false;
     error.value = false;
-    initAttempts = 0; // 重置尝试次数
+    initAttempts = 0; 
   } catch (err) {
     console.error('初始化图表失败:', err);
-    
-    // 如果尝试次数未达到最大值，则延迟重试
+
     if (initAttempts < MAX_INIT_ATTEMPTS) {
       setTimeout(() => {
         initChart();
@@ -1001,23 +987,22 @@ const initChart = async () => {
 
 // 外部调用的初始化方法
 const initializeChart = () => {
-  // 重置尝试次数
+
   initAttempts = 0;
   error.value = false;
-  
-  // 延迟初始化，确保DOM已经完全渲染
+
   setTimeout(() => {
     initChart();
-  }, 300); // 减少延迟时间
+  }, 300); 
 };
 
-// 重试初始化
+
 const retryInit = () => {
   initAttempts = 0;
   initChart();
 };
 
-// 更新图表选项
+
 const updateChartOption = () => {
   if (!chart) return;
   
@@ -1034,11 +1019,10 @@ const updateChartOption = () => {
 const updatePointSize = async () => {
   if (!chart) return;
   
-  // 更新图表中所有点的大小
+
   const option = chart.getOption();
   const seriesData = option.series[0].data;
   
-  // 更新每个数据点的大小为当前滑块值
   const updatedData = seriesData.map(item => {
     item.symbolSize = pointSize.value;
     return item;
@@ -1064,7 +1048,6 @@ const resizeChart = () => {
 onMounted(() => {
   console.log('DataCube组件已挂载');
   
-  // 延迟一点点检查容器
   setTimeout(async () => {
     if (chartContainer.value) {
       console.log('容器已找到，可在需要时初始化图表');
@@ -1075,7 +1058,6 @@ onMounted(() => {
   }, 100);
 });
 
-// 组件卸载时释放资源
 onUnmounted(() => {
   if (chart) {
     chart.dispose();
@@ -1084,7 +1066,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', resizeChart);
 });
 
-// 暴露方法给父组件调用
 defineExpose({
   initializeChart,
   forceRender,
