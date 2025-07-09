@@ -172,22 +172,21 @@ import { ref, reactive, watch, defineProps, defineEmits } from 'vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { Document } from '@element-plus/icons-vue'
 import excelUploadService from '@/services/excelUploadService'
-import * as XLSX from 'xlsx' // 确保引入XLSX库用于处理Excel数据
+import * as XLSX from 'xlsx' 
 import axios from 'axios'
 import { API_URL } from '@/services/apiConfig'
 
 const props = defineProps({
-  // 是否显示对话框
+
   visible: {
     type: Boolean,
     default: false
   },
-  // 对话框标题
+
   title: {
     type: String,
     default: '新建数据对象'
   },
-  // 表单数据
   modelValue: {
     type: Object,
     default: () => ({
@@ -203,27 +202,21 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:visible', 'update:modelValue', 'save', 'cancel'])
-
-// 表单引用
 const formRef = ref(null)
-
-// 对话框可见性状态
 const dialogVisible = ref(false)
 
-// 加载状态
 const loading = ref(false)
 const loadingText = ref('')
 
-// 上传成功标志
+
 const uploadSuccess = ref(false)
 
-// 权重相关状态
 const showWeightForm = ref(false)
 const normalWeight = ref(1.0)
 const importantWeight = ref(2.0)
 const criticalWeight = ref(3.0)
 
-// 表单数据
+
 const form = reactive({
   entity: '',
   locationInfo: {
@@ -277,7 +270,6 @@ const formRules = {
   locationInfo: [
     {
       validator: (rule, value, callback) => {
-        // 只要有输入就通过
         if (form.locationInfo.input && form.locationInfo.input.split(',').length >= 3) {
           callback()
         } else {
@@ -310,25 +302,23 @@ const formRules = {
   ]
 }
 
-// 监听visible属性变化
+
 watch(() => props.visible, (newVal) => {
   dialogVisible.value = newVal
   if (newVal) {
-    // 当对话框打开时，重置表单数据
+
     resetForm()
   }
 })
 
-// 监听dialogVisible变化
 watch(dialogVisible, (newVal) => {
   emit('update:visible', newVal)
 })
 
-// 监听modelValue变化
 watch(() => props.modelValue, (newVal) => {
   if (!newVal) return
   
-  // 深拷贝对象，避免直接修改props
+
   form.entity = newVal.entity || ''
   if (newVal.locationInfo && typeof newVal.locationInfo === 'object') {
     if (newVal.locationInfo.databaseName || newVal.locationInfo.tableName || newVal.locationInfo.selectFields) {
@@ -339,8 +329,7 @@ watch(() => props.modelValue, (newVal) => {
   } else {
     form.locationInfo.input = ''
   }
-  
-  // 设置元数据
+
   if (newVal.metadata && typeof newVal.metadata === 'object') {
     form.metadata.dataName = newVal.metadata.dataName || newVal.entity || ''
     form.metadata.sourceUnit = newVal.metadata.sourceUnit || ''
@@ -349,7 +338,7 @@ watch(() => props.modelValue, (newVal) => {
     form.metadata.resourceSummary = newVal.metadata.resourceSummary || ''
     form.metadata.fieldClassification = newVal.metadata.fieldClassification || ''
   } else {
-    // 如果没有元数据，则使用实体名称和默认值
+
     form.metadata.dataName = newVal.entity || ''
     form.metadata.sourceUnit = ''
     form.metadata.contactPerson = ''
@@ -358,31 +347,31 @@ watch(() => props.modelValue, (newVal) => {
     form.metadata.fieldClassification = ''
   }
   
-  // 设置约束条件数组
+
   form.constraint = Array.isArray(newVal.constraint) ? [...newVal.constraint] : (newVal.constraint ? [newVal.constraint] : [])
   
-  // 设置各个约束条件字段
+
   if (newVal.formatConstraint) form.formatConstraint = newVal.formatConstraint
   if (newVal.accessConstraint) form.accessConstraint = newVal.accessConstraint
   if (newVal.pathConstraint) form.pathConstraint = newVal.pathConstraint
   if (newVal.regionConstraint) form.regionConstraint = newVal.regionConstraint
   if (newVal.shareConstraint) form.shareConstraint = newVal.shareConstraint
   
-  // 传输控制
+
   form.transferControl = Array.isArray(newVal.transferControl) ? [...newVal.transferControl] : (newVal.transferControl ? [newVal.transferControl] : [])
   
   form.excelData = newVal.excelData
 }, { deep: true })
 
-// 监听form变化，更新v-model
+
 watch(form, (newVal) => {
-  // 解析定位信息
+
   let locationInfoObj = {}
   if (newVal.locationInfo.input && newVal.locationInfo.input.split(',').length >= 3) {
     const arr = newVal.locationInfo.input.split(',').map(s => s.trim())
     const databaseName = arr[0]
     const tableName = arr[1]
-    // selectFields为第3位及以后全部字段合并
+
     const selectFields = arr.length > 2 ? arr.slice(2).join(',') : ''
     locationInfoObj = { databaseName, tableName, selectFields }
   }
@@ -416,24 +405,17 @@ watch(form, (newVal) => {
 // 添加Excel数据处理函数
 const processExcelData = (binaryString) => {
   try {
-    // 将二进制字符串转换为工作簿对象
+
     const workbook = XLSX.read(binaryString, { type: 'binary' })
-    
-    // 获取第一个工作表的名称
     const firstSheetName = workbook.SheetNames[0]
-    
-    // 获取工作表
     const worksheet = workbook.Sheets[firstSheetName]
-    
-    // 将工作表转换为JSON对象数组
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-    
-    // 提取表头和数据
+
     if (jsonData.length > 0) {
       const headers = jsonData[0]
       const dataRows = jsonData.slice(1)
       
-      // 将数据行转换为对象数组
+  
       const dataItems = dataRows.map(row => {
         const item = {}
         headers.forEach((header, index) => {
@@ -444,10 +426,9 @@ const processExcelData = (binaryString) => {
         return item
       })
       
-      // 保存表头到元数据
       form.metadata.headers = headers
       
-      // 返回处理后的数据
+ 
       return {
         headers,
         dataItems
@@ -463,15 +444,14 @@ const processExcelData = (binaryString) => {
 
 // 处理文件变更
 const handleFileChange = (file) => {
-  // 验证文件类型
+
   const isExcel = file.raw.type === 'application/vnd.ms-excel' || 
                  file.raw.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   if (!isExcel) {
     ElMessage.warning('请上传Excel格式的文件（.xls或.xlsx）')
     return false
   }
-  
-  // 如果没有手动输入实体名称，则使用文件名作为实体名称
+
   const fileName = file.name
   const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName
   
@@ -479,7 +459,6 @@ const handleFileChange = (file) => {
     form.entity = fileNameWithoutExt
   }
 
-  // 显示上传中状态
   loading.value = true
   loadingText.value = '正在处理Excel文件...'
   
@@ -488,16 +467,16 @@ const handleFileChange = (file) => {
     background: 'rgba(0, 0, 0, 0.7)'
   })
   
-  // 使用统一服务上传文件
+
   import('@/services/dataObjectService').then(async (module) => {
     const dataObjectService = module.default
     
     try {
-      // 先在本地读取解析Excel，获取表头和数据
+
       const reader = new FileReader()
       reader.onload = async (e) => {
         try {
-          // 本地解析Excel数据
+      
           const excelData = e.target.result
           const excelResult = processExcelData(excelData)
           
@@ -508,22 +487,21 @@ const handleFileChange = (file) => {
             return
           }
           
-          // 保存本地解析的数据到表单
+
           form.excelData = excelData
           form.metadata.headers = excelResult.headers
           form.dataItems = excelResult.dataItems
           
-          // 上传Excel文件到服务器并获取临时对象
+
           const uploadResult = await dataObjectService.uploadExcelFile(file.raw)
           
           console.log('Excel上传结果:', uploadResult)
           
           if (uploadResult.success) {
             uploadSuccess.value = true
-            
-            // 处理临时对象数据
+
             if (uploadResult.data) {
-              // 优先提取excelFileId
+
               if (uploadResult.data.excelFileId) {
                 form.excelFileId = uploadResult.data.excelFileId
                 console.log('获取到Excel文件ID:', form.excelFileId)
@@ -532,13 +510,13 @@ const handleFileChange = (file) => {
                 console.log('从临时对象ID获取文件ID:', form.excelFileId)
               }
               
-              // 只有在用户未输入任何元数据字段时，才考虑使用服务器元数据
+
               if (uploadResult.data.metadata && 
                   (!form.metadata.dataName && !form.metadata.sourceUnit && 
                    !form.metadata.contactPerson && !form.metadata.contactPhone && 
                    !form.metadata.resourceSummary && !form.metadata.fieldClassification)) {
                 console.log('用户未输入元数据，使用服务器返回的默认元数据')
-                // 保留表头信息，其他使用服务器返回的数据
+
                 const headers = form.metadata.headers || []
                 form.metadata = {
                   ...uploadResult.data.metadata,
@@ -549,7 +527,7 @@ const handleFileChange = (file) => {
                 console.log('保留用户输入的元数据信息')
               }
               
-              // 提取实体名称，只在用户未输入时使用
+
               if (uploadResult.data.entity && !form.entity) {
                 form.entity = uploadResult.data.entity
                 console.log('从临时对象获取实体名称:', form.entity)
@@ -558,13 +536,13 @@ const handleFileChange = (file) => {
             
             ElMessage.success('Excel文件上传并处理成功')
           } else {
-            // 上传可能失败，但我们仍有本地解析的数据
+
             console.warn('Excel上传失败，但已解析本地数据:', uploadResult.message)
             
-            // 设置一个本地ID
+
             form.excelFileId = `local-${Date.now()}`
             
-            // 虽然服务器上传失败，但本地已解析数据，标记为成功
+
             uploadSuccess.value = true
             
             ElMessage.warning(`Excel文件上传到服务器失败，将使用本地解析结果: ${uploadResult.message}`)
@@ -603,22 +581,20 @@ const handleFileChange = (file) => {
   return false // 阻止自动上传
 }
 
-// 修改保存按钮处理逻辑，确保Excel文件已上传
+// 修改保存按钮处理逻辑
 const handleSave = () => {
-  // 只保留定位信息相关日志
-  // console.log('【保存开始】处理保存按钮点击');
-  // 简单验证
+
   if (!form.entity) {
     ElMessage.warning('请输入实体名称或上传Excel表格文件')
     return
   }
-  // 解析定位信息
+
   let locationInfoObj = {}
   if (form.locationInfo.input && form.locationInfo.input.split(',').length >= 3) {
     const arr = form.locationInfo.input.split(',').map(s => s.trim())
     const databaseName = arr[0]
     const tableName = arr[1]
-    // selectFields为第3位及以后全部字段合并
+ 
     const selectFields = arr.length > 2 ? arr.slice(2).join(',') : ''
     locationInfoObj = { databaseName, tableName, selectFields }
     console.log('[定位信息] 解析后 locationInfoObj:', locationInfoObj)
@@ -634,7 +610,7 @@ const handleSave = () => {
     ElMessage.warning('请确保Excel文件已成功上传到服务器')
     return
   }
-  // 验证约束条件
+
   if (!form.formatConstraint) {
     ElMessage.warning('请选择格式约束')
     return
@@ -655,21 +631,21 @@ const handleSave = () => {
     ElMessage.warning('请选择共享约束')
     return
   }
-  // 确保有excelFileId，如果没有则创建一个
+
   if (!form.excelFileId) {
     form.excelFileId = `autogen-${Date.now()}`
-    // console.log('自动生成excelFileId:', form.excelFileId)
+
   }
   formRef.value.validate((valid) => {
     if (valid) {
-      // 构建约束条件数组
+
       const constraintArray = []
       if (form.formatConstraint) constraintArray.push(`格式约束:${form.formatConstraint}`)
       if (form.accessConstraint) constraintArray.push(`访问权限:${form.accessConstraint}`)
       if (form.pathConstraint) constraintArray.push(`传输路径约束:${form.pathConstraint}`)
       if (form.regionConstraint) constraintArray.push(`地域性约束:${form.regionConstraint}`)
       if (form.shareConstraint) constraintArray.push(`共享约束:${form.shareConstraint}`)
-      // 构建传播控制对象，与transferControl数组对应
+
       const propagationControl = {
         canRead: form.transferControl.includes('可读'),
         canModify: form.transferControl.includes('可修改'),
@@ -677,12 +653,10 @@ const handleSave = () => {
         canShare: form.transferControl.includes('可共享'),
         canDelegate: form.transferControl.includes('可委托')
       }
-      // 如果没有处理Excel数据，再次处理
       if (!form.dataItems && form.excelData) {
         const { dataItems } = processExcelData(form.excelData)
         form.dataItems = dataItems
       }
-      // 创建用户元数据对象副本，并添加特殊标记
       const userInputMetadata = {
         dataName: form.metadata.dataName || form.entity || '',
         sourceUnit: form.metadata.sourceUnit || '',
@@ -691,12 +665,10 @@ const handleSave = () => {
         resourceSummary: form.metadata.resourceSummary || '',
         fieldClassification: form.metadata.fieldClassification || '',
         headers: Array.isArray(form.metadata.headers) ? [...form.metadata.headers] : [],
-        _userInput: true, // 特殊标记，表示这是用户输入的元数据
-        _inputTimestamp: Date.now() // 添加时间戳
+        _userInput: true,
+        _inputTimestamp: Date.now()
       };
-      // 将元数据转换为JSON字符串，确保格式正确
       const metadataJsonString = JSON.stringify(userInputMetadata);
-      // 检查JSON格式是否正确
       try {
         JSON.parse(metadataJsonString);
       } catch (e) {
@@ -705,14 +677,13 @@ const handleSave = () => {
       }
       // 确保metadataJson字段独立存在
       const metadataForBackend = { ...userInputMetadata };
-      // 构建新对象，确保元数据被保留
       const newObject = {
         entity: form.entity,
         locationInfo: locationInfoObj,
         metadata: {...userInputMetadata},
         originalMetadata: {...userInputMetadata},
         metadataJson: metadataJsonString,
-        _preserveUserMetadata: true, // 特殊标记，指示应保留用户元数据
+        _preserveUserMetadata: true, 
         constraint: constraintArray,
         formatConstraint: form.formatConstraint,
         accessConstraint: form.accessConstraint,
@@ -727,7 +698,6 @@ const handleSave = () => {
         dataItems: form.dataItems || [],
         excelFileId: form.excelFileId
       };
-      // 创建dataContent字段，确保包含完整元数据
       try {
         const dataContent = {
           entity: newObject.entity,
@@ -741,18 +711,11 @@ const handleSave = () => {
         };
         newObject.dataContent = JSON.stringify(dataContent);
       } catch (error) {
-        // console.error('【错误】创建dataContent失败:', error);
       }
-      // 发送保存事件
-      // console.log('【保存流程】触发save事件，保存对象到后端');
       console.log('[定位信息] 发送前 newObject.locationInfo:', newObject.locationInfo)
       emit('save', newObject);
-      // console.log('【保存流程】save事件已触发完成');
-      // 关闭对话框
       dialogVisible.value = false;
-      // 显示成功消息
       ElMessage.success('数据对象创建成功');
-      // 重置表单
       resetForm();
     } else {
       ElMessage.warning('请填写必填字段')
@@ -783,10 +746,8 @@ const resetForm = () => {
   form.excelFileId = null
   form.weights = {}
   
-  // 重置上传状态
   uploadSuccess.value = false
   
-  // 重置权重表单
   showWeightForm.value = false
   normalWeight.value = 1.0
   importantWeight.value = 2.0
@@ -806,7 +767,6 @@ const handleCancel = () => {
 
 // 对话框关闭处理
 const handleDialogClosed = () => {
-  // 只有在非编辑模式下才重置表单
   if (!props.modelValue.id) {
     resetForm()
   }
@@ -820,7 +780,6 @@ const confirmWeightChange = () => {
     criticalWeight: criticalWeight.value
   }
   
-  // 发送权重数据到服务器
   axios.post(`${API_URL}/setWeights`, {
     general: normalWeight.value,
     important: importantWeight.value,
@@ -836,7 +795,6 @@ const confirmWeightChange = () => {
     })
     .catch(error => {
       ElMessage.error('权重设置失败，请稍后重试');
-      // 即使请求失败，仍在本地保存权重值
       showWeightForm.value = false;
     });
 }

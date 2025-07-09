@@ -293,7 +293,6 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  // 当前状态筛选
   currentStatus: {
     type: String,
     default: ''
@@ -303,22 +302,18 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  // 当前页
   currentPage: {
     type: Number,
     default: 1
   },
-  // 每页大小
   pageSize: {
     type: Number,
     default: 5
   },
-  // 总数据量
   totalCount: {
     type: Number,
     default: 0
   },
-  // 是否为已合格状态
   isQualifiedStatus: {
     type: Boolean,
     default: false
@@ -348,11 +343,8 @@ const currentPageValue = ref(props.currentPage)
 const pageSizeValue = ref(props.pageSize || 5)
 const selectedRows = ref([])
 
-// 分类分级值对话框可见性
 const classificationLevelDialogVisible = ref(false)
-// 当前操作的行数据
 const currentRow = ref(null)
-// 分类分级值数据
 const classificationLevelData = ref({
   classificationValue: '',
   levelValue: '',
@@ -367,7 +359,6 @@ const classificationLevelData = ref({
 
 const auditLogVisible = ref(false)
 
-// 组件内计算属性和方法
 const tableData = computed(() => {
   if (!props.data) return []
   let filtered = props.data
@@ -383,7 +374,6 @@ const tableData = computed(() => {
   return filtered.slice(startIndex, Math.min(endIndex, filtered.length))
 })
 
-// 监听props变化
 watch(() => props.searchKeyword, (newVal) => {
   searchValue.value = newVal
 })
@@ -396,7 +386,6 @@ watch(() => props.pageSize, (newVal) => {
   pageSizeValue.value = newVal
 })
 
-// 监听内部状态变化，向外发出事件
 watch(searchValue, (newVal) => {
   emit('update:search-keyword', newVal)
 })
@@ -409,55 +398,45 @@ watch(pageSizeValue, (newVal) => {
   emit('update:page-size', newVal)
 })
 
-// 处理状态筛选
 const setStatus = (status) => {
   emit('update:current-status', status)
 }
 
-// 处理搜索输入
 const handleSearchInput = (value) => {
   emit('update:search-keyword', value)
 }
 
-// 处理表格选择变更
 const handleSelectionChange = (rows) => {
   selectedRows.value = rows
   emit('selection-change', rows)
 }
 
-// 处理编辑
 const handleEdit = (row) => {
   emit('edit', row)
 }
 
-// 处理删除
 const handleDelete = (row) => {
   emit('delete', row)
 }
 
-// 处理预览
 const handlePreview = (row) => {
   emit('preview', row)
 }
 
-// 处理分页大小变化
 const handleSizeChange = (size) => {
   pageSizeValue.value = size
   emit('update:page-size', size)
 }
 
-// 处理当前页变化
 const handleCurrentChange = (page) => {
   currentPageValue.value = page
   emit('update:current-page', page)
 }
 
-// 处理排序变化
 const handleSortChange = (column) => {
   emit('sort-change', column)
 }
 
-// 获取状态对应的样式类名
 const getStatusClass = (status) => {
   if (status === '待校验' || status === '待检验') return 'status-pending'
   if (status === '已合格') return 'status-success'
@@ -466,11 +445,9 @@ const getStatusClass = (status) => {
   return ''
 }
 
-// 格式化约束条件文本
 const formatConstraintText = (text) => {
   if (!text) return text
   
-  // 如果包含冒号，分离前缀和内容
   if (text.includes(':')) {
     const parts = text.split(':')
     return `<span class="constraint-prefix">${parts[0]}:</span>${parts[1]}`
@@ -479,7 +456,6 @@ const formatConstraintText = (text) => {
   return text
 }
 
-// 解析元数据JSON
 const parseMetadataJson = (jsonString) => {
   try {
     if (!jsonString) {
@@ -573,7 +549,6 @@ const parseMetadataJson = (jsonString) => {
 // 提取反馈信息
 const extractFeedback = (dataContent) => {
   try {
-    // 如果是字符串类型
     if (typeof dataContent === 'string') {
 
       try {
@@ -619,26 +594,19 @@ const extractFeedback = (dataContent) => {
 // 生成分类分级值
 const generateClassificationLevel = (row) => {
   try {
-    // 设置当前行数据
     currentRow.value = row;
-    
-    // 为分类分级对话框初始化数据
     classificationLevelData.value = {
-      // 优先使用classificationValue，如果不存在则尝试使用totalCategoryValue
       classificationValue: row.classificationValue || row.totalCategoryValue || '',
       industryCategory: row.industryCategory || '',
       dataTimeliness: row.dataTimeliness || '',
       dataSource: row.dataSource || '',
-      // 优先使用levelValue，如果不存在则尝试使用totalGradeValue
       levelValue: row.levelValue || row.totalGradeValue || '',
-      // 硬编码默认分级值 - 未来可以从服务获取
       dbGrade: row.dbGrade !== undefined ? row.dbGrade : 0,
       tableGrade: row.tableGrade !== undefined ? row.tableGrade : 0,
       rowGrades: row.rowGrades || [0, 0],
       columnGrades: row.columnGrades || [0, 0]
     };
-    
-    // 显示分类分级对话框
+
     classificationLevelDialogVisible.value = true;
   } catch (error) {
     ElMessage.error('生成分类分级值时出错');
@@ -649,7 +617,6 @@ const generateClassificationLevel = (row) => {
 const handleClassificationLevelConfirm = async (data) => {
   try {
     if (currentRow.value) {
-      // 更新当前行的分类值和分级值
       currentRow.value.classificationValue = data.classificationValue;
       currentRow.value.totalCategoryValue = data.classificationValue;
       
@@ -659,14 +626,12 @@ const handleClassificationLevelConfirm = async (data) => {
       
       currentRow.value.levelValue = data.levelValue;
       currentRow.value.totalGradeValue = data.levelValue;
-      
-      // 更新分级值
+
       currentRow.value.dbGrade = data.dbGrade;
       currentRow.value.tableGrade = data.tableGrade;
       currentRow.value.rowGrades = data.rowGrades;
       currentRow.value.columnGrades = data.columnGrades;
       
-      // 保存到本地存储，作为临时备份，以防API保存失败
       try {
         const savedValues = JSON.parse(localStorage.getItem('classificationLevelValues') || '{}');
         savedValues[currentRow.value.id] = {
@@ -675,21 +640,17 @@ const handleClassificationLevelConfirm = async (data) => {
         };
         localStorage.setItem('classificationLevelValues', JSON.stringify(savedValues));
       } catch (localStorageError) {
-        console.warn('【分类分级值】本地存储保存失败:', localStorageError);
       }
       
-      // 构建分类值数据
       const categoryData = {
         industryCategory: data.industryCategory || '',
-        processingTimeCategory: data.dataTimeliness || '', // 后端使用processingTimeCategory，前端使用dataTimeliness
+        processingTimeCategory: data.dataTimeliness || '', 
         dataSourceCategory: data.dataSource || ''
       };
       
-      // 直接向API提交分类数据，而不是通过数据服务同步
+
       try {
         const objectId = currentRow.value.id;
-        
-        // 使用fetch API发送分类数据到特定端点
         const categoriesResponse = await fetch(`http://localhost:8080/api/objects/${objectId}/categories`, {
           method: 'POST',
           headers: {
@@ -698,7 +659,6 @@ const handleClassificationLevelConfirm = async (data) => {
           body: JSON.stringify(categoryData)
         });
         
-        // 检查响应状态
         if (!categoriesResponse.ok) {
           console.warn(`分类数据提交状态: ${categoriesResponse.status} ${categoriesResponse.statusText}`);
         } else {
@@ -706,29 +666,23 @@ const handleClassificationLevelConfirm = async (data) => {
         }
       } catch (apiError) {
         console.error('分类数据API提交失败:', apiError);
-        // API错误不阻止本地更新
+
       }
       
-      // 确保表格数据也得到更新
       const index = props.data.findIndex(item => item.id === currentRow.value.id);
       if (index !== -1) {
-        // 创建对象的副本进行更新而不是直接修改
         const updatedItem = { ...props.data[index], ...currentRow.value };
-        // 替换原对象
         props.data[index] = updatedItem;
         console.log('已更新数据源中的数据项:', updatedItem);
       }
       
-      // 通知用户更新成功
       ElMessage.success('分类分级值已更新');
       
-      // 触发数据更新事件 - 使用新数组触发Vue的响应性系统
       emit('update:data', [...props.data]);
     } else {
       ElMessage.error('更新分类分级值失败：当前行数据为空');
     }
     
-    // 关闭对话框
     classificationLevelDialogVisible.value = false;
   } catch (error) {
     console.error('更新分类分级值时出错:', error);
@@ -736,7 +690,6 @@ const handleClassificationLevelConfirm = async (data) => {
   }
 };
 
-// 获取反馈文本的类名
 const getFeedbackClass = (status) => {
   if (status === '待校验' || status === '待检验') return 'feedback-pending'
   if (status === '已合格') return 'feedback-success'
@@ -744,9 +697,7 @@ const getFeedbackClass = (status) => {
   return ''
 }
 
-// 表头自定义样式方法
 const headerCellStyle = ({ column }) => {
-  // 需要淡蓝色的列prop
   const blueProps = [
     'id',
     'entity',
@@ -756,7 +707,6 @@ const headerCellStyle = ({ column }) => {
     'auditInfo',
     'classificationLevelValue'
   ];
-  // 状态、反馈意见、操作三列表头更深灰色
   const grayProps = ['status', 'feedback', 'operation'];
   if (blueProps.includes(column.property)) {
     return {
@@ -770,7 +720,7 @@ const headerCellStyle = ({ column }) => {
   }
   if (grayProps.includes(column.property) || column.label === '操作') {
     return {
-      background: '#e0e2e6', // 更深灰色
+      background: '#e0e2e6',
       color: '#444',
       fontWeight: 'bold',
       fontSize: '15px',
@@ -778,7 +728,6 @@ const headerCellStyle = ({ column }) => {
       padding: '10px 0'
     };
   }
-  // 其他列
   return {
     background: '#f5f7fa',
     color: '#606266',
@@ -789,12 +738,11 @@ const headerCellStyle = ({ column }) => {
   };
 };
 
-// 新增内容单元格样式方法
 const cellStyle = ({ column }) => {
   const grayProps = ['status', 'feedback', 'operation'];
   if (grayProps.includes(column.property) || column.label === 'operation') {
     return {
-      background: '#fafafa' // 浅灰色
+      background: '#fafafa' 
     };
   }
   return {};
@@ -805,7 +753,6 @@ const showAuditLogDialog = (row) => {
 }
 
 function getLocationInfoObj(locationInfo, locationInfoJson) {
-  // 优先用 locationInfo
   if (typeof locationInfo === 'string') {
     try {
       locationInfo = JSON.parse(locationInfo)
@@ -839,7 +786,6 @@ function isClassificationGenerated(row) {
     v === '未分级';
   const cat = row.totalCategoryValue;
   const grade = row.totalGradeValue;
-  // 只要有一个不是"未生成"状态就禁用
   return !isEmpty(cat) || !isEmpty(grade);
 }
 </script>

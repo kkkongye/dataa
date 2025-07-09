@@ -73,8 +73,6 @@ const activeType = ref('all')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-// 模拟数据
-// 模拟数据（带重复 user）
 const allData = ref([
   { user: '张管理员', time: '2025-05-30 14:30:00', type: '新建' },
   { user: '李管理员', time: '2025-05-31 09:05:45', type: '修改' },
@@ -101,7 +99,6 @@ const filteredData = computed(() => {
   return allData.value.filter(item => item.type === activeType.value)
 })
 
-// 分页数据
 const pagedData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return filteredData.value.slice(start, start + pageSize.value)
