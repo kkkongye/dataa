@@ -27,6 +27,7 @@
               三维数据可视化
             </el-button>
             <el-button type="primary" plain @click="handleInitUser"> 使用方初始化</el-button>
+            <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button>
             <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
             <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button>
           </div>
@@ -452,7 +453,7 @@ const handleRequestToken = async () => {
   isRequestingToken.value = true
   
   try {
-    const apiUrl = 'http://localhost:8080/api/getToken'
+    const apiUrl = 'http://localhost:8083/api/getToken'
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -1287,6 +1288,44 @@ const handleInitUser = async () => {
       ElMessage.error('无法连接到使用方服务，请确保服务已启动');
     } else {
       ElMessage.error(`使用方系统初始化失败: ${error.message || '未知错误'}`);
+    }
+  }
+};
+
+// 处理验证组织机构凭证
+const handleVerifySC = async () => {
+  try {
+    const loadingInstance = ElLoading.service({
+      fullscreen: true,
+      text: '正在验证组织机构凭证...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    });
+
+    const response = await axios.post('http://localhost:8083/api/verify-sc');
+
+    loadingInstance.close();
+
+    if (response.data && (response.data.code === 1 || response.data.success === true) && 
+        !(response.data.msg && response.data.msg.includes('验证失败'))) {
+      ElMessage.success('组织机构凭证验证成功！');
+    } else {
+      ElMessage.error(`组织机构凭证验证失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error('组织机构凭证验证失败:', error);
+    
+    if (error.response) {
+      if (error.response.status === 404) {
+        ElMessage.error('使用方服务未启动或接口不存在');
+      } else if (error.response.status === 500) {
+        ElMessage.error(`使用方服务错误: ${error.response.data?.message || '内部服务器错误'}`);
+      } else {
+        ElMessage.error(`验证失败 (${error.response.status}): ${error.response.data?.message || error.message}`);
+      }
+    } else if (error.request) {
+      ElMessage.error('无法连接到使用方服务，请确保服务已启动');
+    } else {
+      ElMessage.error(`组织机构凭证验证失败: ${error.message || '未知错误'}`);
     }
   }
 };
