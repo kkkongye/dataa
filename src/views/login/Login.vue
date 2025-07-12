@@ -75,27 +75,31 @@ const handleLogin = async () => {
       { username: loginForm.username, password: loginForm.password },
       { withCredentials: true }
     )
-    if (response.data && response.data.code === 1) {
-        localStorage.setItem('role', loginForm.role)
-        localStorage.setItem('username', loginForm.username)
-      localStorage.setItem('userId', response.data.data.id?.toString?.() || '')
-        ElMessage.success('登录成功')
+    
+    if (response.data && (response.data.token || response.data.message === '登录成功')) {
+      localStorage.setItem('role', loginForm.role)
+      localStorage.setItem('username', loginForm.username)
+      localStorage.setItem('userId', response.data.id?.toString?.() || '')
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token)
+      }
+      ElMessage.success('登录成功')
 
-        switch (loginForm.role) {
-          case 'datasource':
-            router.push('/datasource')
-            break
-          case 'governor':
-            router.push('/governor')
-            break
-          case 'user':
-            router.push('/user')
-            break
-          default:
-            router.push('/datasource')
-        }
-      } else {
-      ElMessage.error(response.data.msg || '用户名或密码错误')
+      switch (loginForm.role) {
+        case 'datasource':
+          router.push('/datasource')
+          break
+        case 'governor':
+          router.push('/governor')
+          break
+        case 'user':
+          router.push('/user')
+          break
+        default:
+          router.push('/datasource')
+      }
+    } else {
+      ElMessage.error(response.data?.error || response.data?.msg || '用户名或密码错误')
     }
   } catch (error) {
     console.error('登录失败:', error)

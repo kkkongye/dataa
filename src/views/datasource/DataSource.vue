@@ -16,7 +16,7 @@
           <div class="api-error-content">
             <p>可能的解决方案:</p>
             <ol>
-              <li>确保后端服务在 http://localhost:8080 正常运行</li>
+              <li>确保后端服务在 http://localhost:8081 正常运行</li>
             </ol>
             <div class="api-error-actions">
               <el-button size="small" @click="apiErrorVisible = false">知道了</el-button>
@@ -586,7 +586,7 @@ const handleEdit = async (row) => {
   }
   
   try {
-    const apiUrl = 'http://localhost:8080/api/objects/list';
+    const apiUrl = 'http://localhost:8081/api/objects/list';
     const response = await axios.get(apiUrl);
     
     let targetObject = null;
@@ -679,7 +679,7 @@ const saveEditObject = async (updatedObject) => {
   try {
     if (!updatedObject.dataItems || updatedObject.dataItems.length === 0) {
       try {
-        const apiUrl = 'http://localhost:8080/api/objects/list';
+        const apiUrl = 'http://localhost:8081/api/objects/list';
         const response = await axios.get(apiUrl);
         
         let targetObject = null;
@@ -1144,25 +1144,39 @@ const currentExcelFile = ref(null)
 const previewEntity = (row) => {
   console.log('预览实体数据:', row)
   
+  // 深拷贝row，防止后续操作影响原始数据
+  const rowCopy = JSON.parse(JSON.stringify(row))
 
-  previewForm.id = row.id
-  previewForm.entity = row.entity
-  previewForm.locationInfo = row.locationInfo
-  previewForm.locationInfoJson = row.locationInfoJson
-  previewForm.constraint = ensureArray(row.constraint)
-  previewForm.transferControl = ensureArray(row.transferControl)
-  previewForm.status = row.status
+  previewForm.id = rowCopy.id
+  previewForm.entity = rowCopy.entity || (rowCopy.dataEntity && rowCopy.dataEntity.entity)
+  previewForm.locationInfo = rowCopy.locationInfo
+  previewForm.locationInfoJson = rowCopy.locationInfoJson
+  previewForm.constraint = ensureArray(rowCopy.constraint)
+  previewForm.transferControl = ensureArray(rowCopy.transferControl)
+  previewForm.status = rowCopy.status || (rowCopy.dataEntity && rowCopy.dataEntity.status)
 
   previewForm.totalCategoryValue = ''
   previewForm.totalGradeValue = ''
   previewForm.classificationValue = ''
   previewForm.levelValue = ''
 
-  if (row.metadata && typeof row.metadata === 'object') {
-    previewForm.metadata = { ...row.metadata }
+  if (rowCopy.metadata && typeof rowCopy.metadata === 'object') {
+    previewForm.metadata = { ...rowCopy.metadata }
+  } else if (rowCopy.dataEntity && rowCopy.dataEntity.metadata) {
+    previewForm.metadata = { ...rowCopy.dataEntity.metadata }
   } else {
+    previewForm.metadata = extractMetadata(rowCopy)
+  }
 
-    previewForm.metadata = extractMetadata(row)
+  // 保存原始dataItems数据 - 优先从dataEntity中提取
+  if (rowCopy.dataEntity && Array.isArray(rowCopy.dataEntity.dataItems)) {
+    previewForm.dataItems = [...rowCopy.dataEntity.dataItems]
+    console.log('从dataEntity中获取到dataItems:', previewForm.dataItems.length)
+  } else if (Array.isArray(rowCopy.dataItems)) {
+    previewForm.dataItems = [...rowCopy.dataItems]
+    console.log('从顶层获取到dataItems:', previewForm.dataItems.length)
+  } else {
+    previewForm.dataItems = []
   }
 
   currentExcelFile.value = null
@@ -1172,25 +1186,24 @@ const previewEntity = (row) => {
   
   previewDialogVisible.value = true
   
-  if (row.excelData) {
+  if (rowCopy.excelData) {
     ElMessage.info('正在准备Excel数据，请稍候...')
     isExcelLoading.value = true
   
     setTimeout(() => {
       try {
-        currentExcelFile.value = row.excelData
+        currentExcelFile.value = rowCopy.excelData
       } catch (error) {
-        fetchExcelDataFromApi(row.id)
+        fetchExcelDataFromApi(rowCopy.id, previewForm.dataItems)
       }
     }, 100)
   } else {
     console.log('没有本地Excel数据，尝试从API获取')
-
-    fetchExcelDataFromApi(row.id)
+    fetchExcelDataFromApi(rowCopy.id, previewForm.dataItems)
   }
 }
 
-const fetchExcelDataFromApi = async (objectId) => {
+const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
   if (!objectId) {
     ElMessage.warning('无法获取对象ID，无法显示Excel数据')
     return
@@ -1198,16 +1211,14 @@ const fetchExcelDataFromApi = async (objectId) => {
   
   isExcelLoading.value = true
 
-  const apiUrl = 'http://localhost:8080/api/objects/list'
+  const apiUrl = 'http://localhost:8081/api/objects/list'
   
   try {
     const response = await axios.get(apiUrl)
     
-
     let targetObject = null
     let dataItems = null
     
-
     if (response.data && Array.isArray(response.data)) {
       targetObject = response.data.find(item => item.id === objectId)
     } else if (response.data && response.data.list && Array.isArray(response.data.list)) {
@@ -1216,13 +1227,21 @@ const fetchExcelDataFromApi = async (objectId) => {
       targetObject = response.data.data.find(item => item.id === objectId)
     }
     
-
     if (targetObject) {
       extractClassificationValues(targetObject)
       
-      if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
+      // 优先检查dataEntity内部的dataItems
+      if (targetObject.dataEntity && Array.isArray(targetObject.dataEntity.dataItems)) {
+        dataItems = targetObject.dataEntity.dataItems
+        console.log('从dataEntity内部获取到dataItems:', dataItems.length)
+      } 
+      // 然后检查顶层的dataItems
+      else if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
-      } else if (targetObject.dataContent) {
+        console.log('从顶层获取到dataItems:', dataItems.length)
+      } 
+      // 再检查dataContent内的数据
+      else if (targetObject.dataContent) {
         try {
           const dataContent = typeof targetObject.dataContent === 'string' 
             ? JSON.parse(targetObject.dataContent) 
@@ -1230,6 +1249,10 @@ const fetchExcelDataFromApi = async (objectId) => {
             
           if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
             dataItems = dataContent.dataItems
+            console.log('从dataContent中获取到dataItems:', dataItems.length)
+          } else if (dataContent && dataContent.dataEntity && dataContent.dataEntity.dataItems) {
+            dataItems = dataContent.dataEntity.dataItems
+            console.log('从dataContent.dataEntity中获取到dataItems:', dataItems.length)
           }
         } catch (e) {
           console.error('解析dataContent失败:', e)
@@ -1244,10 +1267,18 @@ const fetchExcelDataFromApi = async (objectId) => {
       )
     }
     
+    // 如果API没有返回dataItems，则保留原始dataItems
+    if (!dataItems || dataItems.length === 0) {
+      // 使用传入的原始dataItems
+      dataItems = originalDataItems && originalDataItems.length > 0 ? originalDataItems : null;
+      console.log('使用原始dataItems数据:', dataItems ? dataItems.length : 0)
+    }
+    
+    // 如果仍然没有数据，才使用模拟数据
     if (!dataItems || dataItems.length === 0) {
       ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
-      
       dataItems = generateMockDataForObject(objectId)
+      console.log('使用模拟数据:', dataItems.length)
     }
     
     createExcelFromDataItems(dataItems)
@@ -1256,8 +1287,15 @@ const fetchExcelDataFromApi = async (objectId) => {
     ElMessage.error(`获取Excel数据失败: ${error.message}`)
     isExcelLoading.value = false
     
-    const mockData = generateMockDataForObject(objectId)
-    createExcelFromDataItems(mockData)
+    // 出错时，优先使用原始数据
+    if (originalDataItems && originalDataItems.length > 0) {
+      console.log('API请求出错，使用原始dataItems:', originalDataItems.length)
+      createExcelFromDataItems(originalDataItems)
+    } else {
+      console.log('API请求出错，使用模拟数据')
+      const mockData = generateMockDataForObject(objectId)
+      createExcelFromDataItems(mockData)
+    }
   }
 }
 
@@ -2702,7 +2740,7 @@ const handleClassificationLevelConfirm = async (data) => {
   }
   try {
     // 只在这里单独上传分类分级值
-    const categoriesResponse = await fetch(`http://localhost:8080/api/objects/${editForm.id}/categories`, {
+    const categoriesResponse = await fetch(`http://localhost:8081/api/objects/${editForm.id}/categories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(categoryData)

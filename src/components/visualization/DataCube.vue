@@ -66,7 +66,7 @@ const pointSize = ref(10);
 let initAttempts = 0;
 const MAX_INIT_ATTEMPTS = 10;
 const RETRY_DELAY = 500;
-const apiUrl = 'http://localhost:8080/api/objects/list';
+const apiUrl = 'http://localhost:8081/api/objects/list';
 
 // 行业分类映射值
 const industryValues = {

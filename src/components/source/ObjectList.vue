@@ -271,7 +271,7 @@
       v-model:modelValue="classificationLevelData"
       :objectId="currentRow?.id || ''"
       :debug="true"
-      :apiBaseUrl="'http://localhost:8080'"
+      :apiBaseUrl="'http://localhost:8081'"
       @confirm="handleClassificationLevelConfirm"
     />
 
@@ -651,7 +651,7 @@ const handleClassificationLevelConfirm = async (data) => {
 
       try {
         const objectId = currentRow.value.id;
-        const categoriesResponse = await fetch(`http://localhost:8080/api/objects/${objectId}/categories`, {
+        const categoriesResponse = await fetch(`http://localhost:8081/api/objects/${objectId}/categories`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

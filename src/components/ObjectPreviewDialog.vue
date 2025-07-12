@@ -56,7 +56,9 @@
     <div class="excel-data-section">
       <h3 class="section-title">数据预览</h3>
       <div v-if="isExcelLoading" class="loading-container">
-        <el-loading :fullscreen="false" text="正在加载Excel数据..." />
+        <!-- 替换el-loading为Element Plus的加载指示器 -->
+        <el-icon class="is-loading" :size="30"><Loading /></el-icon>
+        <span class="loading-text">正在加载Excel数据...</span>
       </div>
       <div v-else-if="excelTableData.length > 0" class="excel-table-container">
         <div class="data-info">找到 {{ excelTableData.length }} 条记录</div>
@@ -85,8 +87,9 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { ref, watch, defineProps, defineEmits, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 
 const props = defineProps({
@@ -102,17 +105,60 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:visible'])
 const dialogVisible = ref(props.visible)
-const excelTableData = ref(props.excelData)
+const excelTableData = ref([])
 const isExcelLoading = ref(false)
 
+// 初始化时和依赖变化时更新表格数据
+const updateTableData = () => {
+  // 优先使用传入的excelData
+  if (props.excelData && props.excelData.length > 0) {
+    excelTableData.value = [...props.excelData]
+    console.log('使用excelData作为数据源:', excelTableData.value.length)
+  } 
+  // 如果excelData为空但object.dataItems存在，则使用object.dataItems
+  else if (props.object && props.object.dataItems && props.object.dataItems.length > 0) {
+    excelTableData.value = [...props.object.dataItems]
+    console.log('使用object.dataItems作为数据源:', excelTableData.value.length)
+  } 
+  // 如果都为空则清空数据
+  else {
+    excelTableData.value = []
+    console.log('无可用数据源')
+  }
+}
+
+// 监听props变化
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
+  if (val) {
+    updateTableData()
+  }
 })
+
+// 监听dialogVisible变化并通知父组件
 watch(dialogVisible, (val) => {
   emit('update:visible', val)
 })
+
+// 监听excelData变化
 watch(() => props.excelData, (val) => {
-  excelTableData.value = val
+  if (val && val.length > 0) {
+    excelTableData.value = val
+  } else {
+    updateTableData()
+  }
+}, { deep: true })
+
+// 监听object.dataItems变化
+watch(() => props.object?.dataItems, (val) => {
+  if ((!props.excelData || props.excelData.length === 0) && val && val.length > 0) {
+    excelTableData.value = val
+  }
+}, { deep: true })
+
+// 组件挂载时初始化
+onMounted(() => {
+  updateTableData()
 })
 
 function closeDialog() {
@@ -280,5 +326,24 @@ function handleExportExcel() {
   white-space: nowrap;
   display: inline-block;
   vertical-align: middle;
+}
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+}
+.is-loading {
+  animation: rotating 2s linear infinite;
+}
+.loading-text {
+  margin-top: 10px;
+  color: #909399;
+  font-size: 14px;
+}
+@keyframes rotating {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style> 

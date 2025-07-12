@@ -1548,7 +1548,7 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
     let currentObject = sharedTableData.find(item => compareIds(item.id, id));
     if (!currentObject) {
       try {
-        const resp = await axios.get(`http://localhost:8080/api/objects/${id}`);
+        const resp = await axios.get(`http://localhost:8081/api/objects/${id}`);
         if (resp.data && resp.data.data) {
           currentObject = resp.data.data;
         } else if (resp.data) {
@@ -1586,7 +1586,7 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
 
     try {
       const response = await axios.put(
-        `http://localhost:8080/api/objects/${id}`,
+        `http://localhost:8081/api/objects/${id}`,
         backendData,
         { headers: { 'Content-Type': 'application/json' } }
       );

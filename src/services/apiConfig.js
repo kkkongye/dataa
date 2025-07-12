@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 基础API URL
-export const API_BASE_URL = 'http://localhost:8080';  
+export const API_BASE_URL = 'http://localhost:8081';  
 export const API_URL = `${API_BASE_URL}/api`;
 
 export const MOCK_ENABLED = true; 
