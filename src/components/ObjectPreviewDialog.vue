@@ -152,7 +152,7 @@ watch(() => props.excelData, (val) => {
 // 监听object.dataItems变化
 watch(() => props.object?.dataItems, (val) => {
   if ((!props.excelData || props.excelData.length === 0) && val && val.length > 0) {
-    excelTableData.value = val
+  excelTableData.value = val
   }
 }, { deep: true })
 

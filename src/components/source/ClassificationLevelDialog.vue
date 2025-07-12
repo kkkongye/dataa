@@ -84,7 +84,7 @@
           
           <div class="level-item">
             <span class="label">列分级值：</span>
-            <!-- <span class="value">{{ columnGradeValue }}</span> -->
+            <span class="value">{{ columnGradeValue }}</span> --
             <!-- <el-popover
               placement="right"
               :width="300"
@@ -106,7 +106,7 @@
 
           <div class="level-item">
             <span class="label">行分级值：</span>
-            <!-- <span class="value">{{ rowGradeValue }}</span> -->
+            <span class="value">{{ rowGradeValue }}</span>
             <!-- <el-popover
               placement="right"
               :width="300"
@@ -210,20 +210,10 @@
             min-width="100"
           >
             <template #default="scope">
-              <el-tag :type="
-                scope.row.重要程度 === '核心'
-                  ? 'danger'
-                  : scope.row.重要程度 === '重要'
-                    ? 'warning'
-                    : 'success'
-              ">
-                {{
-                  scope.row.重要程度 === '核心'
-                    ? 3
-                    : scope.row.重要程度 === '重要'
-                      ? 2
-                      : 1
-                }}
+              <el-tag :type="getRowWeightTagType(scope.row.rowGradeValue || scope.row.重要程度)">
+                {{ scope.row.rowGradeValue || 
+                   (scope.row.重要程度 === '核心' ? 3 :
+                    scope.row.重要程度 === '重要' ? 2 : 1) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -389,7 +379,7 @@ const totalGradeValue = computed(() => {
     const rowValue = parseFloat(rowGradeValue.value) || 0;
     const colValue = parseFloat(columnGradeValue.value) || 0;
     
-    const sum = dbValue + tableValue + rowValue + colValue;
+    const sum =tableValue;
     const result = parseFloat(sum.toFixed(1));
     
     return result;
@@ -401,8 +391,7 @@ const totalGradeValue = computed(() => {
 
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
-    console.log('[分类分级] 接收到新的modelValue:', newVal);
-    console.log('[分类分级] dataItems数据:', newVal.dataItems ? newVal.dataItems.length : '无');
+
 
     industryCategory.value = newVal.industryCategory !== undefined ? newVal.industryCategory : '';
     dataTimeliness.value = newVal.dataTimeliness !== undefined ? newVal.dataTimeliness : '';
@@ -518,7 +507,6 @@ onMounted(() => {
 const fetchCategoryData = async (objectId) => {
   try {
     if (!objectId) {
-      console.warn('获取分类值数据失败：缺少对象ID');
       return;
     }
   
@@ -563,11 +551,8 @@ const fetchCategoryData = async (objectId) => {
       } else {
         console.warn('在对象数据中未找到分类数据');
       }
-    } else {
-      console.warn('获取对象数据返回空结果');
-    }
+    } 
   } catch (error) {
-    console.error('获取对象数据出错:', error);
 
     industryCategory.value = '';
     dataTimeliness.value = '';
@@ -585,7 +570,7 @@ watch(dialogVisible, (newVal) => {
   }
 });
 
-const handleConfirm = () => {
+const handleConfirm = async () => {
   try {
 
     const result = {
@@ -615,7 +600,6 @@ const handleConfirm = () => {
               : ''));
             
     if (!id) {
-      console.warn('【分类分级值】错误: 未找到有效的对象ID，无法保存分类分级值');
       ElMessage.error('缺少对象ID，无法保存分类分级值');
       // 仍然关闭对话框并传递本地计算结果
       emit('confirm', result);
@@ -625,143 +609,225 @@ const handleConfirm = () => {
     }
     
 
-    const postData = {
-      totalCategoryValue: String(totalClassificationValue.value),
-      totalGradeValue: String(totalGradeValue.value)
-    };
-    
 
     const categoryData = {
-      industryCategory: industryCategory.value,
-      processingTimeCategory: dataTimeliness.value, 
-      dataSourceCategory: dataSource.value
+      id: id,  
+      objectId: id, 
+      industryCategory: industryCategory.value || "",
+      processingTimeCategory: dataTimeliness.value || "", 
+      dataSourceCategory: dataSource.value || ""
     };
 
     const baseUrl = 'http://localhost:8081/api';
     
-    const requests = [];
-
-    const totalValuesUrl = `${baseUrl}/objects/${id}/total_values`;
-    const totalValuesRequest = axios.post(totalValuesUrl, postData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
-    });
-    requests.push(totalValuesRequest);
+    try {
+      const checkResp = await axios.get(`${baseUrl}/objects/${id}`);
+      
+   
+      if (checkResp.data) {
+        const objectData = checkResp.data && checkResp.data.data ? checkResp.data.data : checkResp.data;
 
 
-    const categoriesUrl = `${baseUrl}/objects/${id}/categories`;
-    const categoriesRequest = axios.post(categoriesUrl, categoryData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
-    });
-    requests.push(categoriesRequest);
 
-
-    Promise.all(requests)
-      .then(async ([totalValuesResponse, categoriesResponse]) => {
-        let successMessages = [];
-        let warningMessages = [];
-
-        if (totalValuesResponse.status >= 200 && totalValuesResponse.status < 300 && 
-            totalValuesResponse.data && totalValuesResponse.data.code === 1) {
-          const successUrlPattern = totalValuesUrl.replace(id, '{id}');
-          localStorage.setItem('classificationLevelSuccessUrl', successUrlPattern);
-          successMessages.push('分类分级总值保存成功');
+        const updateData = { ...objectData };
+        if (updateData.dataEntity) {
+          updateData.dataEntity = { ...updateData.dataEntity };
         } else {
-
-          warningMessages.push(`分类分级总值保存失败: ${totalValuesResponse.data?.msg || totalValuesResponse.data?.message || '未知错误'}`);
+          updateData.dataEntity = {};
         }
-
-
-        if (categoriesResponse.status >= 200 && categoriesResponse.status < 300 && 
-            categoriesResponse.data && categoriesResponse.data.code === 1) {
-          successMessages.push('分类类别值保存成功');
-        } else {
- 
-          warningMessages.push(`分类类别值保存失败: ${categoriesResponse.data?.msg || categoriesResponse.data?.message || '未知错误'}`);
+        
+        // 更新分类和分级值
+        updateData.industryCategory = industryCategory.value || "";
+        updateData.processingTimeCategory = dataTimeliness.value || "";
+        updateData.dataSourceCategory = dataSource.value || "";
+        updateData.totalCategoryValue = totalClassificationValue.value || "0";
+        updateData.totalGradeValue = totalGradeValue.value || "0";
+        updateData.rowGrades = [...rowGrades.value]; // 确保包含行分级值数组
+        updateData.status = '待校验';
+        
+        if (updateData.dataEntity) {
+          updateData.dataEntity.status = '待校验';
         }
-
-
-        if (
-          totalValuesResponse.status >= 200 && totalValuesResponse.status < 300 && totalValuesResponse.data && totalValuesResponse.data.code === 1 &&
-          categoriesResponse.status >= 200 && categoriesResponse.status < 300 && categoriesResponse.data && categoriesResponse.data.code === 1
-        ) {
-          try {
-            console.log('[分类分级] 尝试GET原始对象:', `${baseUrl}/objects/${id}`);
-            const getResp = await axios.get(`${baseUrl}/objects/${id}`);
-            let objectData = getResp.data && getResp.data.data ? getResp.data.data : getResp.data;
-            console.log('[分类分级] GET返回对象:', objectData);
-
-            if (!objectData) throw new Error('未获取到对象原始数据');
-            objectData.status = '待校验';
-            if (objectData.dataEntity) {
-              objectData.dataEntity.status = '待校验';
-
-            }
-
-            const putBody = {
-              ...objectData,
-              dataEntity: {
-                ...objectData.dataEntity,
-                status: '待检验'
+        
+        // 确保所有关键字段都存在
+        if (!updateData.id && id) {
+          updateData.id = id;
+        }
+        
+        // 移除可能导致问题的undefined值
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key] === undefined) {
+            delete updateData[key];
+          } else if (typeof updateData[key] === 'object' && updateData[key] !== null) {
+            Object.keys(updateData[key]).forEach(subKey => {
+              if (updateData[key][subKey] === undefined) {
+                delete updateData[key][subKey];
               }
-            };
-
-            Object.keys(putBody).forEach(key => {
-              if (putBody[key] === undefined) delete putBody[key];
             });
-            console.log('[分类分级] PUT请求body(全量):', putBody);
-
-            const putResp = await axios.put(`${baseUrl}/objects/${id}`, putBody, {
-              headers: { 'Content-Type': 'application/json' }
-            });
-            console.log('[分类分级] PUT返回:', putResp);
-
-            if (
-              putResp.status === 200 || putResp.status === 204 ||
-              (putResp.data && (putResp.data.code === 200 || putResp.data.code === 1 || putResp.data.success === true))
-            ) {
-              successMessages.push('状态已变为待校验');
-            } else {
-              warningMessages.push('状态修改为待校验失败');
-            }
-          } catch (e) {
-            console.error('[分类分级] 自动修改状态为待校验失败:', e);
-            warningMessages.push('自动修改状态为待校验失败: ' + (e.message || e));
           }
-        }
-
-        if (successMessages.length > 0) {
-          ElMessage.success(successMessages.join('；'));
-        }
-        if (warningMessages.length > 0) {
-          ElMessage.warning(warningMessages.join('；'));
-        }
-
-
-        emit('confirm', result);
-        emit('update:modelValue', null);
-        window.location.reload(); 
-      })
-      .catch(error => {
-        console.error('【分类分级值】请求失败:', error.message);
-
-        ElMessage({
-          message: '无法连接到后端保存分类分级值，但已更新本地显示',
-          type: 'warning',
-          duration: 5000
         });
         
-        emit('confirm', result);
-        emit('update:modelValue', null);
+        
+        try {
+          const updateResp = await axios.put(`${baseUrl}/objects/${id}`, updateData, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (updateResp.status === 200 || 
+              updateResp.status === 204 || 
+              (updateResp.data && (updateResp.data.code === 1 || updateResp.data.code === 200))) {
+            ElMessage.success('分类分级值更新成功');
+            emit('confirm', result);
+            emit('update:modelValue', null);
+            window.location.reload();
+            return;
+          }
+        } catch (updateError) {
+        }
+      }
+    } catch(e) {
+    }
+    
+    // 如果直接更新失败，继续使用原有的方式尝试
+    const requests = [];
+
+    // 尝试使用PUT方法更新总值
+    const totalValuesUrl = `${baseUrl}/objects/${id}/total_values`;
+    const totalValuesData = {
+      id: id,
+      objectId: id,
+      totalCategoryValue: totalClassificationValue.value || "0",
+      totalGradeValue: totalGradeValue.value || "0"
+    };
+    
+    let useFallbackMethod = false;  // 标记是否需要使用备用方法
+    
+    // 尝试PUT方法
+    try {
+      const totalValuesPutResponse = await axios.put(totalValuesUrl, totalValuesData, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
       });
 
+      
+      if (totalValuesPutResponse.status >= 200 && totalValuesPutResponse.status < 300) {
+
+      } else {
+        // 如果PUT失败，标记使用备用方法
+        useFallbackMethod = true;
+      }
+    } catch (putError) {
+      console.error('[分类分级] 总值PUT失败:', putError);
+      useFallbackMethod = true;
+    }
+    
+    // 如果需要使用备用方法
+    if (useFallbackMethod) {
+      
+      // 只更新必要的字段
+      try {
+        // 第三种方式：直接通过PATCH更新特定字段
+        const patchData = {
+          id: id,
+          totalCategoryValue: totalClassificationValue.value || "0",
+          totalGradeValue: totalGradeValue.value || "0",
+          industryCategory: industryCategory.value || "",
+          processingTimeCategory: dataTimeliness.value || "",
+          dataSourceCategory: dataSource.value || "",
+          rowGrades: [...rowGrades.value] // 确保包含行分级值数组
+        };
+        
+
+        
+        const patchResponse = await axios.patch(`${baseUrl}/objects/${id}`, patchData, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        
+        if (patchResponse.status >= 200 && patchResponse.status < 300) {
+          ElMessage.success('分类分级值更新成功');
+          emit('confirm', result);
+          emit('update:modelValue', null);
+          window.location.reload();
+          return;
+        }
+      } catch (patchError) {
+        console.error('[分类分级] PATCH更新失败:', patchError);
+      }
+      
+      // 如果所有尝试都失败了，使用原始的POST方法
+      const totalValuesRequest = axios.post(totalValuesUrl, totalValuesData, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
+      });
+      requests.push(totalValuesRequest);
+      
+      const categoriesUrl = `${baseUrl}/objects/${id}/categories`;
+      const categoriesRequest = axios.post(categoriesUrl, categoryData, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
+      });
+      requests.push(categoriesRequest);
+    }
+    
+    // 移除旧的分类PUT请求尝试，因为已经在上面处理过了
+
+    // 如果有POST请求需要执行
+    if (requests.length > 0) {
+      Promise.all(requests)
+        .then(async ([totalValuesResponse, categoriesResponse]) => {
+          let successMessages = [];
+          let warningMessages = [];
+
+          if (totalValuesResponse && totalValuesResponse.status >= 200 && totalValuesResponse.status < 300 && 
+              totalValuesResponse.data && totalValuesResponse.data.code === 1) {
+            const successUrlPattern = totalValuesUrl.replace(id, '{id}');
+            localStorage.setItem('classificationLevelSuccessUrl', successUrlPattern);
+            successMessages.push('分类分级总值保存成功');
+          } else if (totalValuesResponse) {
+            warningMessages.push(`分类分级总值保存失败: ${totalValuesResponse.data?.msg || totalValuesResponse.data?.message || '未知错误'}`);
+          }
+
+          if (categoriesResponse && categoriesResponse.status >= 200 && categoriesResponse.status < 300 && 
+              categoriesResponse.data && categoriesResponse.data.code === 1) {
+            successMessages.push('分类类别值保存成功');
+          } else if (categoriesResponse) {
+            warningMessages.push(`分类类别值保存失败: ${categoriesResponse.data?.msg || categoriesResponse.data?.message || '未知错误'}`);
+          }
+
+          // 其余的处理逻辑不变
+          if (successMessages.length > 0) {
+            ElMessage.success(successMessages.join('；'));
+          }
+          if (warningMessages.length > 0) {
+            ElMessage.warning(warningMessages.join('；'));
+          }
+
+          emit('confirm', result);
+          emit('update:modelValue', null);
+          window.location.reload(); 
+        })
+        .catch(error => {
+          console.error('[分类分级] 保存请求错误:', error);
+          ElMessage({
+            message: '无法连接到后端保存分类分级值，但已更新本地显示',
+            type: 'warning',
+            duration: 5000
+          });
+          
+          emit('confirm', result);
+          emit('update:modelValue', null);
+        });
+    } else {
+      // 如果没有请求需要执行(PUT方法都成功了)，直接返回成功
+      ElMessage.success('分类分级值保存成功');
+      emit('confirm', result);
+      emit('update:modelValue', null);
+      window.location.reload();
+    }
+
   } catch (error) {
-    console.error('【分类分级值】确认过程出现异常:', error);
+    console.error('[分类分级] 确认操作错误:', error);
     ElMessage.error('确认分类分级值时发生错误');
   }
 }
@@ -818,13 +884,27 @@ const showRowDetailDialog = async () => {
     
     // 直接使用props.modelValue中的dataItems，如果存在
     if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
-      console.log('[分类分级详情] 使用props.modelValue中的dataItems:', props.modelValue.dataItems.length);
+      console.log('[行分级值] 使用现有数据, rowGrades:', rowGrades.value);
+      
+      // 确保rowGrades长度与dataItems匹配
+      if (rowGrades.value.length < props.modelValue.dataItems.length) {
+        const defaultValue = 1.0;
+        const difference = props.modelValue.dataItems.length - rowGrades.value.length;
+        for (let i = 0; i < difference; i++) {
+          rowGrades.value.push(defaultValue);
+        }
+      }
+      
       rowExcelData.value = props.modelValue.dataItems.map((item, index) => {
+        // 使用rowGrades中对应位置的值作为rowGradeValue
+        const gradeValue = index < rowGrades.value.length ? rowGrades.value[index] : 1;
         return {
           ...item,
-          rowGradeValue: rowGrades.value[index] || '未设置'
+          rowGradeValue: gradeValue
         };
       });
+      
+      console.log('[行分级值] 处理后的行数据:', rowExcelData.value);
       rowDetailDialogVisible.value = true;
       fetchingData.value = false;
       return;
@@ -833,7 +913,7 @@ const showRowDetailDialog = async () => {
     await fetchExcelData('row');
     rowDetailDialogVisible.value = true;
   } catch (error) {
-    console.error('获取行分级值详情失败:', error);
+    console.error('[行分级值] 获取详情失败:', error);
     ElMessage.error('获取行分级值详情失败');
   } finally {
     fetchingData.value = false;
@@ -848,7 +928,6 @@ const showColumnDetailDialog = async () => {
     
     // 直接使用props.modelValue中的dataItems，如果存在
     if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
-      console.log('[分类分级详情] 使用props.modelValue中的dataItems:', props.modelValue.dataItems.length);
       columnExcelData.value = [...props.modelValue.dataItems];
       
       // 添加分级值行
@@ -870,7 +949,6 @@ const showColumnDetailDialog = async () => {
     await fetchExcelData('column');
     columnDetailDialogVisible.value = true;
   } catch (error) {
-    console.error('获取列分级值详情失败:', error);
     ElMessage.error('获取列分级值详情失败');
   } finally {
     fetchingData.value = false;
@@ -891,36 +969,31 @@ const fetchExcelData = async (type = 'row') => {
 
     const url = props.debug ? `${apiUrl}?_t=${Date.now()}` : apiUrl;
     
-    console.log(`[分类分级详情] 开始获取数据，URL: ${url}`);
+    console.log(`[${type}分级值] 请求数据: ${url}`);
     const response = await axios.get(url);
-    console.log(`[分类分级详情] 获取到响应:`, response.data);
+    console.log(`[${type}分级值] 响应数据:`, response.data);
 
     if (response.data && typeof response.data === 'object') {
       // 提取数据项
       const extractDataItems = (data) => {
-        console.log('[分类分级详情] 提取数据项，原始数据结构:', Object.keys(data));
         
         // 首先检查dataEntity.dataItems
         if (data.dataEntity && data.dataEntity.dataItems && Array.isArray(data.dataEntity.dataItems)) {
-          console.log('[分类分级详情] 从dataEntity.dataItems获取数据，数量:', data.dataEntity.dataItems.length);
           return data.dataEntity.dataItems;
         }
         
         // 然后检查顶层dataItems
         if (data.dataItems && Array.isArray(data.dataItems)) {
-          console.log('[分类分级详情] 从顶层dataItems获取数据，数量:', data.dataItems.length);
           return data.dataItems;
         }
 
         // 检查data.dataEntity.dataItems
         if (data.data && data.data.dataEntity && Array.isArray(data.data.dataEntity.dataItems)) {
-          console.log('[分类分级详情] 从data.dataEntity.dataItems获取数据，数量:', data.data.dataEntity.dataItems.length);
           return data.data.dataEntity.dataItems;
         }
         
         // 检查data.dataItems
         if (data.data && data.data.dataItems && Array.isArray(data.data.dataItems)) {
-          console.log('[分类分级详情] 从data.dataItems获取数据，数量:', data.data.dataItems.length);
           return data.data.dataItems;
         }
         
@@ -935,43 +1008,38 @@ const fetchExcelData = async (type = 'row') => {
               if (typeof content === 'string') {
                 try {
                   content = JSON.parse(content);
-                  console.log('[分类分级详情] 解析dataContent成功');
+                  console.log(`[${type}分级值] 解析dataContent成功`);
                 } catch (parseError) {
-                  console.warn('[分类分级详情] 解析dataContent为JSON失败:', parseError.message);
+                  console.warn(`[${type}分级值] 解析dataContent为JSON失败:`, parseError.message);
                 }
               }
 
               if (content && content.dataItems && Array.isArray(content.dataItems)) {
-                console.log('[分类分级详情] 从content.dataItems获取数据，数量:', content.dataItems.length);
                 return content.dataItems;
               }
               
               if (content && content.dataEntity && content.dataEntity.dataItems && Array.isArray(content.dataEntity.dataItems)) {
-                console.log('[分类分级详情] 从content.dataEntity.dataItems获取数据，数量:', content.dataEntity.dataItems.length);
                 return content.dataEntity.dataItems;
               }
       
               if (Array.isArray(content)) {
-                console.log('[分类分级详情] content本身是数组，数量:', content.length);
                 return content;
               }
               
               if (typeof content === 'object') {
                 for (const key in content) {
                   if (Array.isArray(content[key]) && content[key].length > 0) {
-                    console.log(`[分类分级详情] 从content.${key}获取数据，数量:`, content[key].length);
                     return content[key];
                   }
                 }
               }
             } catch (contentError) {
-              console.error('[分类分级详情] 处理dataContent时出错:', contentError);
+              console.error(`[${type}分级值] 处理dataContent时出错:`, contentError);
             }
           }
           
           for (const key in objectData) {
             if (Array.isArray(objectData[key]) && objectData[key].length > 0) {
-              console.log(`[分类分级详情] 从objectData.${key}获取数据，数量:`, objectData[key].length);
               return objectData[key];
             }
           }
@@ -979,22 +1047,39 @@ const fetchExcelData = async (type = 'row') => {
         
         for (const key in data) {
           if (Array.isArray(data[key]) && data[key].length > 0) {
-            console.log(`[分类分级详情] 从data.${key}获取数据，数量:`, data[key].length);
             return data[key];
           }
         }
-        
-        console.warn('[分类分级详情] 未能找到有效的数据项');
+
         return null;
       };
       
       const dataItems = extractDataItems(response.data);
       
       if (dataItems && dataItems.length > 0) {
-        console.log(`[分类分级详情] 成功提取${dataItems.length}条数据项`);
         
         if (type === 'row') {
           // 处理行分级值数据
+          // 尝试从响应中提取rowGrades数组
+          let extractedRowGrades = null;
+          
+          if (response.data.rowGrades && Array.isArray(response.data.rowGrades)) {
+            extractedRowGrades = response.data.rowGrades;
+          } else if (response.data.data && response.data.data.rowGrades && Array.isArray(response.data.data.rowGrades)) {
+            extractedRowGrades = response.data.data.rowGrades;
+          }
+          
+          console.log(`[行分级值] 提取到的rowGrades:`, extractedRowGrades);
+          
+          // 如果成功提取到rowGrades，则使用它
+          if (extractedRowGrades && extractedRowGrades.length > 0) {
+            rowGrades.value = extractedRowGrades.map(val => {
+              // 确保每个值都是数字
+              const numVal = parseFloat(val);
+              return isNaN(numVal) ? 1 : numVal;
+            });
+          }
+          
           if (rowGrades.value.length < dataItems.length) {
             const defaultValue = 1.0; 
             const difference = dataItems.length - rowGrades.value.length;
@@ -1008,11 +1093,11 @@ const fetchExcelData = async (type = 'row') => {
           rowExcelData.value = dataItems.map((item, index) => {
             return {
               ...item,
-              rowGradeValue: rowGrades.value[index] || '未设置'
+              rowGradeValue: rowGrades.value[index]
             };
           });
           
-          console.log(`[分类分级详情] 行分级值数据处理完成，数量: ${rowExcelData.value.length}`);
+          console.log(`[行分级值] 数据处理完成，行数:${rowExcelData.value.length}，权重:`, rowGrades.value);
         } else {
           // 处理列分级值数据
           columnExcelData.value = dataItems;
@@ -1083,7 +1168,6 @@ const fetchExcelData = async (type = 'row') => {
       }
     ];
 
-    console.log('[分类分级详情] 使用模拟数据:', mockData);
     
     if (type === 'row') {
       rowExcelData.value = mockData;
@@ -1123,6 +1207,21 @@ const getGradeTagType = (value) => {
   if (num >= 2.0) return 'warning';  
   if (num >= 1.0) return 'success';  
   return 'info';                     
+}
+
+const getRowWeightTagType = (value) => {
+  // 如果值是字符串形式的数字，转换为数字
+  const num = parseFloat(value);
+  if (!isNaN(num)) {
+    if (num >= 3.0) return 'danger';   // 高权重（对应"核心"）
+    if (num >= 2.0) return 'warning';  // 中等权重（对应"重要"）
+    if (num >= 1.0) return 'success';  // 低权重（对应"一般"）
+  } else {
+    // 如果值不是数字，按字符串处理
+    if (value === '核心') return 'danger';
+    if (value === '重要') return 'warning';
+  }
+  return 'success'; // 默认低权重
 }
 </script>
 
