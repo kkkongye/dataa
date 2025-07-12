@@ -539,7 +539,15 @@ const handleEdit = async (row) => {
   
   editForm.excelData = sourceObj.excelData || null
 
-  editForm.dataItems = sourceObj.dataItems || []
+  // 优先从dataEntity中获取dataItems
+  if (sourceObj.dataEntity && Array.isArray(sourceObj.dataEntity.dataItems)) {
+    console.log('从dataEntity中获取dataItems:', sourceObj.dataEntity.dataItems.length);
+    editForm.dataItems = [...sourceObj.dataEntity.dataItems];
+    // 保存dataEntity引用，以便后续使用
+    editForm.dataEntity = sourceObj.dataEntity;
+  } else {
+    editForm.dataItems = sourceObj.dataItems || [];
+  }
   
   if (sourceObj.dataContent) {
     try {
@@ -758,9 +766,22 @@ const saveEditObject = async (updatedObject) => {
 
     if (updatedObject.dataItems && updatedObject.dataItems.length > 0) {
       dataContent.dataItems = updatedObject.dataItems
+      
+      // 同时更新dataEntity中的dataItems
+      if (!dataContent.dataEntity) {
+        dataContent.dataEntity = { 
+          entity: updatedObject.entity,
+          status: updatedObject.status,
+          feedback: updatedObject.feedback
+        };
+      }
+      dataContent.dataEntity.dataItems = updatedObject.dataItems;
     } else {
       if (dataContent.dataItems && Array.isArray(dataContent.dataItems) && dataContent.dataItems.length > 0) {
         updatedObject.dataItems = dataContent.dataItems;
+      } else if (dataContent.dataEntity && Array.isArray(dataContent.dataEntity.dataItems) && dataContent.dataEntity.dataItems.length > 0) {
+        updatedObject.dataItems = dataContent.dataEntity.dataItems;
+        dataContent.dataItems = dataContent.dataEntity.dataItems; // 同步到顶层
       }
     }
     
@@ -2703,17 +2724,35 @@ const classificationLevelData = ref({})
 
 
 const openClassificationLevelDialog = () => {
-  classificationLevelData.value = {
-    classificationValue: editForm.classificationValue || editForm.totalCategoryValue || '',
-    industryCategory: editForm.industryCategory || '',
-    dataTimeliness: editForm.dataTimeliness || '',
-    dataSource: editForm.dataSource || '',
-    levelValue: editForm.levelValue || editForm.totalGradeValue || '',
-    dbGrade: editForm.dbGrade !== undefined ? editForm.dbGrade : 0,
-    tableGrade: editForm.tableGrade !== undefined ? editForm.tableGrade : 0,
-    rowGrades: editForm.rowGrades || [0, 0],
-    columnGrades: editForm.columnGrades || [0, 0]
+  // 从dataEntity中提取数据
+  let rowData = { ...editForm };
+  
+  // 如果有dataEntity，从中提取数据
+  if (rowData.dataEntity) {
+    console.log('从dataEntity中提取分类分级数据');
+    if (rowData.dataEntity.dataItems) {
+      rowData.dataItems = rowData.dataEntity.dataItems;
+    }
   }
+  
+  classificationLevelData.value = {
+    classificationValue: rowData.classificationValue || rowData.totalCategoryValue || '',
+    industryCategory: rowData.industryCategory || '',
+    dataTimeliness: rowData.dataTimeliness || '',
+    dataSource: rowData.dataSource || '',
+    levelValue: rowData.levelValue || rowData.totalGradeValue || '',
+    dbGrade: rowData.dbGrade !== undefined ? rowData.dbGrade : 0,
+    tableGrade: rowData.tableGrade !== undefined ? rowData.tableGrade : 0,
+    rowGrades: rowData.rowGrades || [0, 0],
+    columnGrades: rowData.columnGrades || [0, 0],
+    // 添加dataItems数据，确保分类分级弹窗能够访问到
+    dataItems: rowData.dataItems || (rowData.dataEntity && rowData.dataEntity.dataItems) || []
+  }
+  
+  console.log('打开分类分级弹窗，数据项数量:', 
+    (rowData.dataItems && rowData.dataItems.length) || 
+    (rowData.dataEntity && rowData.dataEntity.dataItems && rowData.dataEntity.dataItems.length) || 0);
+    
   classificationLevelDialogVisible.value = true
 }
 

@@ -315,7 +315,7 @@ const props = defineProps({
   // 自定义API基础URL
   apiBaseUrl: {
     type: String,
-    default: 'http://localhost:8080'
+    default: 'http://localhost:8081'
   }
 })
 
@@ -401,6 +401,8 @@ const totalGradeValue = computed(() => {
 
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
+    console.log('[分类分级] 接收到新的modelValue:', newVal);
+    console.log('[分类分级] dataItems数据:', newVal.dataItems ? newVal.dataItems.length : '无');
 
     industryCategory.value = newVal.industryCategory !== undefined ? newVal.industryCategory : '';
     dataTimeliness.value = newVal.dataTimeliness !== undefined ? newVal.dataTimeliness : '';
@@ -520,7 +522,7 @@ const fetchCategoryData = async (objectId) => {
       return;
     }
   
-    const baseUrl = 'http://localhost:8080/api';
+    const baseUrl = 'http://localhost:8081/api';
     const url = `${baseUrl}/objects/${objectId}`;
 
     const response = await axios.get(url);
@@ -635,7 +637,7 @@ const handleConfirm = () => {
       dataSourceCategory: dataSource.value
     };
 
-    const baseUrl = 'http://localhost:8080/api';
+    const baseUrl = 'http://localhost:8081/api';
     
     const requests = [];
 
@@ -811,9 +813,22 @@ const fetchingData = ref(false)
 
 const showRowDetailDialog = async () => {
   try {
-
     rowExcelData.value = [];
     fetchingData.value = true;
+    
+    // 直接使用props.modelValue中的dataItems，如果存在
+    if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
+      console.log('[分类分级详情] 使用props.modelValue中的dataItems:', props.modelValue.dataItems.length);
+      rowExcelData.value = props.modelValue.dataItems.map((item, index) => {
+        return {
+          ...item,
+          rowGradeValue: rowGrades.value[index] || '未设置'
+        };
+      });
+      rowDetailDialogVisible.value = true;
+      fetchingData.value = false;
+      return;
+    }
     
     await fetchExcelData('row');
     rowDetailDialogVisible.value = true;
@@ -828,9 +843,29 @@ const showRowDetailDialog = async () => {
 // 显示列分级值详情弹窗
 const showColumnDetailDialog = async () => {
   try {
-
     columnExcelData.value = [];
     fetchingData.value = true;
+    
+    // 直接使用props.modelValue中的dataItems，如果存在
+    if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
+      console.log('[分类分级详情] 使用props.modelValue中的dataItems:', props.modelValue.dataItems.length);
+      columnExcelData.value = [...props.modelValue.dataItems];
+      
+      // 添加分级值行
+      const columnKeys = getObjectKeys(columnExcelData.value);
+      if (columnExcelData.value.length > 0) {
+        const gradeRow = {};
+        columnKeys.forEach((key, index) => {
+          gradeRow[key] = columnGrades.value[index] || 0.4;
+        });
+        gradeRow['_isGradeRow'] = true;
+        columnExcelData.value.push(gradeRow);
+      }
+      
+      columnDetailDialogVisible.value = true;
+      fetchingData.value = false;
+      return;
+    }
     
     await fetchExcelData('column');
     columnDetailDialogVisible.value = true;
@@ -845,33 +880,47 @@ const showColumnDetailDialog = async () => {
 // 从API获取Excel数据
 const fetchExcelData = async (type = 'row') => {
   try {
-
     const id = props.objectId;
     
     if (!id) {
-
       throw new Error('无法获取对象ID');
     }
 
-    const apiBaseUrl = props.apiBaseUrl || 'http://localhost:8080';
+    const apiBaseUrl = props.apiBaseUrl || 'http://localhost:8081';
     const apiUrl = `${apiBaseUrl}/api/objects/${id}`;
 
     const url = props.debug ? `${apiUrl}?_t=${Date.now()}` : apiUrl;
     
+    console.log(`[分类分级详情] 开始获取数据，URL: ${url}`);
     const response = await axios.get(url);
-
+    console.log(`[分类分级详情] 获取到响应:`, response.data);
 
     if (response.data && typeof response.data === 'object') {
-
-
+      // 提取数据项
       const extractDataItems = (data) => {
-   
+        console.log('[分类分级详情] 提取数据项，原始数据结构:', Object.keys(data));
+        
+        // 首先检查dataEntity.dataItems
+        if (data.dataEntity && data.dataEntity.dataItems && Array.isArray(data.dataEntity.dataItems)) {
+          console.log('[分类分级详情] 从dataEntity.dataItems获取数据，数量:', data.dataEntity.dataItems.length);
+          return data.dataEntity.dataItems;
+        }
+        
+        // 然后检查顶层dataItems
         if (data.dataItems && Array.isArray(data.dataItems)) {
-
+          console.log('[分类分级详情] 从顶层dataItems获取数据，数量:', data.dataItems.length);
           return data.dataItems;
         }
 
+        // 检查data.dataEntity.dataItems
+        if (data.data && data.data.dataEntity && Array.isArray(data.data.dataEntity.dataItems)) {
+          console.log('[分类分级详情] 从data.dataEntity.dataItems获取数据，数量:', data.data.dataEntity.dataItems.length);
+          return data.data.dataEntity.dataItems;
+        }
+        
+        // 检查data.dataItems
         if (data.data && data.data.dataItems && Array.isArray(data.data.dataItems)) {
+          console.log('[分类分级详情] 从data.dataItems获取数据，数量:', data.data.dataItems.length);
           return data.data.dataItems;
         }
         
@@ -880,47 +929,49 @@ const fetchExcelData = async (type = 'row') => {
           const objectData = data.data;
 
           if (objectData.dataContent) {
-          
             try {
-
               let content = objectData.dataContent;
               
               if (typeof content === 'string') {
-
                 try {
                   content = JSON.parse(content);
-
+                  console.log('[分类分级详情] 解析dataContent成功');
                 } catch (parseError) {
-                  console.warn('【Excel数据】解析dataContent为JSON失败:', parseError.message);
+                  console.warn('[分类分级详情] 解析dataContent为JSON失败:', parseError.message);
                 }
               }
 
               if (content && content.dataItems && Array.isArray(content.dataItems)) {
-
+                console.log('[分类分级详情] 从content.dataItems获取数据，数量:', content.dataItems.length);
                 return content.dataItems;
+              }
+              
+              if (content && content.dataEntity && content.dataEntity.dataItems && Array.isArray(content.dataEntity.dataItems)) {
+                console.log('[分类分级详情] 从content.dataEntity.dataItems获取数据，数量:', content.dataEntity.dataItems.length);
+                return content.dataEntity.dataItems;
               }
       
               if (Array.isArray(content)) {
+                console.log('[分类分级详情] content本身是数组，数量:', content.length);
                 return content;
               }
               
-
               if (typeof content === 'object') {
                 for (const key in content) {
                   if (Array.isArray(content[key]) && content[key].length > 0) {
+                    console.log(`[分类分级详情] 从content.${key}获取数据，数量:`, content[key].length);
                     return content[key];
                   }
                 }
               }
             } catch (contentError) {
-              console.error('【Excel数据】处理dataContent时出错:', contentError);
+              console.error('[分类分级详情] 处理dataContent时出错:', contentError);
             }
           }
           
-
           for (const key in objectData) {
             if (Array.isArray(objectData[key]) && objectData[key].length > 0) {
-
+              console.log(`[分类分级详情] 从objectData.${key}获取数据，数量:`, objectData[key].length);
               return objectData[key];
             }
           }
@@ -928,32 +979,30 @@ const fetchExcelData = async (type = 'row') => {
         
         for (const key in data) {
           if (Array.isArray(data[key]) && data[key].length > 0) {
-
+            console.log(`[分类分级详情] 从data.${key}获取数据，数量:`, data[key].length);
             return data[key];
           }
         }
         
+        console.warn('[分类分级详情] 未能找到有效的数据项');
         return null;
       };
       
       const dataItems = extractDataItems(response.data);
       
       if (dataItems && dataItems.length > 0) {
+        console.log(`[分类分级详情] 成功提取${dataItems.length}条数据项`);
         
         if (type === 'row') {
-
+          // 处理行分级值数据
           if (rowGrades.value.length < dataItems.length) {
-
             const defaultValue = 1.0; 
             const difference = dataItems.length - rowGrades.value.length;
             for (let i = 0; i < difference; i++) {
               rowGrades.value.push(defaultValue);
             }
-   
           } else if (rowGrades.value.length > dataItems.length) {
-
             rowGrades.value = rowGrades.value.slice(0, dataItems.length);
-
           }
 
           rowExcelData.value = dataItems.map((item, index) => {
@@ -962,50 +1011,51 @@ const fetchExcelData = async (type = 'row') => {
               rowGradeValue: rowGrades.value[index] || '未设置'
             };
           });
-  
+          
+          console.log(`[分类分级详情] 行分级值数据处理完成，数量: ${rowExcelData.value.length}`);
         } else {
+          // 处理列分级值数据
           columnExcelData.value = dataItems;
           
-
           const columnKeys = getObjectKeys(dataItems);
+          console.log(`[分类分级详情] 提取到列名: ${columnKeys.join(', ')}`);
+          
           if (columnGrades.value.length < columnKeys.length) {
-
             const defaultValue = 0.4;
             const difference = columnKeys.length - columnGrades.value.length;
             for (let i = 0; i < difference; i++) {
               columnGrades.value.push(defaultValue);
             }
-
           } else if (columnGrades.value.length > columnKeys.length) {
-
             columnGrades.value = columnGrades.value.slice(0, columnKeys.length);
-
           }
           
-
           if (columnExcelData.value.length > 0) {
             const gradeRow = {};
-
             columnKeys.forEach((key, index) => {
               gradeRow[key] = columnGrades.value[index] || 0.4;
             });
-
             gradeRow['_isGradeRow'] = true;
             columnExcelData.value.push(gradeRow);
           }
+          
+          console.log(`[分类分级详情] 列分级值数据处理完成，数量: ${columnExcelData.value.length}`);
         }
         
         return true;
+      } else {
+        console.warn('[分类分级详情] 未找到有效的数据项');
       }
     }
     
     // 如果上面的方法都失败了，说明API返回格式异常
-    console.error('【Excel数据】无法从API响应中提取有效数据');
+    console.error('[分类分级详情] 无法从API响应中提取有效数据');
     throw new Error('API返回数据格式不正确');
     
   } catch (error) {
-    console.error('【Excel数据】获取失败:', error.message);
+    console.error('[分类分级详情] 获取数据失败:', error.message);
     
+    // 生成模拟数据
     const id = props.objectId || '';
     const shortId = id.substring(0, 4);
     
@@ -1014,22 +1064,27 @@ const fetchExcelData = async (type = 'row') => {
         "产品ID": `P${shortId}-001`,
         "名称": "手机",
         "库存量": "200",
+        "重要性": "重要",
         "对象ID": id
       },
       {
         "产品ID": `P${shortId}-002`,
         "名称": "耳机",
         "库存量": "500",
+        "重要性": "重要",
         "对象ID": id
       },
       {
         "产品ID": `P${shortId}-003`,
         "名称": "充电器",
         "库存量": "300",
+        "重要性": "核心",
         "对象ID": id
       }
     ];
 
+    console.log('[分类分级详情] 使用模拟数据:', mockData);
+    
     if (type === 'row') {
       rowExcelData.value = mockData;
     } else {

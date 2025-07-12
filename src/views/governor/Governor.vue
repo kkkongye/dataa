@@ -359,7 +359,7 @@ function adaptBackendData(backendItem) {
 // 页面加载时从后端获取数据并适配
 const loadDataFromBackend = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/objects/list')
+    const response = await axios.get('http://localhost:8081/api/objects/list')
     let dataArray = []
     if (Array.isArray(response.data)) {
       dataArray = response.data
@@ -544,7 +544,7 @@ const updateStatus = async (row, newStatus) => {
 // 添加刷新数据列表的函数
 const refreshDataList = async () => {
   try {
-    const response = await fetch('http://localhost:8080/api/objects/list', {
+    const response = await fetch('http://localhost:8081/api/objects/list', {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
@@ -678,7 +678,7 @@ const fetchExcelDataFromApi = async (objectId) => {
   console.log(`【Excel数据】正在从API获取数据，对象ID:`, objectId)
   isExcelLoading.value = true
   
-  const apiUrl = 'http://localhost:8080/api/objects/list'
+  const apiUrl = 'http://localhost:8081/api/objects/list'
   console.log('【Excel数据】API请求URL:', apiUrl)
   
   try {
