@@ -44,7 +44,8 @@
           三维数据可视化
         </el-button>
         <el-button type="primary" plain @click="$emit('show-application-list')" style="margin-left: 8px;">申请列表</el-button>
-        <el-button type="primary" @click="$emit('create')">新建数据对象</el-button>
+        <el-button type="primary" plain @click="$emit('create')">新建数据对象</el-button>
+        <el-button type="primary" plain @click="handlePushToGovernance">发送数字对象值治理方</el-button>
       </div>
     </div>
     
@@ -283,9 +284,10 @@
 import { ref, computed, watch, defineEmits, defineProps, onMounted } from 'vue'
 import { Search, InfoFilled, DataAnalysis } from '@element-plus/icons-vue'
 import CommonPagination from '@/components/CommonPagination.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import ClassificationLevelDialog from './ClassificationLevelDialog.vue'
 import AuditLogDialog from './AuditLogDialog.vue'
+import axios from 'axios'
 
 const props = defineProps({
   // 表格数据
@@ -788,6 +790,54 @@ function isClassificationGenerated(row) {
   const grade = row.totalGradeValue;
   return !isEmpty(cat) || !isEmpty(grade);
 }
+
+// 添加发送数字对象到治理方的方法
+const handlePushToGovernance = () => {
+  ElMessageBox.confirm('确定要将所有数字对象发送到治理方吗?', '确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    try {
+      const loadingInstance = ElLoading.service({
+        fullscreen: true,
+        text: '正在发送数据到治理方...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+      
+      const response = await axios.post('http://localhost:8081/api/push-objects-to-governance');
+      
+      loadingInstance.close();
+      
+      if (response.data && (response.data.code === 1 || response.data.success === true)) {
+        const objectCount = response.data.data ? response.data.data.length || 0 : '所有';
+        ElMessage.success(`成功发送${objectCount}个数字对象到治理方`);
+      } else {
+        ElMessage.warning(`发送失败: ${response.data?.message || response.data?.msg || '未知错误'}`);
+      }
+    } catch (error) {
+      console.error('发送数据到治理方失败:', error);
+      
+      // 更详细的错误信息
+      if (error.response) {
+        if (error.response.status === 404) {
+          ElMessage.error('治理方服务未启动或接口不存在');
+        } else if (error.response.status === 500) {
+          ElMessage.error(`治理方服务错误: ${error.response.data?.message || '内部服务器错误'}`);
+        } else {
+          ElMessage.error(`发送失败 (${error.response.status}): ${error.response.data?.message || error.message}`);
+        }
+      } else if (error.request) {
+        ElMessage.error('无法连接到治理方服务，请确保服务已启动');
+      } else {
+        ElMessage.error(`发送数据到治理方失败: ${error.message || '未知错误'}`);
+      }
+    }
+  }).catch(() => {
+    // 用户取消操作
+    ElMessage.info('已取消发送操作');
+  });
+};
 </script>
 
 <style scoped>

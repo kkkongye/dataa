@@ -1035,8 +1035,8 @@ const handleSaveEditManually = () => {
         }
 
         let statusToSave = editForm.status;
-        if (statusToSave === '待校验') {
-          statusToSave = '待检验';
+        if (statusToSave === '待检验') {
+          statusToSave = '待校验';
         }
         const updatedObject = {
           id: editForm.id,

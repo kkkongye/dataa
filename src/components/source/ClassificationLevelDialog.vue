@@ -572,9 +572,7 @@ watch(dialogVisible, (newVal) => {
 
 const handleConfirm = async () => {
   try {
-
     const result = {
-
       classificationValue: totalClassificationValue.value, 
       industryCategory: industryCategory.value,
       dataTimeliness: dataTimeliness.value,
@@ -590,7 +588,6 @@ const handleConfirm = async () => {
       totalGradeValue: totalGradeValue.value
     };
     
-
     const id = props.objectId 
       ? props.objectId
       : (props.modelValue && props.modelValue.id 
@@ -601,229 +598,175 @@ const handleConfirm = async () => {
             
     if (!id) {
       ElMessage.error('缺少对象ID，无法保存分类分级值');
-      // 仍然关闭对话框并传递本地计算结果
       emit('confirm', result);
       emit('update:modelValue', null);
       window.location.reload(); 
       return; 
     }
     
-
-
-    const categoryData = {
-      id: id,  
-      objectId: id, 
-      industryCategory: industryCategory.value || "",
-      processingTimeCategory: dataTimeliness.value || "", 
-      dataSourceCategory: dataSource.value || ""
-    };
-
     const baseUrl = 'http://localhost:8081/api';
     
     try {
       const checkResp = await axios.get(`${baseUrl}/objects/${id}`);
       
-   
       if (checkResp.data) {
         const objectData = checkResp.data && checkResp.data.data ? checkResp.data.data : checkResp.data;
-
-
-
-        const updateData = { ...objectData };
-        if (updateData.dataEntity) {
-          updateData.dataEntity = { ...updateData.dataEntity };
+        
+        const updateData = {
+          id: id,
+          entity: objectData.entity || '',
+          industryCategory: industryCategory.value || "",
+          processingTimeCategory: dataTimeliness.value || "",
+          dataSourceCategory: dataSource.value || "",
+          totalCategoryValue: totalClassificationValue.value || "0",
+          totalGradeValue: totalGradeValue.value || "0",
+          status: '待校验'
+        };
+        if (Array.isArray(rowGrades.value)) {
+          updateData.rowGrades = rowGrades.value.map(val => {
+            const num = parseFloat(val);
+            return isNaN(num) ? 1 : num;
+          });
         } else {
-          updateData.dataEntity = {};
+          updateData.rowGrades = [];
         }
         
-        // 更新分类和分级值
-        updateData.industryCategory = industryCategory.value || "";
-        updateData.processingTimeCategory = dataTimeliness.value || "";
-        updateData.dataSourceCategory = dataSource.value || "";
-        updateData.totalCategoryValue = totalClassificationValue.value || "0";
-        updateData.totalGradeValue = totalGradeValue.value || "0";
-        updateData.rowGrades = [...rowGrades.value]; // 确保包含行分级值数组
-        updateData.status = '待校验';
+        if (Array.isArray(columnGrades.value)) {
+          updateData.columnGrades = columnGrades.value.map(val => {
+            const num = parseFloat(val);
+            return isNaN(num) ? 0.4 : num;
+          });
+        } else {
+          updateData.columnGrades = [];
+        }
         
-        if (updateData.dataEntity) {
+        if (objectData.locationInfo) updateData.locationInfo = objectData.locationInfo;
+        if (objectData.metadata) updateData.metadata = objectData.metadata;
+        if (objectData.constraint) updateData.constraint = objectData.constraint;
+        if (objectData.transferControl) updateData.transferControl = objectData.transferControl;
+        if (objectData.propagationControl) updateData.propagationControl = objectData.propagationControl;
+        if (objectData.dataItems) updateData.dataItems = objectData.dataItems;
+        if (objectData.excelData) updateData.excelData = objectData.excelData;
+        
+        updateData.dataEntity = {
+          ...(objectData.dataEntity || {}),
+          status: '待校验'
+        };
+    
+        const validStates = ['待生成分类分级值', '不合格', '待校验', '已合格'];
+        if (updateData.status && !validStates.includes(updateData.status)) {
+          console.warn(`[分类分级] 状态值 "${updateData.status}" 不在有效范围内: ${validStates.join(', ')}`);
+          updateData.status = '待校验';
+        }
+        if (updateData.dataEntity && updateData.dataEntity.status && !validStates.includes(updateData.dataEntity.status)) {
+          console.warn(`[分类分级] dataEntity.status "${updateData.dataEntity.status}" 不在有效范围内: ${validStates.join(', ')}`);
           updateData.dataEntity.status = '待校验';
         }
         
-        // 确保所有关键字段都存在
-        if (!updateData.id && id) {
-          updateData.id = id;
-        }
-        
-        // 移除可能导致问题的undefined值
-        Object.keys(updateData).forEach(key => {
-          if (updateData[key] === undefined) {
-            delete updateData[key];
-          } else if (typeof updateData[key] === 'object' && updateData[key] !== null) {
-            Object.keys(updateData[key]).forEach(subKey => {
-              if (updateData[key][subKey] === undefined) {
-                delete updateData[key][subKey];
-              }
-            });
-          }
-        });
-        
+        const updateUrl = `${baseUrl}/objects/${id}`;
+        console.log('[分类分级] 使用URL:', updateUrl);
         
         try {
-          const updateResp = await axios.put(`${baseUrl}/objects/${id}`, updateData, {
-            headers: { 'Content-Type': 'application/json' }
-          });
+            const updateResp = await axios.put(updateUrl, updateData, {
+              headers: { 'Content-Type': 'application/json' }
+            });
           
-          if (updateResp.status === 200 || 
-              updateResp.status === 204 || 
-              (updateResp.data && (updateResp.data.code === 1 || updateResp.data.code === 200))) {
+          if (updateResp.status >= 200 && updateResp.status < 300) {
             ElMessage.success('分类分级值更新成功');
             emit('confirm', result);
             emit('update:modelValue', null);
             window.location.reload();
             return;
+          } else {
+            console.warn('[分类分级] 更新响应非成功:', updateResp);
+            throw new Error('更新请求返回非成功状态');
           }
         } catch (updateError) {
-        }
-      }
-    } catch(e) {
-    }
-    
-    // 如果直接更新失败，继续使用原有的方式尝试
-    const requests = [];
-
-    // 尝试使用PUT方法更新总值
-    const totalValuesUrl = `${baseUrl}/objects/${id}/total_values`;
-    const totalValuesData = {
-      id: id,
-      objectId: id,
-      totalCategoryValue: totalClassificationValue.value || "0",
-      totalGradeValue: totalGradeValue.value || "0"
-    };
-    
-    let useFallbackMethod = false;  // 标记是否需要使用备用方法
-    
-    // 尝试PUT方法
-    try {
-      const totalValuesPutResponse = await axios.put(totalValuesUrl, totalValuesData, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000
-      });
-
-      
-      if (totalValuesPutResponse.status >= 200 && totalValuesPutResponse.status < 300) {
-
-      } else {
-        // 如果PUT失败，标记使用备用方法
-        useFallbackMethod = true;
-      }
-    } catch (putError) {
-      console.error('[分类分级] 总值PUT失败:', putError);
-      useFallbackMethod = true;
-    }
-    
-    // 如果需要使用备用方法
-    if (useFallbackMethod) {
-      
-      // 只更新必要的字段
-      try {
-        // 第三种方式：直接通过PATCH更新特定字段
-        const patchData = {
-          id: id,
-          totalCategoryValue: totalClassificationValue.value || "0",
-          totalGradeValue: totalGradeValue.value || "0",
-          industryCategory: industryCategory.value || "",
-          processingTimeCategory: dataTimeliness.value || "",
-          dataSourceCategory: dataSource.value || "",
-          rowGrades: [...rowGrades.value] // 确保包含行分级值数组
-        };
-        
-
-        
-        const patchResponse = await axios.patch(`${baseUrl}/objects/${id}`, patchData, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        
-        if (patchResponse.status >= 200 && patchResponse.status < 300) {
-          ElMessage.success('分类分级值更新成功');
-          emit('confirm', result);
-          emit('update:modelValue', null);
-          window.location.reload();
-          return;
-        }
-      } catch (patchError) {
-        console.error('[分类分级] PATCH更新失败:', patchError);
-      }
-      
-      // 如果所有尝试都失败了，使用原始的POST方法
-      const totalValuesRequest = axios.post(totalValuesUrl, totalValuesData, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000
-      });
-      requests.push(totalValuesRequest);
-      
-      const categoriesUrl = `${baseUrl}/objects/${id}/categories`;
-      const categoriesRequest = axios.post(categoriesUrl, categoryData, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000
-      });
-      requests.push(categoriesRequest);
-    }
-    
-    // 移除旧的分类PUT请求尝试，因为已经在上面处理过了
-
-    // 如果有POST请求需要执行
-    if (requests.length > 0) {
-      Promise.all(requests)
-        .then(async ([totalValuesResponse, categoriesResponse]) => {
-          let successMessages = [];
-          let warningMessages = [];
-
-          if (totalValuesResponse && totalValuesResponse.status >= 200 && totalValuesResponse.status < 300 && 
-              totalValuesResponse.data && totalValuesResponse.data.code === 1) {
-            const successUrlPattern = totalValuesUrl.replace(id, '{id}');
-            localStorage.setItem('classificationLevelSuccessUrl', successUrlPattern);
-            successMessages.push('分类分级总值保存成功');
-          } else if (totalValuesResponse) {
-            warningMessages.push(`分类分级总值保存失败: ${totalValuesResponse.data?.msg || totalValuesResponse.data?.message || '未知错误'}`);
-          }
-
-          if (categoriesResponse && categoriesResponse.status >= 200 && categoriesResponse.status < 300 && 
-              categoriesResponse.data && categoriesResponse.data.code === 1) {
-            successMessages.push('分类类别值保存成功');
-          } else if (categoriesResponse) {
-            warningMessages.push(`分类类别值保存失败: ${categoriesResponse.data?.msg || categoriesResponse.data?.message || '未知错误'}`);
-          }
-
-          // 其余的处理逻辑不变
-          if (successMessages.length > 0) {
-            ElMessage.success(successMessages.join('；'));
-          }
-          if (warningMessages.length > 0) {
-            ElMessage.warning(warningMessages.join('；'));
-          }
-
-          emit('confirm', result);
-          emit('update:modelValue', null);
-          window.location.reload(); 
-        })
-        .catch(error => {
-          console.error('[分类分级] 保存请求错误:', error);
-          ElMessage({
-            message: '无法连接到后端保存分类分级值，但已更新本地显示',
-            type: 'warning',
-            duration: 5000
-          });
+          console.error('[分类分级] 更新请求错误:', updateError);
           
-          emit('confirm', result);
-          emit('update:modelValue', null);
-        });
-    } else {
-      // 如果没有请求需要执行(PUT方法都成功了)，直接返回成功
-      ElMessage.success('分类分级值保存成功');
-      emit('confirm', result);
-      emit('update:modelValue', null);
-      window.location.reload();
+          // 详细记录错误信息
+          if (updateError.response) {
+            console.error('错误状态码:', updateError.response.status);
+            console.error('错误响应数据:', updateError.response.data);
+            
+            if (updateError.response.status === 400) {
+              try {
+                const simpleData = {
+                  id: id,
+                  industryCategory: industryCategory.value || "",
+                  processingTimeCategory: dataTimeliness.value || "",
+                  dataSourceCategory: dataSource.value || "",
+                  totalCategoryValue: totalClassificationValue.value || "0",
+                  totalGradeValue: totalGradeValue.value || "0",
+                  status: '待校验'
+                };
+                
+                console.log('[分类分级] 尝试简化请求:', JSON.stringify(simpleData));
+                
+                const simpleResp = await axios.patch(`${baseUrl}/objects/${id}`, simpleData);
+                if (simpleResp.status >= 200 && simpleResp.status < 300) {
+                  ElMessage.success('分类分级基本值更新成功');
+                  emit('confirm', result);
+                  emit('update:modelValue', null);
+                  window.location.reload();
+                  return;
+                }
+              } catch (simpleError) {
+                console.error('[分类分级] 简化请求失败:', simpleError);
+              }
+            }
+          }
+          
+          // 尝试使用独立的API端点
+          try {
+            const totalValuesResp = await axios.post(`${baseUrl}/objects/${id}/total_values`, {
+              totalCategoryValue: totalClassificationValue.value || "0",
+              totalGradeValue: totalGradeValue.value || "0"
+            });
+            
+            const categoriesResp = await axios.post(`${baseUrl}/objects/${id}/categories`, {
+              industryCategory: industryCategory.value || "",
+              processingTimeCategory: dataTimeliness.value || "",
+              dataSourceCategory: dataSource.value || ""
+            });
+            
+            if (totalValuesResp.status >= 200 && totalValuesResp.status < 300 && 
+                categoriesResp.status >= 200 && categoriesResp.status < 300) {
+              ElMessage.success('分类分级值通过独立API保存成功');
+              emit('confirm', result);
+              emit('update:modelValue', null);
+              window.location.reload();
+              return;
+            }
+          } catch (apiError) {
+            console.error('[分类分级] 独立API请求失败:', apiError);
+            ElMessage.error('保存分类分级值失败，请检查控制台日志');
+          }
+        }
+      } else {
+        throw new Error('获取对象详情失败');
+      }
+    } catch (fetchError) {
+      console.error('[分类分级] 获取或处理对象失败:', fetchError);
+      ElMessage.error('获取对象信息失败，无法更新分类分级值');
+    }
+    
+    // 最后尝试单独发送分类分级总值
+    try {
+      const basicResp = await axios.post(`${baseUrl}/objects/${id}/total_values`, {
+        totalCategoryValue: totalClassificationValue.value || "0",
+        totalGradeValue: totalGradeValue.value || "0"
+      });
+      
+      if (basicResp.status >= 200 && basicResp.status < 300) {
+        ElMessage.success('保存基本分类分级值成功');
+        emit('confirm', result);
+        emit('update:modelValue', null);
+        return;
+      }
+    } catch (basicError) {
+      console.error('[分类分级] 基本值保存失败:', basicError);
+      ElMessage.error('保存失败，请稍后重试');
     }
 
   } catch (error) {
