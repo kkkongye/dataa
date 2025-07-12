@@ -26,6 +26,7 @@
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
             </el-button>
+            <el-button type="primary" plain @click="handleInitUser"> 使用方初始化</el-button>
             <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
             <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button>
           </div>
@@ -213,7 +214,7 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Search, Lock, Document, DataAnalysis } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '@/components/ExcelPreview.vue'
@@ -489,7 +490,7 @@ const handleGenerateCapsule = async () => {
   isGeneratingCapsule.value = true
   try {
     const ids = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id).join(',')
-    const apiUrl = `http://localhost:8080/api/selectIds?ids=${encodeURIComponent(ids)}`
+    const apiUrl = `http://localhost:8083/api/selectIds?ids=${encodeURIComponent(ids)}`
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: { 'Accept': 'application/json' }
@@ -590,7 +591,7 @@ const fetchExcelDataFromApi = async (objectId) => {
     return
   }
   isExcelLoading.value = true
-  const apiUrl = 'http://localhost:8080/api/objects/list'
+  const apiUrl = 'http://localhost:8081/api/objects/list'
 
   
   try {
@@ -1147,7 +1148,7 @@ const fetchLatestDataFromApi = async () => {
   try {
     ElMessage.info('正在从API获取最新数据...')
 
-    const apiUrl = 'http://localhost:8080/api/objects/list'
+    const apiUrl = 'http://localhost:8081/api/objects/list'
     const response = await axios.get(apiUrl)
     
     if (response.data) {
@@ -1203,6 +1204,92 @@ const visualizationVisible = ref(false)
 const showVisualization = () => {
   visualizationVisible.value = true
 }
+
+// 处理使用方初始化
+const handleInitUser = async () => {
+  try {
+    const loadingInstance = ElLoading.service({
+      fullscreen: true,
+      text: '正在初始化使用方系统...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    });
+    
+    const response = await axios.post('http://localhost:8083/api/send-du-info');
+    
+    loadingInstance.close();
+    
+    if (response.data && (response.data.code === 1 || response.data.success === true)) {
+      ElMessage.success('使用方系统初始化成功');
+      
+      // 弹出确认对话框询问是否构造共享证书申请
+      ElMessageBox.confirm('是否构造共享证书申请给数源方?', '确认', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info',
+      }).then(async () => {
+        try {
+          const scrLoading = ElLoading.service({
+            fullscreen: true,
+            text: '正在构造共享证书申请...',
+            background: 'rgba(0, 0, 0, 0.7)'
+          });
+          
+          // 使用指定的参数调用生成SCR接口
+          const scrResponse = await axios.post('http://localhost:8083/api/generate-scr', {
+            metaData: "MetaData",
+            fno: "杭州市大数据局人事科",
+            sfno: "杭州市大数据局"
+          });
+          
+          scrLoading.close();
+          
+          if (scrResponse.data && (scrResponse.data.code === 1 || scrResponse.data.success === true)) {
+            ElMessage.success('共享证书申请构造成功');
+          } else {
+            ElMessage.warning(`共享证书申请构造失败: ${scrResponse.data?.message || scrResponse.data?.msg || '未知错误'}`);
+          }
+        } catch (scrError) {
+          console.error('共享证书申请构造失败:', scrError);
+          
+          if (scrError.response) {
+            if (scrError.response.status === 404) {
+              ElMessage.error('使用方服务未启动或接口不存在');
+            } else if (scrError.response.status === 500) {
+              ElMessage.error(`使用方服务错误: ${scrError.response.data?.message || '内部服务器错误'}`);
+            } else {
+              ElMessage.error(`构造共享证书申请失败 (${scrError.response.status}): ${scrError.response.data?.message || scrError.message}`);
+            }
+          } else if (scrError.request) {
+            ElMessage.error('无法连接到使用方服务，请确保服务已启动');
+          } else {
+            ElMessage.error(`共享证书申请构造失败: ${scrError.message || '未知错误'}`);
+          }
+        }
+      }).catch(() => {
+        // 用户取消操作
+        console.log('用户取消构造共享证书申请');
+      });
+    } else {
+      ElMessage.warning(`使用方系统初始化失败: ${response.data?.message || response.data?.msg || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error('使用方系统初始化失败:', error);
+    
+    if (error.response) {
+      if (error.response.status === 404) {
+        ElMessage.error('使用方服务未启动或接口不存在');
+      } else if (error.response.status === 500) {
+        ElMessage.error(`使用方服务错误: ${error.response.data?.message || '内部服务器错误'}`);
+      } else {
+        ElMessage.error(`初始化失败 (${error.response.status}): ${error.response.data?.message || error.message}`);
+      }
+    } else if (error.request) {
+      ElMessage.error('无法连接到使用方服务，请确保服务已启动');
+    } else {
+      ElMessage.error(`使用方系统初始化失败: ${error.message || '未知错误'}`);
+    }
+  }
+};
 
 
 const headerCellStyle = ({ column }) => {

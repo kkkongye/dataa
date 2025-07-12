@@ -30,6 +30,8 @@
               </el-input>
           </div>
           <div class="action-buttons">
+            <el-button type="primary" plain @click="handleInitSystem">治理方初始化</el-button>
+            <el-button type="primary" plain >生成组织机构凭证</el-button>
             <el-button type="primary" plain @click="applicationListVisible = true">申请列表</el-button>
           </div>
         </div>
@@ -199,7 +201,7 @@
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Search, Lock, Document, UploadFilled, Download } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '../../components/ExcelPreview.vue'
@@ -261,11 +263,15 @@ function adaptBackendData(backendItem) {
     }
   }
 
+  console.log('适配数据项:', backendItem.id || '无ID')
+
   let parsedLocation = null
   if (backendItem.locationInfoJson) {
     try {
       parsedLocation = JSON.parse(backendItem.locationInfoJson)
     } catch (e) {}
+  } else if (backendItem.locationInfo && typeof backendItem.locationInfo === 'object') {
+    parsedLocation = backendItem.locationInfo
   }
 
   const constraintArray = backendItem.constraintSet && backendItem.constraintSet.constraints
@@ -305,13 +311,18 @@ function adaptBackendData(backendItem) {
 
   const auditInfo = backendItem.auditInfo ? '查看日志' : ''
 
+  // 处理locationInfo
   let locationInfo = ''
   if (parsedLocation && parsedLocation.locations) {
     locationInfo = parsedLocation.locations.map(loc =>
       `(${loc.sheet || '默认'}, ${loc.startRow || '1'}-${loc.endRow || '*'}, ${loc.startColumn || 'A'}-${loc.endColumn || '*'})`
     ).join('; ')
+  } else if (parsedLocation) {
+    // 直接使用locationInfo对象格式
+    locationInfo = `(${parsedLocation.databaseName || '-'}, ${parsedLocation.tableName || '-'}, "select字段")`
   }
 
+  // 处理反馈信息
   let feedback = ''
   if (backendItem.dataEntity && backendItem.dataEntity.feedback) {
     feedback = backendItem.dataEntity.feedback
@@ -319,6 +330,7 @@ function adaptBackendData(backendItem) {
     feedback = backendItem.feedback
   }
 
+  // 处理元数据
   let metadata = null
   if (backendItem.dataEntity && backendItem.dataEntity.metadata) {
     metadata = backendItem.dataEntity.metadata
@@ -326,23 +338,42 @@ function adaptBackendData(backendItem) {
     try {
       metadata = JSON.parse(backendItem.metadataJson)
     } catch (e) {}
+  } else if (backendItem.metadata) {
+    metadata = backendItem.metadata
   }
 
+  // 处理状态
   const status = backendItem.dataEntity && backendItem.dataEntity.status
     ? backendItem.dataEntity.status
     : backendItem.status || ''
 
-  const totalCategoryValue = backendItem.totalCategoryValue || backendItem.classificationValue || ''
-  const totalGradeValue = backendItem.totalGradeValue || backendItem.levelValue || ''
+  // 处理分类分级值
+  const totalCategoryValue = backendItem.totalCategoryValue || 
+                            (backendItem.dataEntity && backendItem.dataEntity.totalCategoryValue) || 
+                            backendItem.classificationValue || 
+                            ''
+  
+  const totalGradeValue = backendItem.totalGradeValue || 
+                          (backendItem.dataEntity && backendItem.dataEntity.totalGradeValue) || 
+                          backendItem.levelValue || 
+                          ''
 
+  // 处理实体名称
   const entity = backendItem.dataEntity && backendItem.dataEntity.entity
     ? backendItem.dataEntity.entity
     : backendItem.entity || ''
+  
+  // 处理dataContent
+  const dataContent = backendItem.dataContent || 
+                     (backendItem.dataEntity && backendItem.dataEntity.dataContent) || 
+                     JSON.stringify(backendItem.dataEntity || {})
+  
   return {
     id: backendItem.id || '',
     entity,
     locationInfo,
-    locationInfoJson: backendItem.locationInfoJson || '',
+    locationInfoJson: backendItem.locationInfoJson || 
+                      (parsedLocation ? JSON.stringify(parsedLocation) : ''),
     constraint: constraintArray,
     transferControl: transferControlArray,
     propagationControl: propagationControlObj,
@@ -352,25 +383,42 @@ function adaptBackendData(backendItem) {
     totalCategoryValue,
     totalGradeValue,
     metadata,
-    dataContent: backendItem.dataContent || ''
+    dataContent
   }
 }
 
 // 页面加载时从后端获取数据并适配
 const loadDataFromBackend = async () => {
   try {
-    const response = await axios.get('http://localhost:8081/api/objects/list')
+    const response = await axios.get('http://localhost:8082/api/objects')
+    console.log('加载数据 - API响应:', response.data)
+    
     let dataArray = []
     if (Array.isArray(response.data)) {
       dataArray = response.data
+      console.log('数据格式: 直接数组')
     } else if (response.data.data && Array.isArray(response.data.data)) {
       dataArray = response.data.data
+      console.log('数据格式: response.data.data')
     } else if (response.data.list && Array.isArray(response.data.list)) {
       dataArray = response.data.list
+      console.log('数据格式: response.data.list')
+    } else {
+      console.warn('未识别的数据格式:', response.data)
+      ElMessage.warning('数据格式不符合预期，请检查控制台')
     }
-
+    
+    console.log('处理前的原始数据:', dataArray)
     tableData.value = dataArray.map(item => adaptBackendData(item))
+    console.log('处理后的表格数据:', tableData.value)
+    
+    if (tableData.value.length === 0) {
+      ElMessage.warning('没有获取到数据对象，请检查API返回和数据适配逻辑')
+    } else {
+      ElMessage.success(`成功加载 ${tableData.value.length} 条数据对象`)
+    }
   } catch (error) {
+    console.error('获取数据失败:', error)
     ElMessage.error('获取数据失败: ' + (error.message || '未知错误'))
   }
 }
@@ -501,7 +549,7 @@ const updateStatus = async (row, newStatus) => {
       const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, '', localModeOnly)
       if (result) {
         ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态`)
-        await refreshDataList();
+        window.location.reload();
       } else {
         ElMessage.warning(`${row.entity} 状态更新失败`)
       }
@@ -527,7 +575,7 @@ const updateStatus = async (row, newStatus) => {
         const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, value, localModeOnly)
         if (result) {
           ElMessage.success(`${row.entity} 已更新为"不合格"状态`)
-          await refreshDataList();
+          window.location.reload();
         } else {
           ElMessage.warning(`${row.entity} 状态更新失败`)
         }
@@ -544,7 +592,7 @@ const updateStatus = async (row, newStatus) => {
 // 添加刷新数据列表的函数
 const refreshDataList = async () => {
   try {
-    const response = await fetch('http://localhost:8081/api/objects/list', {
+    const response = await fetch('http://localhost:8082/api/objects', {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
@@ -670,7 +718,6 @@ const isExcelLoading = ref(false)
 
 const fetchExcelDataFromApi = async (objectId) => {
   if (!objectId) {
-
     ElMessage.warning('无法获取对象ID，无法显示Excel数据')
     return
   }
@@ -678,12 +725,13 @@ const fetchExcelDataFromApi = async (objectId) => {
   console.log(`【Excel数据】正在从API获取数据，对象ID:`, objectId)
   isExcelLoading.value = true
   
-  const apiUrl = 'http://localhost:8081/api/objects/list'
+  const apiUrl = 'http://localhost:8082/api/objects'
   console.log('【Excel数据】API请求URL:', apiUrl)
   
   try {
     const response = await axios.get(apiUrl)
     console.log('【Excel数据】API响应状态码:', response.status)
+    console.log('【Excel数据】API响应数据:', response.data)
 
     let targetObject = null
     let dataItems = null
@@ -700,8 +748,12 @@ const fetchExcelDataFromApi = async (objectId) => {
       console.log(`【Excel数据】找到ID为${objectId}的对象:`, targetObject)
 
       extractClassificationValues(targetObject)
-
-      if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
+      
+      // 检查dataEntity.dataItems
+      if (targetObject.dataEntity && targetObject.dataEntity.dataItems && Array.isArray(targetObject.dataEntity.dataItems)) {
+        dataItems = targetObject.dataEntity.dataItems
+        console.log(`【Excel数据】从对象的dataEntity中提取到${dataItems.length}条dataItems`)
+      } else if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
         console.log(`【Excel数据】从对象中直接提取到${dataItems.length}条dataItems`)
       } else if (targetObject.dataContent) {
@@ -713,6 +765,9 @@ const fetchExcelDataFromApi = async (objectId) => {
           if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
             dataItems = dataContent.dataItems
             console.log(`【Excel数据】从dataContent中提取到${dataItems.length}条dataItems`)
+          } else if (dataContent && dataContent.dataEntity && dataContent.dataEntity.dataItems && Array.isArray(dataContent.dataEntity.dataItems)) {
+            dataItems = dataContent.dataEntity.dataItems
+            console.log(`【Excel数据】从dataContent.dataEntity中提取到${dataItems.length}条dataItems`)
           }
         } catch (e) {
           console.error('解析dataContent失败:', e)
@@ -721,7 +776,6 @@ const fetchExcelDataFromApi = async (objectId) => {
     } 
 
     else if (response.data && response.data.dataItems && Array.isArray(response.data.dataItems)) {
-
       dataItems = response.data.dataItems.filter(item => 
         item.objectId === objectId || 
         item.id === objectId ||
@@ -758,6 +812,7 @@ const fetchExcelDataFromApi = async (objectId) => {
 const extractClassificationValues = (obj) => {
   if (!obj) return
 
+  // 直接从对象提取
   if (obj.totalCategoryValue !== undefined) {
     previewForm.totalCategoryValue = obj.totalCategoryValue
   } else if (obj.classificationValue !== undefined) {
@@ -770,6 +825,22 @@ const extractClassificationValues = (obj) => {
     previewForm.levelValue = obj.levelValue
   }
   
+  // 从dataEntity提取
+  if (obj.dataEntity) {
+    if (obj.dataEntity.totalCategoryValue !== undefined) {
+      previewForm.totalCategoryValue = obj.dataEntity.totalCategoryValue
+    } else if (obj.dataEntity.classificationValue !== undefined) {
+      previewForm.classificationValue = obj.dataEntity.classificationValue
+    }
+    
+    if (obj.dataEntity.totalGradeValue !== undefined) {
+      previewForm.totalGradeValue = obj.dataEntity.totalGradeValue
+    } else if (obj.dataEntity.levelValue !== undefined) {
+      previewForm.levelValue = obj.dataEntity.levelValue
+    }
+  }
+  
+  // 从dataContent提取
   if (obj.dataContent) {
     let dataContent = obj.dataContent
     if (typeof dataContent === 'string') {
@@ -791,6 +862,21 @@ const extractClassificationValues = (obj) => {
         previewForm.totalGradeValue = dataContent.totalGradeValue
       } else if (dataContent.levelValue !== undefined) {
         previewForm.levelValue = dataContent.levelValue
+      }
+      
+      // 从dataContent.dataEntity提取
+      if (dataContent.dataEntity) {
+        if (dataContent.dataEntity.totalCategoryValue !== undefined) {
+          previewForm.totalCategoryValue = dataContent.dataEntity.totalCategoryValue
+        } else if (dataContent.dataEntity.classificationValue !== undefined) {
+          previewForm.classificationValue = dataContent.dataEntity.classificationValue
+        }
+        
+        if (dataContent.dataEntity.totalGradeValue !== undefined) {
+          previewForm.totalGradeValue = dataContent.dataEntity.totalGradeValue
+        } else if (dataContent.dataEntity.levelValue !== undefined) {
+          previewForm.levelValue = dataContent.dataEntity.levelValue
+        }
       }
     }
   }
@@ -1314,6 +1400,45 @@ function isSelectFieldsLong(selectFields) {
   if (!selectFields) return false;
   return selectFields.length > 30;
 }
+
+// 处理初始化系统方法
+const handleInitSystem = async () => {
+  try {
+    const loadingInstance = ElLoading.service({
+      fullscreen: true,
+      text: '正在初始化系统...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    });
+    
+    const response = await axios.post('http://localhost:8082/api/init-system');
+    
+    loadingInstance.close();
+    
+    if (response.data && (response.data.code === 1 || response.data.success === true)) {
+      ElMessage.success('系统初始化成功');
+      // 刷新数据
+      loadDataFromBackend();
+    } else {
+      ElMessage.warning(`系统初始化失败: ${response.data?.message || response.data?.msg || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error('系统初始化失败:', error);
+    
+    if (error.response) {
+      if (error.response.status === 404) {
+        ElMessage.error('系统服务未启动或接口不存在');
+      } else if (error.response.status === 500) {
+        ElMessage.error(`系统服务错误: ${error.response.data?.message || '内部服务器错误'}`);
+      } else {
+        ElMessage.error(`初始化失败 (${error.response.status}): ${error.response.data?.message || error.message}`);
+      }
+    } else if (error.request) {
+      ElMessage.error('无法连接到系统服务，请确保服务已启动');
+    } else {
+      ElMessage.error(`系统初始化失败: ${error.message || '未知错误'}`);
+    }
+  }
+};
 </script>
 
 <style scoped>
