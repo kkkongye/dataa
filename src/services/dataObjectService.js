@@ -165,7 +165,26 @@ const adaptBackendData = (backendItem) => {
   const constraintArray = extractConstraintArray(backendItem)
   const transferControlArray = extractTransferControlArray(backendItem)
   const auditInfo = extractAuditInfo(backendItem)  
-  const locationInfo = extractLocationInfo(backendItem)
+  // 保留原始locationInfo对象
+  let locationInfo = backendItem.locationInfo;
+  
+  // 如果locationInfo不是对象，尝试从其他属性获取
+  if (typeof locationInfo !== 'object' || locationInfo === null) {
+    if (parsedLocation) {
+      locationInfo = parsedLocation;
+    } else if (backendItem.locationInfoJson) {
+      try {
+        locationInfo = JSON.parse(backendItem.locationInfoJson);
+      } catch (e) {
+        // 解析失败
+      }
+    }
+    // 如果还是没有locationInfo对象，则使用extractLocationInfo生成格式化字符串
+    if (typeof locationInfo !== 'object' || locationInfo === null) {
+      locationInfo = extractLocationInfo(backendItem);
+    }
+  }
+
   const feedback = extractFeedback(backendItem)
 
   let metadata = null

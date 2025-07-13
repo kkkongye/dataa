@@ -81,16 +81,40 @@
         </el-table-column>
         <el-table-column prop="locationInfo" label="定位信息" min-width="140" align="center">
           <template #default="scope">
-            <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
-              ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
-              {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
-              <el-popover placement="top" trigger="click">
-                <template #reference>
-                  <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
-                </template>
-                <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields }}</div>
-              </el-popover>
-              )
+            <!-- 增加调试输出 -->
+            <span style="display: none;">{{ console.log('渲染定位信息:', scope.row.id, scope.row.locationInfo) }}</span>
+            <span v-if="scope.row.locationInfo">
+              <!-- 对象格式的locationInfo -->
+              <template v-if="typeof scope.row.locationInfo === 'object' && scope.row.locationInfo !== null">
+                ({{ scope.row.locationInfo.databaseName || scope.row.locationInfo.database || '-' }},
+                {{ scope.row.locationInfo.tableName || scope.row.locationInfo.table || '-' }},
+                <el-popover placement="top" trigger="click">
+                  <template #reference>
+                    <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                  </template>
+                  <div style="max-width:400px;word-break:break-all;">{{ scope.row.locationInfo.selectFields || scope.row.locationInfo.fields || '-' }}</div>
+                </el-popover>
+                )
+              </template>
+              <!-- 字符串格式的locationInfo，且已经格式化 -->
+              <template v-else-if="typeof scope.row.locationInfo === 'string' && scope.row.locationInfo.startsWith('(')">
+                {{ scope.row.locationInfo }}
+              </template>
+              <!-- 其他情况，尝试使用解析函数 -->
+              <template v-else>
+                <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
+                  ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
+                  {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
+                  <el-popover placement="top" trigger="click">
+                    <template #reference>
+                      <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                    </template>
+                    <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields || '-' }}</div>
+                  </el-popover>
+                  )
+                </span>
+                <span v-else>-</span>
+              </template>
             </span>
             <span v-else>-</span>
           </template>
@@ -756,22 +780,152 @@ const showAuditLogDialog = (row) => {
 }
 
 function getLocationInfoObj(locationInfo, locationInfoJson) {
-  if (typeof locationInfo === 'string') {
-    try {
-      locationInfo = JSON.parse(locationInfo)
-    } catch (e) {
-      locationInfo = null
+  // 处理locationInfo为空的情况
+  if (!locationInfo) {
+    if (!locationInfoJson) {
+      return {
+        databaseName: '-',
+        tableName: '-',
+        selectFields: '-'
+      };
     }
   }
-  if ((!locationInfo || typeof locationInfo !== 'object') && locationInfoJson) {
-    try {
-      locationInfo = JSON.parse(locationInfoJson)
-    } catch (e) {
-      locationInfo = null
+  if (typeof locationInfo === 'string' && locationInfo.startsWith('(') && locationInfo.endsWith(')')) {
+    return null;
+  }
+  
+  // 1. 如果locationInfo已经是对象且包含必要的字段，直接返回
+  if (typeof locationInfo === 'object' && locationInfo !== null) {
+    if (locationInfo.databaseName !== undefined || 
+        locationInfo.tableName !== undefined || 
+        locationInfo.selectFields !== undefined) {
+      console.log('返回直接对象:', locationInfo);
+      return locationInfo;
+    }
+    
+    // 检查data属性中的locationInfo
+    if (locationInfo.data && typeof locationInfo.data === 'object') {
+      // 可能在data.locationInfo中
+      if (locationInfo.data.locationInfo) {
+        if (typeof locationInfo.data.locationInfo === 'object') {
+          console.log('返回data.locationInfo对象:', locationInfo.data.locationInfo);
+          return locationInfo.data.locationInfo;
+        } else if (typeof locationInfo.data.locationInfo === 'string') {
+          try {
+            const parsed = JSON.parse(locationInfo.data.locationInfo);
+            if (parsed && typeof parsed === 'object') {
+              return parsed;
+            }
+          } catch (e) {
+            // 解析失败，继续
+          }
+        }
+      }
+      
+      // 检查data本身是否包含需要的字段
+      const dataObj = locationInfo.data;
+      if (dataObj.databaseName !== undefined || dataObj.tableName !== undefined || 
+          dataObj.selectFields !== undefined || dataObj.database !== undefined || 
+          dataObj.table !== undefined || dataObj.fields !== undefined) {
+        const result = {
+          databaseName: dataObj.databaseName || dataObj.database || '-',
+          tableName: dataObj.tableName || dataObj.table || '-',
+          selectFields: dataObj.selectFields || dataObj.fields || '-'
+        };
+        console.log('从data提取字段:', result);
+        return result;
+      }
     }
   }
-  if (!locationInfo || typeof locationInfo !== 'object') return null
-  return locationInfo
+
+  // 2. 尝试从字符串解析JSON
+  if (typeof locationInfo === 'string' && !locationInfo.startsWith('(')) {
+    try {
+      const parsed = JSON.parse(locationInfo);
+      if (parsed && typeof parsed === 'object') {
+        console.log('从字符串解析JSON:', parsed);
+        return parsed;
+      }
+    } catch (e) {
+      // 解析失败，继续尝试其他方式
+    }
+  }
+  
+  // 3. 尝试从locationInfoJson解析
+  if (locationInfoJson) {
+    if (typeof locationInfoJson === 'object' && locationInfoJson !== null) {
+      console.log('返回locationInfoJson对象:', locationInfoJson);
+      return locationInfoJson;
+    }
+    
+    if (typeof locationInfoJson === 'string') {
+      try {
+        const parsed = JSON.parse(locationInfoJson);
+        if (parsed && typeof parsed === 'object') {
+          console.log('返回解析的locationInfoJson字符串:', parsed);
+          return parsed;
+        }
+      } catch (e) {
+        // 解析失败，继续尝试其他方式
+      }
+    }
+  }
+  
+  // 4. 嵌套的locationInfo
+  if (typeof locationInfo === 'object' && locationInfo !== null && locationInfo.locationInfo) {
+    if (typeof locationInfo.locationInfo === 'object') {
+      console.log('返回嵌套locationInfo对象:', locationInfo.locationInfo);
+      return locationInfo.locationInfo;
+    } else if (typeof locationInfo.locationInfo === 'string') {
+      if (!locationInfo.locationInfo.startsWith('(')) {
+        try {
+          const parsed = JSON.parse(locationInfo.locationInfo);
+          if (parsed && typeof parsed === 'object') {
+            console.log('返回解析的嵌套locationInfo字符串:', parsed);
+            return parsed;
+          }
+        } catch (e) {
+          // 解析失败，继续尝试其他方式
+        }
+      }
+    }
+  }
+  
+  // 5. 尝试从各种可能的位置查找字段
+  if (typeof locationInfo === 'object' && locationInfo !== null) {
+    const result = {
+      databaseName: '-',
+      tableName: '-',
+      selectFields: '-'
+    };
+    
+    // 检查各种可能的字段位置
+    if (locationInfo.databaseName !== undefined) result.databaseName = locationInfo.databaseName;
+    else if (locationInfo.database !== undefined) result.databaseName = locationInfo.database;
+    else if (locationInfo.dbName !== undefined) result.databaseName = locationInfo.dbName;
+    
+    if (locationInfo.tableName !== undefined) result.tableName = locationInfo.tableName;
+    else if (locationInfo.table !== undefined) result.tableName = locationInfo.table;
+    else if (locationInfo.tblName !== undefined) result.tableName = locationInfo.tblName;
+    
+    if (locationInfo.selectFields !== undefined) result.selectFields = locationInfo.selectFields;
+    else if (locationInfo.fields !== undefined) result.selectFields = locationInfo.fields;
+    else if (locationInfo.columns !== undefined) result.selectFields = locationInfo.columns;
+    else if (locationInfo.select !== undefined) result.selectFields = locationInfo.select;
+    
+    // 如果至少有一个字段不是默认值，则认为找到了有效数据
+    if (result.databaseName !== '-' || result.tableName !== '-' || result.selectFields !== '-') {
+      console.log('返回组装的对象:', result);
+      return result;
+    }
+  }
+  
+  console.log('所有方法都失败，返回默认对象');
+  return {
+    databaseName: '-',
+    tableName: '-',
+    selectFields: '-'
+  };
 }
 
 function isSelectFieldsLong(selectFields) {
