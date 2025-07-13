@@ -412,32 +412,24 @@ const isGeneratingCapsule = ref(false)
 const showDecryptDialog = (ids) => {
   decryptForm.objectId = ids.join(', ')
   decryptedObjectIds.value = ids
-  decryptDialogVisible.value = true
+  
+  // 直接调用解密函数，不显示弹窗
+  handleDecrypt()
 }
 
 // 处理解密操作
 const handleDecrypt = async () => {
-  if (!decryptForm.dataCapsule) {
-    ElMessage.warning('请先生成数据胶囊')
-    return
-  }
   try {
-    await ElMessageBox.confirm('确认要解密这些数据吗？', '解密确认', {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
     isDecrypted.value = true
     const idList = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id)
     decryptedObjectIds.value = idList
     decryptedObjectId.value = idList.length === 1 ? idList[0] : ''
-    decryptDialogVisible.value = false
+    
+    // 关闭目录弹窗
+    directoryDialogVisible.value = false
+    
     ElMessage.success('解密成功')
   } catch (error) {
-    if (error.message === 'cancel') {
-      return
-    }
     console.error('解密失败:', error)
     ElMessage.error(`解密失败: ${error.message}`)
   }
@@ -616,12 +608,14 @@ const fetchExcelDataFromApi = async (objectId) => {
 
       extractClassificationValues(targetObject)
       
-
-      if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
+      // 检查 dataEntity.dataItems
+      if (targetObject.dataEntity && targetObject.dataEntity.dataItems && Array.isArray(targetObject.dataEntity.dataItems)) {
+        dataItems = targetObject.dataEntity.dataItems
+        console.log(`【Excel数据】从对象的dataEntity中提取到${dataItems.length}条dataItems`)
+      } else if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
         console.log(`【Excel数据】从对象中直接提取到${dataItems.length}条dataItems`)
       } else if (targetObject.dataContent) {
-
         try {
           const dataContent = typeof targetObject.dataContent === 'string' 
             ? JSON.parse(targetObject.dataContent) 
@@ -630,6 +624,9 @@ const fetchExcelDataFromApi = async (objectId) => {
           if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
             dataItems = dataContent.dataItems
             console.log(`【Excel数据】从dataContent中提取到${dataItems.length}条dataItems`)
+          } else if (dataContent && dataContent.dataEntity && dataContent.dataEntity.dataItems && Array.isArray(dataContent.dataEntity.dataItems)) {
+            dataItems = dataContent.dataEntity.dataItems
+            console.log(`【Excel数据】从dataContent.dataEntity中提取到${dataItems.length}条dataItems`)
           }
         } catch (e) {
           console.error('解析dataContent失败:', e)
@@ -768,24 +765,44 @@ const generateMockDataForObject = (objectId) => {
 // 创建Excel数据
 const createExcelFromDataItems = (dataItems) => {
   try {
+    // 处理dataItems中的字段值，移除前缀（字段名称:）
+    const processedItems = dataItems.map(item => {
+      const processedItem = {};
+      
+      for (const key in item) {
+        // 如果值是字符串，并且包含"key名:"格式的前缀，则去掉前缀
+        if (typeof item[key] === 'string' && item[key].startsWith(`${key}：`)) {
+          // 使用中文冒号分割，取冒号后面的部分
+          processedItem[key] = item[key].substring(item[key].indexOf('：') + 1).trim();
+        } else if (typeof item[key] === 'string' && item[key].startsWith(`${key}:`)) {
+          // 使用英文冒号分割，取冒号后面的部分
+          processedItem[key] = item[key].substring(item[key].indexOf(':') + 1).trim();
+        } else {
+          // 其他情况保持不变
+          processedItem[key] = item[key];
+        }
+      }
+      
+      return processedItem;
+    });
 
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(dataItems)
-    XLSX.utils.book_append_sheet(wb, ws, "数据")
+    // 使用处理后的数据创建Excel
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(processedItems);
+    XLSX.utils.book_append_sheet(wb, ws, "数据");
     
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    excelBinaryData.value = blob
-
-    excelTableData.value = dataItems
+    excelBinaryData.value = blob;
+    excelTableData.value = processedItems;
     
-    isExcelLoading.value = false
-    ElMessage.success(`成功获取${dataItems.length}条数据记录`)
+    isExcelLoading.value = false;
+    ElMessage.success(`成功获取${processedItems.length}条数据记录`);
   } catch (error) {
-    console.error('【Excel数据】创建Excel数据失败:', error)
-    ElMessage.error(`创建Excel数据失败: ${error.message}`)
-    isExcelLoading.value = false
+    console.error('【Excel数据】创建Excel数据失败:', error);
+    ElMessage.error(`创建Excel数据失败: ${error.message}`);
+    isExcelLoading.value = false;
   }
 }
 

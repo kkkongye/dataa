@@ -84,7 +84,7 @@
           
           <div class="level-item">
             <span class="label">列分级值：</span>
-            <span class="value">{{ columnGradeValue }}</span> --
+            <span class="value">{{ columnGradeValue }}</span>
             <!-- <el-popover
               placement="right"
               :width="300"

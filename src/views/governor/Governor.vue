@@ -32,7 +32,8 @@
           <div class="action-buttons">
             <el-button type="primary" plain @click="handleInitSystem">治理方初始化</el-button>
             <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button>
-            <el-button type="primary" plain @click="applicationListVisible = true">申请列表</el-button>
+            <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
+            <!-- <el-button type="primary" plain @click="applicationListVisible = true">申请列表</el-button> -->
           </div>
         </div>
         
@@ -413,7 +414,7 @@ const loadDataFromBackend = async () => {
     console.log('处理后的表格数据:', tableData.value)
     
     if (tableData.value.length === 0) {
-      ElMessage.warning('没有获取到数据对象，请检查API返回和数据适配逻辑')
+      ElMessage.warning('没有获取到数据对象,请等待数源方发送')
     } else {
       ElMessage.success(`成功加载 ${tableData.value.length} 条数据对象`)
     }
@@ -1488,6 +1489,44 @@ const handleGenerateOrgVouchers = async () => {
     }
   }
 }
+
+// 处理生成并发送数据胶囊给使用方
+const handleGenerateAndSendCapsule = async () => {
+  const loading = ElLoading.service({ 
+    fullscreen: true, 
+    text: '正在生成并发送数据胶囊...' 
+  });
+  
+  try {
+    const response = await axios.post('http://localhost:8082/api/generate-and-send-capsule');
+    
+    loading.close();
+    
+    if (response.data && (response.data.code === 0 || response.data.code === 1 || response.data.success === true)) {
+      ElMessage.success('数据胶囊已成功生成并发送给使用方');
+    } else {
+      ElMessage.error(`操作失败：${response.data?.msg || response.data?.message || '未知错误'}`);
+    }
+  } catch (error) {
+    loading.close();
+    
+    console.error('生成并发送数据胶囊失败:', error);
+    
+    if (error.response) {
+      if (error.response.status === 404) {
+        ElMessage.error('服务未启动或接口不存在');
+      } else if (error.response.status === 500) {
+        ElMessage.error(`服务错误: ${error.response.data?.message || '内部服务器错误'}`);
+      } else {
+        ElMessage.error(`操作失败 (${error.response.status}): ${error.response.data?.message || error.message}`);
+      }
+    } else if (error.request) {
+      ElMessage.error('无法连接到服务，请确保服务已启动');
+    } else {
+      ElMessage.error(`操作失败: ${error.message || '未知错误'}`);
+    }
+  }
+};
 </script>
 
 <style scoped>
