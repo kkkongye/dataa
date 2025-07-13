@@ -634,9 +634,34 @@ const refreshDataList = async () => {
 }
 
 // 退出登录
-const logout = () => {
-  localStorage.removeItem('role')
-  router.push('/login')
+const logout = async () => {
+  try {
+    // 显示加载提示
+    const loadingInstance = ElLoading.service({
+      fullscreen: true,
+      text: '正在清除数据并退出...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    });
+    
+    // 调用接口清除所有对象
+    const response = await axios.delete('http://localhost:8082/api/objects');
+    
+    loadingInstance.close();
+    
+    // 处理响应结果
+    if (response.data && (response.data.code === 1 || response.data.success === true)) {
+      ElMessage.success(response.data.data || '成功清除所有数据对象');
+    } else {
+      ElMessage.warning('清除数据可能未完全成功，但仍将退出系统');
+    }
+  } catch (error) {
+    console.error('清除数据失败:', error);
+    ElMessage.error('清除数据失败，但仍将退出系统');
+  } finally {
+    // 无论成功失败，都执行退出登录
+    localStorage.removeItem('role');
+    router.push('/login');
+  }
 }
 
 // 处理每页显示数量变化
