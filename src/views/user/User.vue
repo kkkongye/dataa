@@ -37,7 +37,8 @@
         <div class="table-container">
           <div v-if="!isDecrypted" class="data-locked-placeholder">
             <el-icon class="locked-icon"><Lock /></el-icon>
-            <p>数据已加密，请点击右上角"解密"按钮并输入正确的数据对象ID和Token进行解密</p>
+            <p>数据已加密，请点击右上角"目录"按钮并选择数据对象ID发送解密申请</p>
+            <p>发送解密申请后请等待治理方生成并发送数字胶囊进行解密</p>
             <p class="locked-subtitle">解密后将显示所有匹配ID的数据对象数据</p>
           </div>
           <el-table
@@ -238,35 +239,14 @@ const isDecrypted = ref(false)
 const selectedRows = ref([])
 const decryptedObjectId = ref('')
 
-// 添加计算属性判断是否为已合格状态
-const isQualifiedStatus = computed(() => currentStatus.value === '已合格')
 
-const editDialogVisible = ref(false)
-const editFormRef = ref(null)
-const editForm = reactive({
-  id: '',
-  entity: '',
-  locationInfo: '',
-  constraint: '',
-  transferControl: '',
-  auditInfo: '',
-  status: '',
-  feedback: ''
-})
-const editingIndex = ref(-1)
-
-// 表格数据 - 从共享服务获取
 const tableData = ref(dataObjectService.getAllDataObjects())
 
 // 监听共享服务数据变化
 onMounted(() => {
-  // 添加数据变化监听器
   dataObjectService.addChangeListener((newData) => {
-    console.log('使用方收到数据变化:', newData)
-    // 无需手动更新tableData，因为是响应式引用
   })
-  
-  // 页面加载后自动显示三维数据可视化
+
   showVisualization()
 })
 
@@ -324,62 +304,8 @@ const handleSelectionChange = (rows) => {
   selectedRows.value = rows
 }
 
-// 获取状态对应的样式类名
-const getStatusClass = (status) => {
-  switch (status) {
-    case '已合格': return 'status-success'
-    case '不合格': return 'status-error'
-    case '待校验': return 'status-pending'
-    default: return ''
-  }
-}
 
-// 编辑对象
-const handleEdit = (row) => {
-  editingIndex.value = tableData.value.findIndex(item => item.id === row.id)
-  
-  Object.keys(editForm).forEach(key => {
-    editForm[key] = row[key]
-  })
-  
-  editDialogVisible.value = true
-}
 
-// 取消编辑
-const cancelEdit = () => {
-  editDialogVisible.value = false
-  Object.keys(editForm).forEach(key => {
-    editForm[key] = ''
-  })
-  editingIndex.value = -1
-}
-
-// 保存编辑
-const saveEdit = () => {
-  if (editForm.status === '已合格') {
-    editForm.feedback = ''
-  }
-  
-  if (editingIndex.value > -1) {
-    tableData.value[editingIndex.value] = { ...editForm }
-  }
-  
-  ElMessage.success(`已保存对 ${editForm.entity} 的编辑`)
-  editDialogVisible.value = false
-}
-
-// 删除对象
-const handleDelete = (row) => {
-  ElMessageBox.confirm(`确定要删除"${row.entity}"吗?`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    ElMessage.success(`已删除: ${row.entity}`)
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
 
 // 退出登录
 const logout = () => {
@@ -1284,8 +1210,6 @@ const handleInitUser = async () => {
           }
         }
       }).catch(() => {
-        // 用户取消操作
-        console.log('用户取消构造共享证书申请');
       });
     } else {
       ElMessage.warning(`使用方系统初始化失败: ${response.data?.message || response.data?.msg || '未知错误'}`);

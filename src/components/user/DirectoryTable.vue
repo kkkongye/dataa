@@ -123,19 +123,8 @@ const selectedRows = ref([])
 
 // 计算属性：过滤后的表格数据
 const filteredTableData = computed(() => {
-  if (tableData.value.length === 0) {
-    addExampleData();
-  }
-  
   let result = tableData.value.filter(item => item.status === '已合格')
   
-
-  if (result.length === 0 && tableData.value.length > 0) {
-    addExampleData();
-
-    result = tableData.value.filter(item => item.status === '已合格');
-  }
-
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     result = result.filter(item => {
@@ -322,11 +311,9 @@ const fetchData = async () => {
   try {
     const response = await axios.get('http://localhost:8081/api/objects/list')
     
-
     if (response.data) {
       let dataArray = []
       
-
       if (Array.isArray(response.data)) {
         dataArray = response.data
       } else if (response.data.data && Array.isArray(response.data.data)) {
@@ -335,7 +322,6 @@ const fetchData = async () => {
         dataArray = response.data.list
       }
       
-
       if (dataArray.length > 0) {
         dataArray = dataArray.map(item => {
 
@@ -422,60 +408,22 @@ const fetchData = async () => {
         if (qualifiedCount > 0) {
           ElMessage.success(`成功获取${dataArray.length}条数据，其中${qualifiedCount}条已合格`)
         } else {
-          ElMessage.warning('没有找到已合格的数据，将添加示例数据并将部分数据标记为已合格')
-          
-          if (dataArray.length > 0) {
-            const maxToMark = Math.min(3, dataArray.length)
-            for (let i = 0; i < maxToMark; i++) {
-              dataArray[i].status = '已合格'
-            }
-          }
-          
-          addExampleData()
-          assignRandomApplyStatus()
+          ElMessage.warning('未找到已合格的数据')
         }
       } else {
-        ElMessage.warning('API返回数据为空，已添加示例数据')
-        addExampleData()
-        assignRandomApplyStatus()
+        ElMessage.warning('未找到可用的数据对象')
       }
     } else {
-      ElMessage.warning('API返回的数据格式不正确，已添加示例数据')
-      addExampleData()
-      assignRandomApplyStatus()
+      ElMessage.warning('API返回的数据格式不正确')
     }
     
     await markApplyStatusForUser()
   } catch (error) {
     console.error('获取数据失败:', error)
     ElMessage.error(`获取数据失败: ${error.message}`)
-    
-    addExampleData()
-    assignRandomApplyStatus()
   } finally {
     loading.value = false
   }
-}
-
-const addExampleData = () => {
-  const exampleData = {
-    id: '123e4567-e89b-12d3-a456-426614174000',
-    entity: '库存管理',
-    constraint: ['格式约束:json', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'],
-    transferControl: ['可读', '可共享'],
-    status: '已合格'
-  }
-
-  const existingIndex = tableData.value.findIndex(item => item.id === exampleData.id)
-  
-  if (existingIndex >= 0) {
-
-    tableData.value[existingIndex].status = '已合格'
-  } else {
-
-    tableData.value.push(exampleData)
-  }
-  assignRandomApplyStatus()
 }
 
 
@@ -491,11 +439,6 @@ watch(() => props.visible, (newValue) => {
 })
 
 
-const applyStatusOptions = [
-  '数源方同意等待治理方通过',
-  '治理方通过 请解密查看',
-  '拒绝申请'
-]
 
 
 function assignRandomApplyStatus() {
@@ -511,20 +454,7 @@ function assignRandomApplyStatus() {
 }
 
 
-function getApplyStatusTagType(row) {
-  if (row.sourceAgreed === true && row.governanceAgreed === true) {
-    return 'success'
-  }
-  return 'danger'
-}
 
-// 获取申请状态文本
-function getApplyStatusText(row) {
-  if (row.sourceAgreed === true && row.governanceAgreed === true) {
-    return '申请已同意,请解密查看'
-  }
-  return '无权限解密'
-}
 
 
 // function handleApply(row) {
@@ -563,7 +493,7 @@ async function markApplyStatusForUser() {
       const records = res.data.data || []
       const username = localStorage.getItem('username')
       tableData.value.forEach(row => {
-        // 查找该用户对该对象的申请记录
+
         const record = records.find(r => r.objectId === row.id && r.applicant === username)
         if (record) {
           row.applied = true
@@ -581,7 +511,6 @@ async function markApplyStatusForUser() {
   }
 }
 
-// 处理申请功能 - 连接到 selectIds 接口
 function handleApply() {
   if (selectedRows.value.length === 0) {
     ElMessage.info('请先勾选要申请的数据对象')
@@ -589,15 +518,13 @@ function handleApply() {
   }
   
   loading.value = true
-  const ids = selectedRows.value.map(row => row.id)
+  const ids = selectedRows.value.map(row => row.id).join(',')
   
-  // 调用 selectIds 接口
-  axios.post('http://localhost:8083/api/selectIds', { ids }, { withCredentials: true })
+  axios.get(`http://localhost:8083/api/selectIds?ids=${encodeURIComponent(ids)}`, { withCredentials: true })
     .then(res => {
       console.log('申请接口返回结果:', res.data)
       ElMessage.success('申请成功')
       
-      // 更新选中行的状态
       selectedRows.value.forEach(row => {
         row.applied = true
         row.applyStatus = '待处理'
@@ -612,7 +539,6 @@ function handleApply() {
     })
 }
 
-// 处理解密功能 - 连接到 decrypt 接口
 function handleDecrypt() {
   if (selectedRows.value.length === 0) {
     ElMessage.info('请先勾选要解密的数据对象')
@@ -622,13 +548,11 @@ function handleDecrypt() {
   loading.value = true
   const ids = selectedRows.value.map(row => row.id)
   
-  // 调用 decrypt 接口
   axios.post('http://localhost:8083/api/decrypt', { ids }, { withCredentials: true })
     .then(res => {
       console.log('解密接口返回结果:', res.data)
       ElMessage.success('解密成功')
-      
-      // 关闭当前目录弹窗并显示解密数据
+
       emit('show-decrypt', ids)
     })
     .catch(err => {

@@ -30,7 +30,7 @@
               </el-input>
           </div>
           <div class="action-buttons">
-            <el-button type="primary" plain @click="handleInitSystem">治理方初始化</el-button>
+
             <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button>
             <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
             <!-- <el-button type="primary" plain @click="applicationListVisible = true">申请列表</el-button> -->
@@ -425,7 +425,12 @@ const loadDataFromBackend = async () => {
 }
 
 onMounted(() => {
-  loadDataFromBackend()
+  const currentRole = localStorage.getItem('role');
+  if (currentRole === 'governor') { 
+    handleInitSystem();
+  } else {
+    loadDataFromBackend();
+  }
 })
 
 // 计算实际数据量

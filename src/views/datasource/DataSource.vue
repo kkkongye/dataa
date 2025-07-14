@@ -177,7 +177,7 @@
           <el-option label="可委托" value="可委托"></el-option>
         </el-select>
       </el-form-item>
-      <!-- 分类分级值按钮（大按钮，带文字） -->
+      <!-- 分类分级值按钮 -->
       <el-form-item label="分类分级值：">
         <el-button type="primary" class="generate-btn" style="width: 140px; height: 30px; font-size: 14px;" @click="openClassificationLevelDialog">生成分类分级值</el-button>
       </el-form-item>
@@ -2727,14 +2727,84 @@ const openClassificationLevelDialog = () => {
   // 从dataEntity中提取数据
   let rowData = { ...editForm };
   
-  // 如果有dataEntity，从中提取数据
-  if (rowData.dataEntity) {
-    console.log('从dataEntity中提取分类分级数据');
-    if (rowData.dataEntity.dataItems) {
-      rowData.dataItems = rowData.dataEntity.dataItems;
+  // 先尝试从dataContent中提取分类分级数据
+  if (rowData.dataContent) {
+    try {
+      // 解析dataContent（如果是字符串）
+      const dataContent = typeof rowData.dataContent === 'string' ? 
+        JSON.parse(rowData.dataContent) : rowData.dataContent;
+      
+      // 从dataContent中提取分类分级值
+      if (dataContent) {
+        // 提取分类值
+        if (dataContent.classificationValue !== undefined) {
+          rowData.classificationValue = dataContent.classificationValue;
+        } else if (dataContent.totalCategoryValue !== undefined) {
+          rowData.totalCategoryValue = dataContent.totalCategoryValue;
+        }
+        
+        // 提取分级值
+        if (dataContent.levelValue !== undefined) {
+          rowData.levelValue = dataContent.levelValue;
+        } else if (dataContent.totalGradeValue !== undefined) {
+          rowData.totalGradeValue = dataContent.totalGradeValue;
+        }
+        
+        // 提取分类细节
+        if (dataContent.industryCategory !== undefined) {
+          rowData.industryCategory = dataContent.industryCategory;
+        }
+        if (dataContent.dataTimeliness !== undefined) {
+          rowData.dataTimeliness = dataContent.dataTimeliness;
+        }
+        if (dataContent.dataSource !== undefined) {
+          rowData.dataSource = dataContent.dataSource;
+        }
+        
+        // 提取分级细节
+        if (dataContent.dbGrade !== undefined) {
+          rowData.dbGrade = dataContent.dbGrade;
+        }
+        if (dataContent.tableGrade !== undefined) {
+          rowData.tableGrade = dataContent.tableGrade;
+        }
+        if (dataContent.rowGrades !== undefined) {
+          rowData.rowGrades = dataContent.rowGrades;
+        }
+        if (dataContent.columnGrades !== undefined) {
+          rowData.columnGrades = dataContent.columnGrades;
+        }
+      }
+    } catch (error) {
+      console.warn('解析dataContent提取分类分级数据失败:', error);
     }
   }
   
+  // 如果有dataEntity，从中提取数据
+  if (rowData.dataEntity) {
+    console.log('从dataEntity中提取分类分级数据');
+    
+    // 提取dataItems
+    if (rowData.dataEntity.dataItems) {
+      rowData.dataItems = rowData.dataEntity.dataItems;
+    }
+    
+    // 提取分类分级值
+    if (rowData.dataEntity.classificationValue !== undefined) {
+      rowData.classificationValue = rowData.dataEntity.classificationValue;
+    }
+    if (rowData.dataEntity.totalCategoryValue !== undefined) {
+      rowData.totalCategoryValue = rowData.dataEntity.totalCategoryValue;
+    }
+    if (rowData.dataEntity.levelValue !== undefined) {
+      rowData.levelValue = rowData.dataEntity.levelValue;
+    }
+    if (rowData.dataEntity.totalGradeValue !== undefined) {
+      rowData.totalGradeValue = rowData.dataEntity.totalGradeValue;
+    }
+  }
+  
+  // 先设置初始值
   classificationLevelData.value = {
     classificationValue: rowData.classificationValue || rowData.totalCategoryValue || '',
     industryCategory: rowData.industryCategory || '',
@@ -2749,11 +2819,107 @@ const openClassificationLevelDialog = () => {
     dataItems: rowData.dataItems || (rowData.dataEntity && rowData.dataEntity.dataItems) || []
   }
   
-  console.log('打开分类分级弹窗，数据项数量:', 
-    (rowData.dataItems && rowData.dataItems.length) || 
-    (rowData.dataEntity && rowData.dataEntity.dataItems && rowData.dataEntity.dataItems.length) || 0);
-    
+  // 先显示弹窗，再获取API数据
   classificationLevelDialogVisible.value = true
+  
+  // 额外尝试从API获取最新的分类分级数据
+  fetchClassificationData(editForm.id);
+  
+  console.log('打开分类分级弹窗，初始数据值:', {
+    classificationValue: classificationLevelData.value.classificationValue,
+    levelValue: classificationLevelData.value.levelValue,
+    industryCategory: classificationLevelData.value.industryCategory,
+    dataItems: (classificationLevelData.value.dataItems || []).length
+  });
+}
+
+// 修改获取分类分级数据的函数
+const fetchClassificationData = async (objectId) => {
+  if (!objectId) return;
+  
+  try {
+    // 使用GET方法获取对象详情 - 这个接口应该是GET方法
+    const response = await fetch(`http://localhost:8081/api/objects/${objectId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('获取到的对象数据:', data);
+      
+      // 处理返回的数据
+      if (data && data.data) {
+        const objectData = data.data;
+        
+        // 直接更新分类分级弹窗数据
+        let updatedData = { ...classificationLevelData.value };
+        
+        // 更新分类值
+        if (objectData.totalCategoryValue) {
+          updatedData.classificationValue = objectData.totalCategoryValue;
+        }
+        
+        // 更新分类细节
+        if (objectData.industryCategory) {
+          updatedData.industryCategory = objectData.industryCategory;
+        }
+        if (objectData.processingTimeCategory) {
+          updatedData.dataTimeliness = objectData.processingTimeCategory;
+        }
+        if (objectData.dataSourceCategory) {
+          updatedData.dataSource = objectData.dataSourceCategory;
+        }
+        
+        // 更新分级值
+        if (objectData.totalGradeValue) {
+          updatedData.levelValue = objectData.totalGradeValue;
+        }
+        
+        // 更新分级细节
+        if (objectData.dbGrade !== undefined) {
+          updatedData.dbGrade = objectData.dbGrade;
+        }
+        if (objectData.tableGrade !== undefined) {
+          updatedData.tableGrade = objectData.tableGrade;
+        }
+        if (objectData.rowGrades) {
+          updatedData.rowGrades = objectData.rowGrades;
+        }
+        if (objectData.columnGrades) {
+          updatedData.columnGrades = objectData.columnGrades;
+        }
+        
+        // 更新dataItems（如果存在）
+        if (objectData.dataItems) {
+          updatedData.dataItems = objectData.dataItems;
+        } else if (objectData.dataEntity && objectData.dataEntity.dataItems) {
+          updatedData.dataItems = objectData.dataEntity.dataItems;
+        }
+        
+        // 直接更新弹窗数据
+        console.log('更新分类分级弹窗数据:', updatedData);
+        classificationLevelData.value = updatedData;
+        
+        // 同时更新editForm中的数据（保持同步）
+        editForm.classificationValue = updatedData.classificationValue;
+        editForm.totalCategoryValue = updatedData.classificationValue;
+        editForm.industryCategory = updatedData.industryCategory;
+        editForm.dataTimeliness = updatedData.dataTimeliness;
+        editForm.dataSource = updatedData.dataSource;
+        editForm.levelValue = updatedData.levelValue;
+        editForm.totalGradeValue = updatedData.levelValue;
+        editForm.dbGrade = updatedData.dbGrade;
+        editForm.tableGrade = updatedData.tableGrade;
+        editForm.rowGrades = updatedData.rowGrades;
+        editForm.columnGrades = updatedData.columnGrades;
+      }
+    } else {
+      console.warn(`获取对象数据失败, HTTP状态: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('获取分类分级数据失败:', error);
+  }
 }
 
 // 分类分级对话框确认回调
