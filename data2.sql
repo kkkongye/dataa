@@ -23,7 +23,7 @@ CREATE DATABASE IF NOT EXISTS provider_database
 USE provider_database;
 
 DROP TABLE data_objects;
-
+ALTER TABLE data_objects ADD COLUMN audit_report TEXT COMMENT '审查报告内容';
 CREATE TABLE data_objects (
     id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识符',
     numeric_id BIGINT AUTO_INCREMENT COMMENT '数据库自增长ID',
@@ -92,6 +92,7 @@ CREATE DATABASE IF NOT EXISTS governance_database
     DEFAULT COLLATE utf8mb4_unicode_ci;
     
 USE governance_database;
+ALTER TABLE governance_objects ADD COLUMN audit_report TEXT COMMENT '审查报告内容';
 DROP TABLE governance_objects;
 
 CREATE TABLE governance_objects (
@@ -109,6 +110,14 @@ CREATE TABLE governance_objects (
     processing_time_category VARCHAR(50) COMMENT '处理时效分类',
     data_source_category VARCHAR(50) COMMENT '数据来源分类'
 );
+
+ALTER TABLE governance_objects 
+ADD COLUMN metadata_json TEXT,
+ADD COLUMN location_info_json TEXT,
+ADD COLUMN constraint_set_json TEXT,
+ADD COLUMN propagation_control_json TEXT,
+ADD COLUMN audit_info_json TEXT,
+ADD COLUMN numeric_id BIGINT COMMENT '数据库自增长ID';
 
 
 CREATE DATABASE IF NOT EXISTS consumer_database 
