@@ -42,7 +42,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import reportService from '../../services/reportService'
 import axios from 'axios'
 
 const props = defineProps({
@@ -142,21 +141,11 @@ const loadReport = async () => {
   try {
     reportLoading.value = true
     
-    // 首先尝试从localStorage获取审计报告
-    const storedReport = localStorage.getItem('currentAuditReport');
-    if (storedReport) {
-      reportContent.value = storedReport;
-      // 使用后清除，避免影响下次查看
-      localStorage.removeItem('currentAuditReport');
-      reportLoading.value = false;
-      return;
-    }
-    
-    // 如果localStorage中没有，则尝试从API获取
+    // 从数源方API获取对象信息，包含审计报告
     if (props.objectId) {
       try {
-        // 直接从API获取对象信息，包含审计报告
-        const response = await axios.get(`http://localhost:8082/api/objects/${props.objectId}`);
+        // 从数源方API获取审计报告
+        const response = await axios.get(`http://localhost:8081/api/objects/${props.objectId}`);
         
         let auditReport = '';
         
@@ -176,56 +165,15 @@ const loadReport = async () => {
           return;
         }
       } catch (apiError) {
-        console.warn('从API获取审计报告失败，尝试使用reportService:', apiError);
+        console.warn('从数源方API获取审计报告失败:', apiError);
       }
-      
-      // 如果API获取失败，尝试使用reportService
-      reportContent.value = await reportService.getObjectReviewReport(props.objectId);
-    } else {
-      reportContent.value = await reportService.getDataIssuesReport();
     }
     
-    // 如果仍然没有内容，显示默认报告
-    if (!reportContent.value || reportContent.value.trim() === '') {
-      if (props.objectId) {
-        reportContent.value = `等待治理方审查\n======================\n\n该数据对象 (ID: ${props.objectId}) 尚未生成审查报告，请等待治理方进行审查。`;
-      } else {
-        reportContent.value = `
-数据审查报告
-======================
-
-审查时间: ${new Date().toLocaleString('zh-CN')}
-审查对象: ${props.objectId ? `数据对象 (ID: ${props.objectId})` : '数据对象集合'}
-审查结果: 通过
-
-一、数据完整性检查
------------------------
-1. 字段完整性: 通过
-2. 记录完整性: 通过
-3. 必填项检查: 通过
-
-二、数据一致性检查
------------------------
-1. 跨表一致性: 通过
-2. 业务规则一致性: 通过
-3. 引用完整性: 通过
-
-三、数据准确性检查
------------------------
-1. 数值范围检查: 通过
-2. 格式正确性: 通过
-3. 逻辑关系检查: 通过
-
-四、安全合规检查
------------------------
-1. 敏感数据检查: 通过
-2. 权限控制检查: 通过
-3. 数据分类分级: 合格
-
-结论: 该数据对象符合质量标准，可以进行后续处理。
-`;
-      }
-    }
+    // 如果没有获取到报告内容，显示默认信息
+    reportContent.value = props.objectId 
+      ? `等待治理方审查\n======================\n\n该数据对象 (ID: ${props.objectId}) 尚未生成审查报告，请等待治理方进行审查。`
+      : '暂无审查报告信息';
+    
   } catch (error) {
     console.error('加载报告失败:', error);
     ElMessage.error('加载报告失败: ' + error.message);
@@ -244,27 +192,27 @@ const loadReport = async () => {
 
 watch(() => props.visible, (newValue) => {
   if (newValue) {
-    loadReport()
+    loadReport();
   } else {
     // 关闭对话框时清空内容，但添加延迟以便有淡出动画
     setTimeout(() => {
-      reportContent.value = ''
-    }, 300)
+      reportContent.value = '';
+    }, 300);
   }
-})
+});
 
 // 监听objectId变化，重新加载报告
 watch(() => props.objectId, (newValue) => {
   if (props.visible && newValue) {
-    loadReport()
+    loadReport();
   }
-})
+});
 
 onMounted(() => {
   if (props.visible) {
-    loadReport()
+    loadReport();
   }
-})
+});
 </script>
 
 <style scoped>

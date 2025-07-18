@@ -273,6 +273,7 @@
           <template #default="scope">
             <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button link type="info" size="small" @click="handleViewReport(scope.row)">查看审查报告</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -361,7 +362,8 @@ const emit = defineEmits([
   'create',
   'export',
   'visualization',
-  'show-application-list'
+  'show-application-list',
+  'view-report'
 ])
 
 // 内部状态
@@ -385,6 +387,14 @@ const classificationLevelData = ref({
 })
 
 const auditLogVisible = ref(false)
+const reportViewerVisible = ref(false)
+const currentReportObjectId = ref('')
+
+// 处理查看审查报告
+const handleViewReport = (row) => {
+  currentReportObjectId.value = row.id
+  emit('view-report', row)
+}
 
 const tableData = computed(() => {
   if (!props.data) return []
@@ -780,7 +790,6 @@ const showAuditLogDialog = (row) => {
 }
 
 function getLocationInfoObj(locationInfo, locationInfoJson) {
-  // 处理locationInfo为空的情况
   if (!locationInfo) {
     if (!locationInfoJson) {
       return {
@@ -793,8 +802,6 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
   if (typeof locationInfo === 'string' && locationInfo.startsWith('(') && locationInfo.endsWith(')')) {
     return null;
   }
-  
-  // 1. 如果locationInfo已经是对象且包含必要的字段，直接返回
   if (typeof locationInfo === 'object' && locationInfo !== null) {
     if (locationInfo.databaseName !== undefined || 
         locationInfo.tableName !== undefined || 
@@ -817,7 +824,6 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
               return parsed;
             }
           } catch (e) {
-            // 解析失败，继续
           }
         }
       }

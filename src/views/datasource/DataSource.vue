@@ -50,6 +50,7 @@
           @update:data="handleDataUpdate"
           @visualization="showVisualization"
           @show-application-list="applicationListVisible = true"
+          @view-report="handleViewReport"
         />
       </div>
     </div>
@@ -226,6 +227,8 @@
     :model-value="classificationLevelData"
     @confirm="handleClassificationLevelConfirm"
   />
+  <!-- 审查报告查看器 -->
+  <ReportViewer v-model:visible="reportViewerVisible" :object-id="currentReportObjectId" />
 
 </template>
 
@@ -237,6 +240,7 @@ import { Search, Document, RefreshRight, DataAnalysis } from '@element-plus/icon
 import * as XLSX from 'xlsx'
 import CreateObjectDialog from '../../components/source/CreateObjectDialog.vue'
 import ObjectList from '../../components/source/ObjectList.vue'
+import ReportViewer from '../../components/source/ReportViewer.vue'
 import AppHeader from '../../components/AppHeader.vue'
 import CommonPagination from '@/components/CommonPagination.vue'
 import dataObjectService from '@/services/dataObjectService'
@@ -2961,6 +2965,14 @@ const handleClassificationLevelConfirm = async (data) => {
   ElMessage.success('分类分级值已更新')
   classificationLevelDialogVisible.value = false
 }
+
+
+const reportViewerVisible = ref(false);
+const currentReportObjectId = ref('');
+const handleViewReport = (row) => {
+  currentReportObjectId.value = row.id;
+  reportViewerVisible.value = true;
+};
 </script>
 
 <style scoped>
