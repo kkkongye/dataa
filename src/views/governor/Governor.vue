@@ -244,7 +244,7 @@ const editingIndex = ref(-1)
 // 表格数据 - 从共享服务获取
 const tableData = ref([])
 
-// 适配后端数据到前端格式（复制自dataObjectService.js）
+// 适配后端数据到前端格式（增强版）
 function adaptBackendData(backendItem) {
   if (!backendItem) {
     return {
@@ -266,13 +266,13 @@ function adaptBackendData(backendItem) {
     }
   }
 
-  console.log('适配数据项:', backendItem.id || '无ID')
-
   let parsedLocation = null
   if (backendItem.locationInfoJson) {
     try {
       parsedLocation = JSON.parse(backendItem.locationInfoJson)
-    } catch (e) {}
+    } catch (e) {
+      console.warn('解析locationInfoJson失败:', e)
+    }
   } else if (backendItem.locationInfo && typeof backendItem.locationInfo === 'object') {
     parsedLocation = backendItem.locationInfo
   }
@@ -289,6 +289,8 @@ function adaptBackendData(backendItem) {
 
   let transferControlArray = [];
   let propagationControlObj = null;
+  
+  // 增强的传播控制处理
   if (backendItem.propagationControl) {
     propagationControlObj = backendItem.propagationControl;
   } else if (backendItem.propagationControlJson) {
@@ -296,8 +298,11 @@ function adaptBackendData(backendItem) {
       propagationControlObj = typeof backendItem.propagationControlJson === 'string'
         ? JSON.parse(backendItem.propagationControlJson)
         : backendItem.propagationControlJson;
-    } catch (e) {}
+    } catch (e) {
+      console.warn('解析propagationControlJson失败:', e);
+    }
   }
+  
   if (propagationControlObj) {
     if (propagationControlObj.canRead) transferControlArray.push('可读');
     if (propagationControlObj.canModify) transferControlArray.push('可修改');
@@ -305,7 +310,6 @@ function adaptBackendData(backendItem) {
     if (propagationControlObj.canDelegate) transferControlArray.push('可委托');
     if (propagationControlObj.canDestroy) transferControlArray.push('可销毁');
   } else if (backendItem.constraintSet && backendItem.constraintSet.constraints) {
-
     const constraints = backendItem.constraintSet.constraints[0] || {};
     if (constraints.accessConstraint && constraints.accessConstraint.includes('允许')) transferControlArray.push('可读');
     if (constraints.shareConstraint && constraints.shareConstraint.includes('允许')) transferControlArray.push('可共享');
@@ -340,7 +344,9 @@ function adaptBackendData(backendItem) {
   } else if (backendItem.metadataJson) {
     try {
       metadata = JSON.parse(backendItem.metadataJson)
-    } catch (e) {}
+    } catch (e) {
+      console.warn('解析metadataJson失败:', e);
+    }
   } else if (backendItem.metadata) {
     metadata = backendItem.metadata
   }
@@ -361,17 +367,33 @@ function adaptBackendData(backendItem) {
                           backendItem.levelValue || 
                           ''
 
-  // 处理实体名称
-  const entity = backendItem.dataEntity && backendItem.dataEntity.entity
-    ? backendItem.dataEntity.entity
-    : backendItem.entity || ''
+  // 增强的实体名称处理
+  let entity = '';
+  if (backendItem.dataEntity && backendItem.dataEntity.entity) {
+    entity = backendItem.dataEntity.entity;
+  } else if (backendItem.entity) {
+    entity = backendItem.entity;
+  } else if (backendItem.dataContent) {
+    try {
+      const dataContent = typeof backendItem.dataContent === 'string' 
+        ? JSON.parse(backendItem.dataContent) 
+        : backendItem.dataContent;
+      if (dataContent && dataContent.entity) {
+        entity = dataContent.entity;
+      } else if (dataContent && dataContent.dataEntity && dataContent.dataEntity.entity) {
+        entity = dataContent.dataEntity.entity;
+      }
+    } catch (e) {
+      console.warn('从dataContent解析实体名称失败:', e);
+    }
+  }
   
   // 处理dataContent
   const dataContent = backendItem.dataContent || 
                      (backendItem.dataEntity && backendItem.dataEntity.dataContent) || 
                      JSON.stringify(backendItem.dataEntity || {})
   
-  return {
+  const result = {
     id: backendItem.id || '',
     entity,
     locationInfo,
@@ -389,32 +411,27 @@ function adaptBackendData(backendItem) {
     dataContent,
     hasReview: backendItem.hasReview || false
   }
+  
+  return result;
 }
 
 // 页面加载时从后端获取数据并适配
 const loadDataFromBackend = async () => {
   try {
     const response = await axios.get('http://localhost:8082/api/objects')
-    console.log('加载数据 - API响应:', response.data)
-    
     let dataArray = []
     if (Array.isArray(response.data)) {
       dataArray = response.data
-      console.log('数据格式: 直接数组')
     } else if (response.data.data && Array.isArray(response.data.data)) {
       dataArray = response.data.data
-      console.log('数据格式: response.data.data')
     } else if (response.data.list && Array.isArray(response.data.list)) {
       dataArray = response.data.list
-      console.log('数据格式: response.data.list')
     } else {
       console.warn('未识别的数据格式:', response.data)
       ElMessage.warning('数据格式不符合预期，请检查控制台')
     }
     
-    console.log('处理前的原始数据:', dataArray)
     tableData.value = dataArray.map(item => adaptBackendData(item))
-    console.log('处理后的表格数据:', tableData.value)
     
     if (tableData.value.length === 0) {
       ElMessage.warning('没有获取到数据对象,请等待数源方发送')
@@ -625,9 +642,8 @@ const showReviewReport = async (row) => {
   }
 };
 
+// 新的状态更新方法，直接使用8082接口
 const updateStatus = async (row, newStatus) => {
-  const localModeOnly = false;
-
   if (newStatus === '审查中') {
     try {
       handleReview(row);
@@ -635,20 +651,22 @@ const updateStatus = async (row, newStatus) => {
       console.error('审查过程出错:', error);
       ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
     }
+    return;
   }
+
   // 处理已合格或待校验状态
-  else if (newStatus === '已合格' || newStatus === '待校验') {
+  if (newStatus === '已合格' || newStatus === '待校验') {
     try {
-      const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, '', localModeOnly)
+      const result = await updateStatusViaBothPorts(row.id, newStatus, '');
       if (result) {
-        ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态`)
-        window.location.reload();
+        ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态 (双端口同步)`);
+        loadDataFromBackend(); // 重新加载数据
       } else {
-        ElMessage.warning(`${row.entity} 状态更新失败`)
+        ElMessage.warning(`${row.entity} 状态更新失败`);
       }
     } catch (error) {
-      console.error('更新状态时出错:', error)
-      ElMessage.error(`更新 ${row.entity} 状态失败: ${error.message || '未知错误'}`)
+      console.error('更新状态时出错:', error);
+      ElMessage.error(`更新 ${row.entity} 状态失败: ${error.message || '未知错误'}`);
     }
   } 
   // 如果是不合格状态，弹出对话框要求输入反馈意见
@@ -661,24 +679,143 @@ const updateStatus = async (row, newStatus) => {
       inputType: 'textarea',
       inputPlaceholder: '请详细描述不合格的原因...',
       inputValidator: (value) => {
-        return value.trim() !== '' || '反馈意见不能为空'
+        return value.trim() !== '' || '反馈意见不能为空';
       }
     }).then(async ({ value }) => {
       try {
-        const result = await dataObjectService.updateObjectStatusViaApi(row.id, newStatus, value, localModeOnly)
+        const result = await updateStatusViaBothPorts(row.id, newStatus, value);
         if (result) {
-          ElMessage.success(`${row.entity} 已更新为"不合格"状态`)
-          window.location.reload();
+          ElMessage.success(`${row.entity} 已更新为"不合格"状态 (双端口同步)`);
+          loadDataFromBackend(); // 重新加载数据
         } else {
-          ElMessage.warning(`${row.entity} 状态更新失败`)
+          ElMessage.warning(`${row.entity} 状态更新失败`);
         }
       } catch (error) {
-        console.error('更新状态时出错:', error)
-        ElMessage.error(`更新 ${row.entity} 状态失败: ${error.message || '未知错误'}`)
+        console.error('更新状态时出错:', error);
+        ElMessage.error(`更新 ${row.entity} 状态失败: ${error.message || '未知错误'}`);
       }
     }).catch(() => {
-      ElMessage.info('已取消状态更新')
-    })
+      ElMessage.info('已取消状态更新');
+    });
+  }
+}
+
+// 同时调用8081和8082端口更新状态的方法
+const updateStatusViaBothPorts = async (objectId, newStatus, feedback = '') => {
+  const results = {
+    port8081: false,
+    port8082: false
+  };
+
+  // 并行调用两个端口
+  const promises = [
+    // 8081端口调用
+    (async () => {
+      try {
+        const result = await dataObjectService.updateObjectStatusViaApi(objectId, newStatus, feedback, false);
+        results.port8081 = result;
+        return result;
+      } catch (error) {
+        console.error('8081端口更新失败:', error);
+        results.port8081 = false;
+        return false;
+      }
+    })(),
+    
+    // 8082端口调用
+    (async () => {
+              try {
+          // 首先获取当前对象数据
+          const getResponse = await axios.get(`http://localhost:8082/api/objects/${objectId}`);
+          
+          if (!getResponse.data) {
+            console.error('8082端口获取对象数据失败');
+            results.port8082 = false;
+            return false;
+          }
+
+          // 处理8082端口的数据结构
+          let currentObject = null;
+          if (getResponse.data.data) {
+            // 如果返回的是 {code: 1, data: {...}} 格式
+            currentObject = getResponse.data.data;
+          } else if (getResponse.data.id) {
+            // 如果直接返回对象
+            currentObject = getResponse.data;
+          } else {
+            console.error('8082端口返回的数据格式不正确:', getResponse.data);
+            results.port8082 = false;
+            return false;
+          }
+        // 构建更新数据 - 保持所有原有字段
+        const updateData = {
+          ...currentObject,
+          status: newStatus,
+          feedback: feedback,
+          dataEntity: {
+            ...(currentObject.dataEntity || {}),
+            status: newStatus,
+            feedback: feedback
+          },
+          // 确保保留传播控制相关字段
+          propagationControl: currentObject.propagationControl,
+          constraintSet: currentObject.constraintSet,
+          locationInfo: currentObject.locationInfo,
+          metadata: currentObject.metadata,
+          metadataJson: currentObject.metadataJson,
+          totalCategoryValue: currentObject.totalCategoryValue,
+          totalGradeValue: currentObject.totalGradeValue,
+          dataItems: currentObject.dataItems,
+          dataContent: currentObject.dataContent
+        };
+
+        // 发送PUT请求更新状态
+        const putResponse = await axios.put(
+          `http://localhost:8082/api/objects/${objectId}`,
+          updateData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // 检查响应状态
+        if (putResponse.status === 200 || putResponse.status === 204 ||
+            (putResponse.data && (putResponse.data.code === 1 || putResponse.data.success === true))) {
+          results.port8082 = true;
+          return true;
+        } else {
+          console.error('8082端口状态更新响应异常:', putResponse);
+          results.port8082 = false;
+          return false;
+        }
+      } catch (error) {
+        console.error('8082端口更新失败:', error);
+        results.port8082 = false;
+        return false;
+      }
+    })()
+  ];
+
+  try {
+    // 等待所有请求完成
+    await Promise.allSettled(promises);
+    
+    // 检查结果
+    const successCount = Object.values(results).filter(result => result).length;
+    const totalCount = Object.keys(results).length;
+    
+    // 如果至少有一个端口成功，就认为更新成功
+    if (successCount > 0) {
+      return true;
+    } else {
+      console.error('所有端口都更新失败');
+      return false;
+    }
+  } catch (error) {
+    console.error('并行更新过程中出错:', error);
+    return false;
   }
 }
 

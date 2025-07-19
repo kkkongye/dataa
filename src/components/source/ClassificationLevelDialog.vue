@@ -1144,13 +1144,7 @@ const getObjectKeys = (dataArray) => {
   return filteredKeys;
 }
 
-const getGradeTagType = (value) => {
-  const num = parseFloat(value) || 0;
-  if (num >= 3.0) return 'danger';   
-  if (num >= 2.0) return 'warning';  
-  if (num >= 1.0) return 'success';  
-  return 'info';                     
-}
+
 
 const getRowWeightTagType = (value) => {
   // 如果值是字符串形式的数字，转换为数字

@@ -1020,7 +1020,7 @@ const handleGenerateDV = async () => {
       ElMessage.error(response.data.msg || '生成DV失败');
     } else if (response.data && (response.data.code === 1 || response.data.success === true)) {
       // 生成凭证成功后询问是否加密并签名
-      ElMessageBox.confirm('数据凭证生成成功，是否加密并签名?', '确认', {
+      ElMessageBox.confirm('数据凭证生成成功，是否加密签名并发送?', '确认', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'info',
