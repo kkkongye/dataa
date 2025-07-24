@@ -211,6 +211,25 @@
 
   <!-- 添加三维可视化对话框组件 -->
   <VisualizationDialog v-model:visible="visualizationVisible" />
+
+  <!-- 构造共享证书申请对话框 -->
+  <el-dialog v-model="scrDialogVisible" title="构造共享证书申请" width="500px">
+    <el-form :model="scrForm" label-width="80px">
+      <el-form-item label="metaData">
+        <el-input v-model="scrForm.metaData" />
+      </el-form-item>
+      <el-form-item label="fno">
+        <el-input v-model="scrForm.fno" />
+      </el-form-item>
+      <el-form-item label="sfno">
+        <el-input v-model="scrForm.sfno" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="scrDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="submitScrForm">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -337,7 +356,7 @@ const isGeneratingCapsule = ref(false)
 // 显示解密对话框
 const showDecryptDialog = (ids) => {
   decryptForm.objectId = ids.join(', ')
-  decryptedObjectIds.value = ids
+  decryptedObjectIds.value = idList
   
   // 直接调用解密函数，不显示弹窗
   handleDecrypt()
@@ -1166,51 +1185,14 @@ const handleInitUser = async () => {
       ElMessage.success('使用方系统初始化成功');
       
       // 弹出确认对话框询问是否构造共享证书申请
-      ElMessageBox.confirm('是否构造共享证书申请给数源方?', '确认', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info',
-      }).then(async () => {
-        try {
-          const scrLoading = ElLoading.service({
-            fullscreen: true,
-            text: '正在构造共享证书申请...',
-            background: 'rgba(0, 0, 0, 0.7)'
-          });
-          
-          // 使用指定的参数调用生成SCR接口
-          const scrResponse = await axios.post('http://localhost:8083/api/generate-scr', {
-            metaData: "MetaData",
-            fno: "杭州市大数据局人事科",
-            sfno: "杭州市大数据局"
-          });
-          
-          scrLoading.close();
-          
-          if (scrResponse.data && (scrResponse.data.code === 1 || scrResponse.data.success === true)) {
-            ElMessage.success('共享证书申请构造成功');
-          } else {
-            ElMessage.warning(`共享证书申请构造失败: ${scrResponse.data?.message || scrResponse.data?.msg || '未知错误'}`);
-          }
-        } catch (scrError) {
-          console.error('共享证书申请构造失败:', scrError);
-          
-          if (scrError.response) {
-            if (scrError.response.status === 404) {
-              ElMessage.error('使用方服务未启动或接口不存在');
-            } else if (scrError.response.status === 500) {
-              ElMessage.error(`使用方服务错误: ${scrError.response.data?.message || '内部服务器错误'}`);
-            } else {
-              ElMessage.error(`构造共享证书申请失败 (${scrError.response.status}): ${scrError.response.data?.message || scrError.message}`);
-            }
-          } else if (scrError.request) {
-            ElMessage.error('无法连接到使用方服务，请确保服务已启动');
-          } else {
-            ElMessage.error(`共享证书申请构造失败: ${scrError.message || '未知错误'}`);
-          }
-        }
-      }).catch(() => {
-      });
+      // ElMessageBox.confirm('是否构造共享证书申请给数源方?', '确认', {
+      //   confirmButtonText: '确定',
+      //   cancelButtonText: '取消',
+      //   type: 'info',
+      // }).then(async () => {
+      //   ...原有代码...
+      // })
+      openScrDialog()
     } else {
       ElMessage.warning(`使用方系统初始化失败: ${response.data?.message || response.data?.msg || '未知错误'}`);
     }
@@ -1321,6 +1303,41 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
 function isSelectFieldsLong(selectFields) {
   if (!selectFields) return false;
   return selectFields.length > 30;
+}
+
+const scrDialogVisible = ref(false)
+const scrForm = ref({
+  metaData: '',
+  fno: '',
+  sfno: ''
+})
+function openScrDialog() {
+  scrForm.value = { metaData: '', fno: '', sfno: '' }
+  scrDialogVisible.value = true
+}
+async function submitScrForm() {
+  const scrLoading = ElLoading.service({
+    fullscreen: true,
+    text: '正在构造共享证书申请...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+  try {
+    const scrResponse = await axios.post('http://localhost:8083/api/generate-scr', {
+      metaData: scrForm.value.metaData,
+      fno: scrForm.value.fno,
+      sfno: scrForm.value.sfno
+    })
+    scrLoading.close()
+    scrDialogVisible.value = false
+    if (scrResponse.data && (scrResponse.data.code === 1 || scrResponse.data.success === true)) {
+      ElMessage.success('共享证书申请构造成功')
+    } else {
+      ElMessage.warning(`共享证书申请构造失败: ${scrResponse.data?.message || scrResponse.data?.msg || '未知错误'}`)
+    }
+  } catch (e) {
+    scrLoading.close()
+    ElMessage.error('请求失败: ' + e.message)
+  }
 }
 </script>
 

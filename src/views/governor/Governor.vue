@@ -528,7 +528,7 @@ const handleReview = async (row) => {
     loading.close();
     
     if (response.data || response.status === 200) {
-      await ElMessageBox.confirm('已获取审查报告，是否进行审查？', '提示', {
+      await ElMessageBox.confirm('是否进行审查？', '提示', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         type: 'info',

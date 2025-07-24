@@ -20,6 +20,7 @@
           <el-menu-item index="all">全部日志</el-menu-item>
           <el-menu-item index="新建">新建日志</el-menu-item>
           <el-menu-item index="修改">修改日志</el-menu-item>
+          <el-menu-item index="查询">查询日志</el-menu-item>
           <el-menu-item index="审核">审核日志</el-menu-item>
         </el-menu>
       </div>
@@ -58,12 +59,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps({
   visible: {
     type: Boolean,
     default: false
+  },
+  objectId: {
+    type: String,
+    required: true
   }
 })
 const emit = defineEmits(['close'])
@@ -73,22 +78,91 @@ const activeType = ref('all')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-const allData = ref([
-  { user: '张管理员', time: '2025-05-30 14:30:00', type: '新建' },
-  { user: '李管理员', time: '2025-05-31 09:05:45', type: '修改' },
-  { user: '王审核员', time: '2025-05-31 10:20:33', type: '审核合格' },
-  { user: '张管理员', time: '2025-06-01 08:15:27', type: '新建' },
-  { user: '李管理员', time: '2025-06-01 11:45:19', type: '修改' },
-  { user: '王审核员', time: '2025-06-02 13:30:55', type: '审核不合格' },
-  { user: '张管理员', time: '2025-06-02 14:50:41', type: '新建' },
-  { user: '李管理员', time: '2025-06-03 09:10:22', type: '修改' },
-  { user: '王审核员', time: '2025-06-03 10:25:36', type: '审核合格' },
-  { user: '张管理员', time: '2025-06-03 11:40:50', type: '新建' },
-  { user: '李管理员', time: '2025-06-04 08:55:14', type: '修改' },
-  { user: '王审核员', time: '2025-06-04 09:30:28', type: '审核不合格' },
-  { user: '张管理员', time: '2025-06-04 10:45:42', type: '新建' },
-])
+const allData = ref([])
 
+const getStatusType = (status) => {
+  switch (status) {
+    case 1:
+      return '注册'
+    case 2:
+      return '新建' 
+    case 3:
+      return '修改'
+    case 4:
+      return '查询'
+    case 5:
+      return '审核合格'
+    case 6:
+      return '审核不合格'
+    default:
+      return '未知'
+  }
+}
+
+const fetchAuditLogs = async () => {
+  console.log('开始获取审计日志，objectId:', props.objectId)
+  if (!props.objectId) {
+    console.warn('未提供objectId，取消请求')
+    return
+  }
+  loading.value = true
+  const url = `http://localhost:8081/api/objects/${props.objectId}/activityRecords`
+  console.log('请求URL:', url)
+  
+  try {
+    console.log('发起请求...')
+    const response = await fetch(url)
+    console.log('收到响应:', response.status, response.statusText)
+    
+    if (!response.ok) {
+      throw new Error(`请求失败: ${response.status} ${response.statusText}`)
+    }
+    
+    const result = await response.json()
+    console.log('解析响应数据:', result)
+    
+    if (result.code === 1 && result.data) {
+      console.log('数据处理前:', result.data)
+      allData.value = result.data.map((record) => {
+        const mappedData = {
+          user: record.username,
+          time: record.formattedTimestamp,
+          type: getStatusType(record.statusCode)
+        }
+        console.log('映射数据:', record, ' -> ', mappedData)
+        return mappedData
+      })
+      console.log('最终数据:', allData.value)
+    } else {
+      console.error('API返回错误:', result.msg)
+      allData.value = []
+    }
+  } catch (error) {
+    console.error('获取审计日志失败:', error)
+    allData.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 确保在组件挂载时也调用一次
+onMounted(() => {
+  if (props.visible && props.objectId) {
+    fetchAuditLogs()
+  }
+})
+
+// 监听visible变化
+watch(
+  () => props.visible,
+  (isVisible) => {
+    console.log('dialog visible changed:', isVisible, 'objectId:', props.objectId)
+    if (isVisible) {
+      fetchAuditLogs()
+    }
+  },
+  { immediate: true }
+)
 
 // 目录筛选
 const filteredData = computed(() => {

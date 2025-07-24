@@ -302,7 +302,11 @@
       @confirm="handleClassificationLevelConfirm"
     />
 
-    <AuditLogDialog :visible="auditLogVisible" @close="auditLogVisible = false" />
+    <AuditLogDialog 
+      :visible="auditLogVisible" 
+      :object-id="currentRow?.id"
+      @close="auditLogVisible = false" 
+    />
   </div>
 </template>
 
@@ -786,6 +790,7 @@ const cellStyle = ({ column }) => {
 };
 
 const showAuditLogDialog = (row) => {
+  currentRow.value = row
   auditLogVisible.value = true
 }
 

@@ -148,7 +148,7 @@
           
           <div class="level-item">
             <span class="label">表分级值：</span>
-            <span class="value">{{ tableGrade }}</span>
+            <span class="value">{{ totalGradeValue }}</span>
             <!-- <el-popover
               placement="right"
               :width="300"
@@ -169,7 +169,7 @@
         </div>
 
         <div class="level-result">
-          <div class="result-value">最终该<b>表分级值</b>计算得：{{ tableGrade }}</div>
+          <div class="result-value">最终该<b>表分级值</b>计算得：{{ totalGradeValue }}</div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -334,19 +334,38 @@ const rowGrades = ref([0, 0])
 const columnGrades = ref([0, 0]) 
 
 
+// 计算列权重的平均值
+const columnAverageValue = computed(() => {
+  if (!columnGrades.value || columnGrades.value.length === 0) return 0;
+  try {
+    const numericValues = columnGrades.value.map(val => {
+      const num = parseFloat(val);
+      return isNaN(num) ? 0 : num;
+    });
+
+    const sum = numericValues.reduce((acc, val) => acc + val, 0);
+    const average = sum / numericValues.length;
+    const result = parseFloat(average.toFixed(1));
+    return result;
+  } catch (error) {
+    return 0;
+  }
+})
+
 const rowGradeValue = computed(() => {
   if (!rowGrades.value || rowGrades.value.length === 0) return 0;
   try {
-
+    // 获取所有行权重的最大值
     const numericValues = rowGrades.value.map(val => {
       const num = parseFloat(val);
       return isNaN(num) ? 0 : num;
     });
 
     const maxValue = Math.max(...numericValues);
-
-    const result = parseFloat(maxValue.toFixed(1));
-    return result;
+    
+    // 行分级值 = 行权重最大值 + 列权重平均值
+    const result = maxValue + columnAverageValue.value;
+    return parseFloat(result.toFixed(1));
   } catch (error) {
     return 0;
   }
@@ -356,7 +375,6 @@ const rowGradeValue = computed(() => {
 const columnGradeValue = computed(() => {
   if (!columnGrades.value || columnGrades.value.length === 0) return 0;
   try {
-
     const numericValues = columnGrades.value.map(val => {
       const num = parseFloat(val);
       return isNaN(num) ? 0 : num;
@@ -373,14 +391,14 @@ const columnGradeValue = computed(() => {
 
 const totalGradeValue = computed(() => {
   try {
-
     const dbValue = parseFloat(dbGrade.value) || 0;
     const tableValue = parseFloat(tableGrade.value) || 0;
     const rowValue = parseFloat(rowGradeValue.value) || 0;
     const colValue = parseFloat(columnGradeValue.value) || 0;
     
-    const sum =tableValue;
-    const result = parseFloat(sum.toFixed(1));
+    // 表分级值 = 原始表分级值 + 列权重平均值
+    const adjustedTableValue = tableValue + columnAverageValue.value;
+    const result = parseFloat(adjustedTableValue.toFixed(1));
     
     return result;
   } catch (error) {
@@ -578,14 +596,14 @@ const handleConfirm = async () => {
       dataTimeliness: dataTimeliness.value,
       dataSource: dataSource.value,
       
-      levelValue: totalGradeValue.value.toString(), 
-      dbGrade: parseFloat(dbGrade.value),
-      tableGrade: parseFloat(tableGrade.value),
-      rowGrades: [...rowGrades.value],
-      columnGrades: [...columnGrades.value],
-      rowGradeValue: parseFloat(rowGradeValue.value),
-      columnGradeValue: parseFloat(columnGradeValue.value),
-      totalGradeValue: totalGradeValue.value
+              levelValue: totalGradeValue.value.toString(), 
+        dbGrade: parseFloat(dbGrade.value),
+        tableGrade: totalGradeValue.value, 
+        rowGrades: [...rowGrades.value],
+        columnGrades: [...columnGrades.value],
+        rowGradeValue: parseFloat(rowGradeValue.value),
+        columnGradeValue: parseFloat(columnGradeValue.value),
+        totalGradeValue: totalGradeValue.value
     };
     
     const id = props.objectId 
@@ -620,6 +638,7 @@ const handleConfirm = async () => {
           dataSourceCategory: dataSource.value || "",
           totalCategoryValue: totalClassificationValue.value || "0",
           totalGradeValue: totalGradeValue.value || "0",
+          tableGrade: totalGradeValue.value || "0", 
           status: '待校验'
         };
         if (Array.isArray(rowGrades.value)) {
@@ -698,6 +717,7 @@ const handleConfirm = async () => {
                   dataSourceCategory: dataSource.value || "",
                   totalCategoryValue: totalClassificationValue.value || "0",
                   totalGradeValue: totalGradeValue.value || "0",
+                  tableGrade: totalGradeValue.value || "0", 
                   status: '待校验'
                 };
                 
@@ -1146,19 +1166,33 @@ const getObjectKeys = (dataArray) => {
 
 
 
+// 获取行权重最大值
+const getMaxRowGrade = () => {
+  if (!rowGrades.value || rowGrades.value.length === 0) return 0;
+  try {
+    const numericValues = rowGrades.value.map(val => {
+      const num = parseFloat(val);
+      return isNaN(num) ? 0 : num;
+    });
+    return Math.max(...numericValues);
+  } catch (error) {
+    return 0;
+  }
+}
+
 const getRowWeightTagType = (value) => {
-  // 如果值是字符串形式的数字，转换为数字
+
   const num = parseFloat(value);
   if (!isNaN(num)) {
-    if (num >= 3.0) return 'danger';   // 高权重（对应"核心"）
-    if (num >= 2.0) return 'warning';  // 中等权重（对应"重要"）
-    if (num >= 1.0) return 'success';  // 低权重（对应"一般"）
+    if (num >= 3.0) return 'danger';   
+    if (num >= 2.0) return 'warning';  
+    if (num >= 1.0) return 'success'; 
   } else {
-    // 如果值不是数字，按字符串处理
+
     if (value === '核心') return 'danger';
     if (value === '重要') return 'warning';
   }
-  return 'success'; // 默认低权重
+  return 'success'; 
 }
 </script>
 
