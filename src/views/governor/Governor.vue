@@ -1,5 +1,5 @@
 <template>
-  <div class="datasource-container">
+  <div class="datasource-container watermark-bg">
     <!-- 头部导航 -->
     <AppHeader role-name="某市大数据局(治理方)" @logout="logout" />
     
@@ -201,7 +201,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Search, Lock, Document, UploadFilled, Download } from '@element-plus/icons-vue'
@@ -445,12 +445,18 @@ const loadDataFromBackend = async () => {
 }
 
 onMounted(() => {
+  setWatermark('治理方')
+  window.addEventListener('resize', () => setWatermark('治理方'))
   const currentRole = localStorage.getItem('role');
   if (currentRole === 'governor') { 
     handleInitSystem();
   } else {
     loadDataFromBackend();
   }
+})
+onBeforeUnmount(() => {
+  removeWatermark()
+  window.removeEventListener('resize', () => setWatermark('治理方'))
 })
 
 // 计算实际数据量
@@ -1772,6 +1778,50 @@ const handleGenerateAndSendCapsule = async () => {
     }
   }
 };
+
+function setWatermark(text) {
+  const id = 'global-watermark-bg'
+  let wm = document.getElementById(id)
+  if (wm) {
+    wm.parentNode.removeChild(wm)
+  }
+  const can = document.createElement('canvas')
+  can.width = 300
+  can.height = 200
+  const ctx = can.getContext('2d')
+  ctx.rotate(-20 * Math.PI / 180)
+  ctx.font = '16px Microsoft YaHei'
+  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 40, 100)
+  const base64Url = can.toDataURL()
+  const div = document.createElement('div')
+  div.id = id
+  div.style.pointerEvents = 'none'
+  div.style.position = 'fixed'
+  div.style.top = '0'
+  div.style.left = '0'
+  div.style.width = '100vw'
+  div.style.height = '100vh'
+  div.style.zIndex = '9999'
+  div.style.background = `url(${base64Url}) left top repeat`
+  document.body.appendChild(div)
+}
+
+function removeWatermark() {
+  const wm = document.getElementById('global-watermark-bg')
+  if (wm) wm.parentNode.removeChild(wm)
+}
+
+onMounted(() => {
+  setWatermark('治理方')
+  window.addEventListener('resize', () => setWatermark('治理方'))
+})
+onBeforeUnmount(() => {
+  removeWatermark()
+  window.removeEventListener('resize', () => setWatermark('治理方'))
+})
 </script>
 
 <style scoped>

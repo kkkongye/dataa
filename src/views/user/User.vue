@@ -1,5 +1,5 @@
 <template>
-  <div class="datasource-container">
+  <div class="datasource-container watermark-bg">
     <!-- 头部导航 -->
     <AppHeader role-name="某街道居委会(使用方)" @logout="logout" />
     
@@ -233,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Search, Lock, Document, DataAnalysis } from '@element-plus/icons-vue'
@@ -356,7 +356,7 @@ const isGeneratingCapsule = ref(false)
 // 显示解密对话框
 const showDecryptDialog = (ids) => {
   decryptForm.objectId = ids.join(', ')
-  decryptedObjectIds.value = idList
+  decryptedObjectIds.value = ids
   
   // 直接调用解密函数，不显示弹窗
   handleDecrypt()
@@ -1184,14 +1184,6 @@ const handleInitUser = async () => {
     if (response.data && (response.data.code === 1 || response.data.success === true)) {
       ElMessage.success('使用方系统初始化成功');
       
-      // 弹出确认对话框询问是否构造共享证书申请
-      // ElMessageBox.confirm('是否构造共享证书申请给数源方?', '确认', {
-      //   confirmButtonText: '确定',
-      //   cancelButtonText: '取消',
-      //   type: 'info',
-      // }).then(async () => {
-      //   ...原有代码...
-      // })
       openScrDialog()
     } else {
       ElMessage.warning(`使用方系统初始化失败: ${response.data?.message || response.data?.msg || '未知错误'}`);
@@ -1300,11 +1292,6 @@ function getLocationInfoObj(locationInfo, locationInfoJson) {
   return null;
 }
 
-function isSelectFieldsLong(selectFields) {
-  if (!selectFields) return false;
-  return selectFields.length > 30;
-}
-
 const scrDialogVisible = ref(false)
 const scrForm = ref({
   metaData: '',
@@ -1339,6 +1326,50 @@ async function submitScrForm() {
     ElMessage.error('请求失败: ' + e.message)
   }
 }
+
+function setWatermark(text) {
+  const id = 'global-watermark-bg'
+  let wm = document.getElementById(id)
+  if (wm) {
+    wm.parentNode.removeChild(wm)
+  }
+  const can = document.createElement('canvas')
+  can.width = 300
+  can.height = 200
+  const ctx = can.getContext('2d')
+  ctx.rotate(-20 * Math.PI / 180)
+  ctx.font = '16px Microsoft YaHei'
+  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 40, 100)
+  const base64Url = can.toDataURL()
+  const div = document.createElement('div')
+  div.id = id
+  div.style.pointerEvents = 'none'
+  div.style.position = 'fixed'
+  div.style.top = '0'
+  div.style.left = '0'
+  div.style.width = '100vw'
+  div.style.height = '100vh'
+  div.style.zIndex = '9999'
+  div.style.background = `url(${base64Url}) left top repeat`
+  document.body.appendChild(div)
+}
+
+function removeWatermark() {
+  const wm = document.getElementById('global-watermark-bg')
+  if (wm) wm.parentNode.removeChild(wm)
+}
+
+onMounted(() => {
+  setWatermark('使用方')
+  window.addEventListener('resize', () => setWatermark('使用方'))
+})
+onBeforeUnmount(() => {
+  removeWatermark()
+  window.removeEventListener('resize', () => setWatermark('使用方'))
+})
 </script>
 
 <style scoped>

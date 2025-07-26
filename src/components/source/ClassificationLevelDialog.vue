@@ -61,43 +61,12 @@
       <el-tab-pane label="分级" name="level">
         <!-- 分级选项卡内容 -->
         <div class="level-form">
-          <!-- <div class="level-item">
-            <span class="label">库分级值：</span>
-            <span class="value">{{ dbGrade }}</span>
-            <el-popover
-              placement="right"
-              :width="300"
-              trigger="click"
-            >
-              <template #reference>
-                <el-link type="primary" class="help-link">说明</el-link>
-              </template>
-              <div class="help-content">
-                <h4>库分级值说明</h4>
-                <p>根据数据库的数据量、表的分级值确定数据库分级值。
-                  由数据表量对应的分级值、所有表的分级值的最大值累加确定数据库分级值;
-                  其中根据数据表的数量分为1~99的小型数据库、100~999的中型数据库、999以上的大型数据库，
-                  分别对应分级值:100、200、300;</p>
-              </div>
-            </el-popover>
-          </div> -->
+
           
           <div class="level-item">
             <span class="label">列分级值：</span>
             <span class="value">{{ columnGradeValue }}</span>
-            <!-- <el-popover
-              placement="right"
-              :width="300"
-              trigger="click"
-            >
-              <template #reference>
-                <el-link type="primary" class="help-link">说明</el-link>
-              </template>
-              <div class="help-content">
-                <h4>列分级值说明</h4>
-                <p>根据字段的敏感程度来确定数据的级别;</p>
-              </div>
-            </el-popover> -->
+
             <el-link type="primary" class="help-link" @click="showColumnDetailDialog">查看详情</el-link>
           </div>
           
@@ -107,20 +76,6 @@
           <div class="level-item">
             <span class="label">行分级值：</span>
             <span class="value">{{ rowGradeValue }}</span>
-            <!-- <el-popover
-              placement="right"
-              :width="300"
-              trigger="click"
-            >
-              <template #reference>
-                <el-link type="primary" class="help-link">说明</el-link>
-              </template>
-              <div class="help-content">
-                <h4>行分级值说明</h4>
-                <p>数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</p>
-              </div>
-            </el-popover> -->
-            
             <el-link type="primary" class="help-link" @click="showRowDetailDialog">查看详情</el-link>
             <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link>
           </div>
@@ -149,19 +104,6 @@
           <div class="level-item">
             <span class="label">表分级值：</span>
             <span class="value">{{ totalGradeValue }}</span>
-            <!-- <el-popover
-              placement="right"
-              :width="300"
-              trigger="click"
-            >
-              <template #reference>
-                <el-link type="primary" class="help-link">说明</el-link>
-              </template>
-              <div class="help-content">
-                <h4>表分级值说明</h4>
-                <p>由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</p>
-              </div>
-            </el-popover> -->
           </div>
           
           <div class="grading-rule-card">③ 由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</div>
@@ -196,8 +138,17 @@
       <div v-if="rowExcelData.length > 0">
         <div class="data-info">找到 {{ rowExcelData.length }} 条记录</div>
         <el-table :data="rowExcelData" border style="width: 100%" max-height="600px">
+          <!-- 序号列 -->
+          <el-table-column
+            label="序号"
+            type="index"
+            width="70"
+            align="center"
+            :index="index => index + 1"
+          />
+          <!-- 其余字段列，排除“rowNumber” -->
           <el-table-column 
-            v-for="(key, index) in getObjectKeys(rowExcelData).filter(k => k !== 'rowGradeValue')" 
+            v-for="(key, index) in getObjectKeys(rowExcelData).filter(k => k !== 'rowNumber')" 
             :key="index"
             :prop="key"
             :label="key"
@@ -205,16 +156,12 @@
           />
           <!-- 行分级值列 -->
           <el-table-column
-            label="行权重"
-            align="center"
+            label="行分级值"
             min-width="100"
+            align="center"
           >
             <template #default="scope">
-              <el-tag :type="getRowWeightTagType(scope.row.rowGradeValue || scope.row.重要程度)">
-                {{ scope.row.rowGradeValue || 
-                   (scope.row.重要程度 === '核心' ? 3 :
-                    scope.row.重要程度 === '重要' ? 2 : 1) }}
-              </el-tag>
+              <el-tag type="success">{{ calcRowGradeValue(scope.$index) }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -239,26 +186,35 @@
       
       <div v-if="columnExcelData.length > 0">
         <div class="data-info">找到 {{ columnExcelData.length - 1 }} 条记录</div>
-        <el-table :data="columnExcelData" border style="width: 100%" max-height="600px">
+        <el-table :data="getColumnTableDataWithoutGradeRow()" border style="width: 100%" max-height="600px">
+          <!-- 序号列 -->
+          <el-table-column
+            label="序号"
+            type="index"
+            width="70"
+            align="center"
+            :index="index => index + 1"
+          />
+          <!-- 其余字段列，排除“重要性”和“rowNumber”，表头右侧显示分级值 -->
           <el-table-column 
-            v-for="(key, index) in getObjectKeys(columnExcelData).filter(k => k !== '_isGradeRow')" 
+            v-for="(key, index) in getObjectKeys(columnExcelData).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber')" 
             :key="index"
             :prop="key"
-            :label="key"
             :min-width="100"
           >
+            <template #header>
+              <span>{{ key }}</span>
+              <el-tag
+                v-if="getGradeValue(key) !== null"
+                :type="getGradeTagType(getGradeValue(key))"
+                size="small"
+                style="margin-left:4px;vertical-align:middle;"
+              >
+                {{ parseFloat(getGradeValue(key)).toFixed(1) }}
+              </el-tag>
+            </template>
             <template #default="scope">
-              <!-- 如果是分级值行，使用彩色标签显示分级值 -->
-              <template v-if="scope.row._isGradeRow">
-                <div class="column-grade-cell">
-                  <div class="column-grade-label">列分级值:</div>
-                  <el-tag type="info">{{ parseFloat(scope.row[key]).toFixed(1) }}</el-tag>
-                </div>
-              </template>
-              <!-- 普通数据行正常显示 -->
-              <template v-else>
-                {{ scope.row[key] }}
-              </template>
+              {{ scope.row[key] }}
             </template>
           </el-table-column>
         </el-table>
@@ -845,11 +801,9 @@ const showRowDetailDialog = async () => {
     rowExcelData.value = [];
     fetchingData.value = true;
     
-    // 直接使用props.modelValue中的dataItems，如果存在
     if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
       console.log('[行分级值] 使用现有数据, rowGrades:', rowGrades.value);
       
-      // 确保rowGrades长度与dataItems匹配
       if (rowGrades.value.length < props.modelValue.dataItems.length) {
         const defaultValue = 1.0;
         const difference = props.modelValue.dataItems.length - rowGrades.value.length;
@@ -859,7 +813,6 @@ const showRowDetailDialog = async () => {
       }
       
       rowExcelData.value = props.modelValue.dataItems.map((item, index) => {
-        // 使用rowGrades中对应位置的值作为rowGradeValue
         const gradeValue = index < rowGrades.value.length ? rowGrades.value[index] : 1;
         return {
           ...item,
@@ -867,7 +820,6 @@ const showRowDetailDialog = async () => {
         };
       });
       
-      console.log('[行分级值] 处理后的行数据:', rowExcelData.value);
       rowDetailDialogVisible.value = true;
       fetchingData.value = false;
       return;
@@ -876,7 +828,6 @@ const showRowDetailDialog = async () => {
     await fetchExcelData('row');
     rowDetailDialogVisible.value = true;
   } catch (error) {
-    console.error('[行分级值] 获取详情失败:', error);
     ElMessage.error('获取行分级值详情失败');
   } finally {
     fetchingData.value = false;
@@ -889,11 +840,9 @@ const showColumnDetailDialog = async () => {
     columnExcelData.value = [];
     fetchingData.value = true;
     
-    // 直接使用props.modelValue中的dataItems，如果存在
     if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
       columnExcelData.value = [...props.modelValue.dataItems];
       
-      // 添加分级值行
       const columnKeys = getObjectKeys(columnExcelData.value);
       if (columnExcelData.value.length > 0) {
         const gradeRow = {};
@@ -1193,6 +1142,59 @@ const getRowWeightTagType = (value) => {
     if (value === '重要') return 'warning';
   }
   return 'success'; 
+}
+
+// 获取分级值（不再依赖_isGradeRow，直接从columnGrades或props/modelValue获取）
+function getGradeValue(key) {
+  // 优先从columnGrades
+  if (Array.isArray(columnGrades.value)) {
+    const keys = getObjectKeys(columnExcelData.value).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber');
+    const idx = keys.indexOf(key);
+    if (idx > -1 && columnGrades.value[idx] !== undefined) {
+      return columnGrades.value[idx];
+    }
+  }
+  return null;
+}
+// 根据分级值返回el-tag类型
+function getGradeTagType(val) {
+  const num = parseFloat(val);
+  if (num >= 0.8) return 'danger'; // 红
+  if (num >= 0.6) return 'warning'; // 橙
+  if (num >= 0.4) return 'info'; // 蓝
+  return 'default'; // 灰
+}
+function getColumnTableDataWithoutGradeRow() {
+  if (!columnExcelData.value) return [];
+  // 过滤掉所有字段均为数字且数量与字段数一致的分级值行
+  const keys = getObjectKeys(columnExcelData.value).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber');
+  return columnExcelData.value.filter(row => {
+    // 只要有一个字段不是数字或为空，就不是分级值行
+    let isGradeRow = true;
+    for (const key of keys) {
+      if (typeof row[key] === 'undefined' || row[key] === null || row[key] === '') {
+        isGradeRow = false;
+        break;
+      }
+      if (typeof row[key] === 'string' && isNaN(Number(row[key]))) {
+        isGradeRow = false;
+        break;
+      }
+      if (typeof row[key] === 'number' && (row[key] < 0 || row[key] > 1)) {
+        isGradeRow = false;
+        break;
+      }
+    }
+    // 只要不是所有字段都是0~1的数字，就保留
+    return !isGradeRow;
+  });
+}
+
+// 行分级值=行权重+列分级值平均值
+function calcRowGradeValue(idx) {
+  const rowWeight = Array.isArray(rowGrades.value) && rowGrades.value[idx] !== undefined ? parseFloat(rowGrades.value[idx]) : 0;
+  const colAvg = columnAverageValue.value || 0;
+  return (rowWeight + colAvg).toFixed(1);
 }
 </script>
 

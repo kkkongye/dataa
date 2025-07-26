@@ -1,5 +1,5 @@
 <template>
-  <div class="datasource-container">
+  <div class="datasource-container watermark-bg">
     <AppHeader role-name="税务局(数源方)" @logout="logout" />
     
     <!-- API错误提示 -->
@@ -233,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { Search, Document, RefreshRight, DataAnalysis } from '@element-plus/icons-vue'
@@ -1613,6 +1613,13 @@ onMounted(() => {
   }).catch(error => {
     apiErrorVisible.value = true;
   });
+
+  setWatermark('数源方')
+  window.addEventListener('resize', () => setWatermark('数源方'))
+})
+onBeforeUnmount(() => {
+  removeWatermark()
+  window.removeEventListener('resize', () => setWatermark('数源方'))
 })
 
 // 添加新的变量和方法
@@ -2973,6 +2980,41 @@ const handleViewReport = (row) => {
   currentReportObjectId.value = row.id;
   reportViewerVisible.value = true;
 };
+
+function setWatermark(text) {
+  const id = 'global-watermark-bg'
+  let wm = document.getElementById(id)
+  if (wm) {
+    wm.parentNode.removeChild(wm)
+  }
+  const can = document.createElement('canvas')
+  can.width = 300
+  can.height = 200
+  const ctx = can.getContext('2d')
+  ctx.rotate(-20 * Math.PI / 180)
+  ctx.font = '16px Microsoft YaHei'
+  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 40, 100)
+  const base64Url = can.toDataURL()
+  const div = document.createElement('div')
+  div.id = id
+  div.style.pointerEvents = 'none'
+  div.style.position = 'fixed'
+  div.style.top = '0'
+  div.style.left = '0'
+  div.style.width = '100vw'
+  div.style.height = '100vh'
+  div.style.zIndex = '9999'
+  div.style.background = `url(${base64Url}) left top repeat`
+  document.body.appendChild(div)
+}
+
+function removeWatermark() {
+  const wm = document.getElementById('global-watermark-bg')
+  if (wm) wm.parentNode.removeChild(wm)
+}
 </script>
 
 <style scoped>
