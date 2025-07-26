@@ -139,7 +139,7 @@
         <div class="data-info">找到 {{ rowExcelData.length }} 条记录</div>
         <el-table :data="rowExcelData" border style="width: 100%" max-height="600px">
           <!-- 序号列 -->
-          <el-table-column
+          <el-table-column 
             label="序号"
             type="index"
             width="70"
@@ -188,7 +188,7 @@
         <div class="data-info">找到 {{ columnExcelData.length - 1 }} 条记录</div>
         <el-table :data="getColumnTableDataWithoutGradeRow()" border style="width: 100%" max-height="600px">
           <!-- 序号列 -->
-          <el-table-column
+          <el-table-column 
             label="序号"
             type="index"
             width="70"
@@ -212,9 +212,9 @@
               >
                 {{ parseFloat(getGradeValue(key)).toFixed(1) }}
               </el-tag>
-            </template>
+              </template>
             <template #default="scope">
-              {{ scope.row[key] }}
+                {{ scope.row[key] }}
             </template>
           </el-table-column>
         </el-table>

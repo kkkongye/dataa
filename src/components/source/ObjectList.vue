@@ -250,30 +250,22 @@
         </el-table-column>
         <el-table-column prop="feedback" label="反馈意见" min-width="150" align="center">
           <template #default="scope">
-            <!-- 优先使用row.feedback -->
-            <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
               {{ scope.row.feedback }}
             </span>
-            
-            <!-- 其次尝试从dataContent中提取 -->
-            <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
+              <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
               {{ extractFeedback(scope.row.dataContent) }}
             </span>
-            
-            <!-- 如果是客户反馈实体且状态为不合格，强制显示 -->
-            <span v-else-if="scope.row.entity === '客户反馈' && scope.row.status === '不合格'" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
-              数据格式错误
-            </span>
-            
-            <!-- 没有反馈信息 -->
-            <span v-else></span>
+              <span v-else style="margin-bottom: 10px;"></span>
+              <el-button v-if="scope.row.auditReport && scope.row.status !== '已合格'" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="operation" label="操作" width="150" align="center">
           <template #default="scope">
             <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
-            <el-button link type="info" size="small" @click="handleViewReport(scope.row)">查看审查报告</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -1,22 +1,15 @@
 <template>
   <div class="datasource-container watermark-bg">
-    <!-- 头部导航 -->
     <AppHeader role-name="某市大数据局(治理方)" @logout="logout" />
-    
-    <!-- 主内容区域 -->
     <div class="main-content">
-      <!-- 标签页 -->
       <div class="content-card">
-        <div class="table-title">我的数据对象列表</div>
-        <!-- 状态筛选按钮 -->
+        <div class="table-title">待治理的数据对象列表</div>
         <div class="status-filter">
           <el-button :class="['status-btn', { active: currentStatus === '' }]" @click="setStatus('')">全部数据对象</el-button>
           <el-button :class="['status-btn', { active: currentStatus === '待校验' }]" @click="setStatus('待校验')">待校验</el-button>
           <el-button :class="['status-btn', { active: currentStatus === '已合格' }]" @click="setStatus('已合格')">已合格</el-button>
           <el-button :class="['status-btn', { active: currentStatus === '不合格' }]" @click="setStatus('不合格')">不合格</el-button>
         </div>
-        
-        <!-- 搜索和操作区 -->
         <div class="action-bar">
           <div class="search-area">
               <el-input
@@ -116,7 +109,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="auditInfo" label="审计控制信息" width="100" align="center">
+            <el-table-column prop="auditInfo" label="审计控制信息" width="150" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
               </template>
@@ -142,28 +135,27 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="130" align="center">
+            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="150" align="center">
               <template #default="scope">
-                <!-- 优先使用row.feedback -->
-                <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
-                  {{ scope.row.feedback }}
-                </span>
-                
-                <!-- 其次尝试从dataContent中提取 -->
-                <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]">
-                  {{ extractFeedback(scope.row.dataContent) }}
-                </span>
-                
-
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                  <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
+                    {{ scope.row.feedback }}
+                  </span>
+                  <span v-else-if="scope.row.dataContent" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
+                    {{ extractFeedback(scope.row.dataContent) }}
+                  </span>
+                  <span v-else style="margin-bottom: 10px;"></span>
+                  <el-button v-if="scope.row.auditReport" link type="info" size="small" style="margin-top: 0;" @click="showReviewReport(scope.row)">自动化审查报告</el-button>
+                </div>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="300" align="center">
+            <el-table-column label="操作" width="250" align="center">
               <template #default="scope">
                 <div class="status-buttons">
-                  <el-button type="primary" size="small" plain @click="handleReview(scope.row)">审查</el-button>
-                  <el-button type="info" size="small" plain @click="showReviewReport(scope.row)">审查报告</el-button>
-                  <el-button type="success" size="small" plain :disabled="scope.row.status === '已合格'" @click="updateStatus(scope.row, '已合格')">正确</el-button>
-                  <el-button type="danger" size="small" plain :disabled="scope.row.status === '不合格'" @click="updateStatus(scope.row, '不合格')">错误</el-button>
+                  <el-button type="primary" size="small" plain @click="handleReview(scope.row)">自动化审查</el-button>
+                  <!-- <el-button type="success" size="small" plain :disabled="scope.row.status === '已合格'" @click="updateStatus(scope.row, '已合格')">正确</el-button>
+                  <el-button type="danger" size="small" plain :disabled="scope.row.status === '不合格'" @click="updateStatus(scope.row, '不合格')">错误</el-button> -->
+                  <el-button type="warning" size="small" plain @click="previewEntity(scope.row)">手工审查</el-button>
                 </div>
               </template>
             </el-table-column>
@@ -186,14 +178,33 @@
   </div>
   
   <!-- Excel预览对话框 -->
-  <ObjectPreviewDialog
+    <ObjectPreviewDialog
     v-model:visible="previewDialogVisible"
     :object="previewForm"
     :excelData="excelTableData"
-  />
+  >
+    <template v-slot:footer>
+      <span class="dialog-footer">
+        <el-button v-if="showJudgeButtonsForPreview" type="success" plain @click="handlePreviewJudge('pass')">正确</el-button>
+        <el-button v-if="showJudgeButtonsForPreview" type="danger" plain @click="handlePreviewJudge('fail')">错误</el-button>
+      </span>
+    </template>
+  </ObjectPreviewDialog>
 
   <!-- 审核报告弹窗 -->
-  <ReportViewer v-model:visible="reportDialogVisible" :object-id="currentReviewObjectId" />
+  <ReportViewer ref="reportViewer" v-model:visible="reportDialogVisible" :object-id="currentReviewObjectId">
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="reportDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="$refs.reportViewer.exportReport()">导出报告</el-button>
+        <template v-if="showJudgeButtons">
+          <el-button type="success" plain @click="handleJudge('pass')">正确</el-button>
+          <el-button type="danger" plain @click="handleJudge('fail')">错误</el-button>
+        </template>
+        <el-button type="warning" plain @click="handleSendAuditReport">发送审查报告至数源方</el-button>
+      </span>
+    </template>
+  </ReportViewer>
 
   <AuditLogDialog :visible="auditLogVisible" @close="auditLogVisible = false" />
 
@@ -262,7 +273,8 @@ function adaptBackendData(backendItem) {
       totalGradeValue: '',
       metadata: null,
       dataContent: '',
-      hasReview: false
+      hasReview: false,
+      auditReport: '' // 新增
     }
   }
 
@@ -409,7 +421,8 @@ function adaptBackendData(backendItem) {
     totalGradeValue,
     metadata,
     dataContent,
-    hasReview: backendItem.hasReview || false
+    hasReview: backendItem.hasReview || false,
+    auditReport: backendItem.auditReport || '' // 新增
   }
   
   return result;
@@ -521,79 +534,36 @@ const getStatusClass = (status) => {
 /// 处理审查功能
 const handleReview = async (row) => {
   try {
-    currentReviewObjectId.value = row.id; 
-    
-    const loading = ElLoading.service({
+    currentReviewObjectId.value = row.id;
+    await ElMessageBox.confirm('是否进行审查？', '提示', {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'info',
+    });
+    try {
+      await axios.get('http://localhost:8081/api/baogao1');
+    } catch (e) {
+      ElMessage.error('8081接口调用失败: ' + (e.message || '未知错误'));
+      return;
+    }
+    const loading2 = ElLoading.service({
       fullscreen: true,
-      text: '正在获取审查报告...',
+      text: '正在进行审查...',
       background: 'rgba(0, 0, 0, 0.7)'
     });
-    
-    // 第一步：调用获取报告接口
-    const response = await axios.get('http://localhost:8081/api/baogao1');
-    loading.close();
-    
-    if (response.data || response.status === 200) {
-      await ElMessageBox.confirm('是否进行审查？', '提示', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'info',
-      });
-      
-      // 第二步：调用更新报告接口
-      const loading2 = ElLoading.service({
-        fullscreen: true,
-        text: '正在进行审查...',
-        background: 'rgba(0, 0, 0, 0.7)'
-      });
-      
-      let updateResponse;
-      try {
-        updateResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/fill-audit-report1`);
-      } catch (error) {
-        console.error('审查接口调用失败:', error);
-        ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
-        loading2.close();
-        return;
-      }
-      
+    let updateResponse;
+    try {
+      updateResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/fill-audit-report1`);
+    } catch (error) {
+      console.error('审查接口调用失败:', error);
+      ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
       loading2.close();
-      
-      await ElMessageBox.confirm('审查完成，是否发送审查报告给数源方？', '提示', {
-        confirmButtonText: '确认发送',
-        cancelButtonText: '取消',
-        type: 'info',
-      });
-      
-      // 第三步：调用发送报告接口
-      const loading3 = ElLoading.service({
-        fullscreen: true,
-        text: '正在发送审查报告...',
-        background: 'rgba(0, 0, 0, 0.7)'
-      });
-      
-      try {
-        const sendResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/update-pro-report`);
-        loading3.close();
-        
-        ElMessage.success('审查报告已成功发送给数源方');
-        const index = tableData.value.findIndex(item => item.id === row.id);
-        if (index !== -1) {
-          tableData.value[index].hasReview = true;
-          
-                        // 立即显示审查报告
-              setTimeout(() => {
-                reportDialogVisible.value = true;
-              }, 800);
-        }
-      } catch (error) {
-        loading3.close();
-        console.error('发送报告接口调用失败:', error);
-        ElMessage.error(`发送报告失败: ${error.message || '未知错误'}`);
-      }
-    } else {
-      ElMessage.error('获取审查报告失败');
+      return;
     }
+    loading2.close();
+    reportDialogVisible.value = true;
+    showJudgeButtons.value = true;
+    judgeRow.value = row;
   } catch (err) {
     if (err && err.message && err.message.includes('cancel')) {
       ElMessage.info('操作已取消');
@@ -601,6 +571,40 @@ const handleReview = async (row) => {
       console.error('审查过程出错:', err);
       ElMessage.error(`审查失败: ${err.message || '未知错误'}`);
     }
+  }
+};
+
+const handleJudge = async (result) => {
+  if (!judgeRow.value) return;
+  if (result === 'pass') {
+    await updateStatus(judgeRow.value, '已合格');
+  } else if (result === 'fail') {
+    await updateStatus(judgeRow.value, '不合格');
+  }
+  showJudgeButtons.value = false;
+  judgeRow.value = null;
+};
+
+const handleSendAuditReport = async () => {
+  // 优先用 judgeRow，否则用 currentReviewObjectId
+  const rowId = judgeRow.value?.id || currentReviewObjectId.value;
+  if (!rowId) {
+    ElMessage.error('无法获取对象ID，无法发送审查报告');
+    return;
+  }
+  const loading = ElLoading.service({
+    fullscreen: true,
+    text: '正在发送审查报告...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  });
+  try {
+    await axios.post(`http://localhost:8082/api/objects/${rowId}/update-pro-report`);
+    ElMessage.success('审查报告已成功发送给数源方');
+    // 不自动关闭弹窗
+  } catch (error) {
+    ElMessage.error('发送报告失败: ' + (error.message || '未知错误'));
+  } finally {
+    loading.close();
   }
 };
 
@@ -665,7 +669,7 @@ const updateStatus = async (row, newStatus) => {
     try {
       const result = await updateStatusViaBothPorts(row.id, newStatus, '');
       if (result) {
-        ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态 (双端口同步)`);
+        ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态`);
         loadDataFromBackend(); // 重新加载数据
       } else {
         ElMessage.warning(`${row.entity} 状态更新失败`);
@@ -691,7 +695,7 @@ const updateStatus = async (row, newStatus) => {
       try {
         const result = await updateStatusViaBothPorts(row.id, newStatus, value);
         if (result) {
-          ElMessage.success(`${row.entity} 已更新为"不合格"状态 (双端口同步)`);
+          ElMessage.success(`${row.entity} 已更新为"不合格"状态`);
           loadDataFromBackend(); // 重新加载数据
         } else {
           ElMessage.warning(`${row.entity} 状态更新失败`);
@@ -854,7 +858,8 @@ const refreshDataList = async () => {
         totalCategoryValue: item.totalCategoryValue,
         totalGradeValue: item.totalGradeValue,
         metadata: item.dataEntity?.metadata,
-        dataContent: item.dataContent
+        dataContent: item.dataContent,
+        auditReport: item.auditReport || '' // 新增
       }));
       
       tableData.value = updatedData;
@@ -961,6 +966,26 @@ const previewForm = reactive({
   metadata: null 
 })
 
+
+const showJudgeButtonsForPreview = ref(false)
+
+// 处理预览对话框中的判断操作
+const handlePreviewJudge = async (result) => {
+  // 从tableData中找到对应的行数据
+  const targetRow = tableData.value.find(row => row.id === previewForm.id)
+  if (!targetRow) {
+    ElMessage.error('无法找到对应的数据对象')
+    return
+  }
+  
+  if (result === 'pass') {
+    await updateStatus(targetRow, '已合格')
+  } else if (result === 'fail') {
+    await updateStatus(targetRow, '不合格')
+  }
+  showJudgeButtonsForPreview.value = false
+  previewDialogVisible.value = false
+}
 
 const excelBinaryData = ref(null)
 
@@ -1229,6 +1254,7 @@ const previewEntity = (row) => {
 
   previewDialogVisible.value = true
   
+  showJudgeButtonsForPreview.value = true
 
   fetchExcelDataFromApi(row.id)
 }
@@ -1552,6 +1578,8 @@ const handleExportExcel = () => {
 // 审核报告弹窗
 const reportDialogVisible = ref(false)
 const currentReviewObjectId = ref('')
+const showJudgeButtons = ref(false)
+const judgeRow = ref(null)
 
 // 显示审核报告
 const showReportDialog = () => {
@@ -2420,4 +2448,4 @@ onBeforeUnmount(() => {
   color: #fa8c16;
   border: 1px solid #ffd591;
 }
-</style> 
+</style>

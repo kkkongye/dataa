@@ -31,10 +31,12 @@
     </div>
     
     <template #footer>
+      <slot name="footer">
       <span class="dialog-footer">
         <el-button @click="closeDialog">关闭</el-button>
         <el-button type="primary" @click="exportReport">导出报告</el-button>
       </span>
+      </slot>
     </template>
   </el-dialog>
 </template>

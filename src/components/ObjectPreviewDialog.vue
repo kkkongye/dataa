@@ -63,8 +63,17 @@
       <div v-else-if="excelTableData.length > 0" class="excel-table-container">
         <div class="data-info">找到 {{ excelTableData.length }} 条记录</div>
         <el-table :data="excelTableData" border stripe style="width: 100%">
+          <!-- 序号列 -->
           <el-table-column 
-            v-for="(key, index) in getObjectKeys(excelTableData)" 
+            label="序号" 
+            type="index" 
+            width="60" 
+            align="center"
+            :index="(index) => index + 1"
+          />
+          <!-- 数据列，过滤掉rowNumber字段 -->
+          <el-table-column 
+            v-for="(key, index) in getFilteredObjectKeys(excelTableData)" 
             :key="index"
             :prop="key"
             :label="key"
@@ -77,10 +86,11 @@
         <el-empty description="暂无数据" />
       </div>
     </div>
-    <template #footer>
+    <template v-slot:footer>
       <span class="dialog-footer">
         <el-button @click="closeDialog">关闭</el-button>
         <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
+        <slot name="footer"></slot>
       </span>
     </template>
   </el-dialog>
@@ -187,6 +197,13 @@ function getObjectKeys(dataArray) {
   if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) return []
   const keySets = dataArray.map(item => (item && typeof item === 'object') ? Object.keys(item) : [])
   return [...new Set(keySets.flat())]
+}
+function getFilteredObjectKeys(dataArray) {
+  if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) return []
+  const keySets = dataArray.map(item => (item && typeof item === 'object') ? Object.keys(item) : [])
+  const allKeys = [...new Set(keySets.flat())]
+  // 过滤掉rowNumber字段
+  return allKeys.filter(key => key !== 'rowNumber')
 }
 function getCurrentDateTime() {
   const now = new Date()
@@ -316,8 +333,13 @@ function handleExportExcel() {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
   margin-top: 15px;
+}
+
+.dialog-footer .el-button {
+  margin: 0;
 }
 .constraint-info {
   max-width: 500px;
@@ -346,4 +368,4 @@ function handleExportExcel() {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-</style> 
+</style>
