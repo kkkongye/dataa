@@ -20,6 +20,13 @@
             </template>
           </el-input>
         </el-form-item>
+        <el-form-item v-if="registerForm.role === 'user'">
+          <el-input v-model="registerForm.organization" placeholder="请输入上级机构" class="register-input">
+            <template #prefix>
+              <el-icon class="input-icon"><OfficeBuilding /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
         <div class="role-section">
           <div class="role-label">请选择您的角色</div>
           <el-radio-group v-model="registerForm.role" class="register-role-select">
@@ -49,7 +56,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, OfficeBuilding } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const router = useRouter()
@@ -58,7 +65,8 @@ const registerFormRef = ref(null)
 const registerForm = reactive({
   username: '',
   password: '',
-  role: 'datasource' // 默认选中数源方
+  role: 'datasource', // 默认选中数源方
+  organization: '' // 上级机构
 })
 
 const handleRegister = async () => {
@@ -284,4 +292,4 @@ const goToLogin = () => {
 .login-link:hover {
   text-decoration: underline;
 }
-</style> 
+</style>

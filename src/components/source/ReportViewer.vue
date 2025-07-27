@@ -71,35 +71,64 @@ const closeDialog = () => {
 
 // 导出报告
 const exportReport = () => {
+
+  
   try {
-    // 创建一个纯文本版本的报告内容
-    const plainTextReport = reportContent.value || '审查报告内容为空';
+    // 检查报告内容是否存在
+    if (!reportContent.value || reportContent.value.trim() === '') {
+      ElMessage.warning('没有可导出的报告内容');
+      return;
+    }
+    
+    console.log('开始导出报告...');
+    
+    let plainTextReport = reportContent.value;
+    
+    if (plainTextReport.includes('<')) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = plainTextReport;
+      plainTextReport = tempDiv.textContent || tempDiv.innerText || '';
+    }
+    
+    if (!plainTextReport.trim()) {
+      plainTextReport = '审查报告内容为空';
+    }
+    
+    const BOM = '\uFEFF';
+    const finalContent = BOM + plainTextReport;
     
     // 创建Blob对象
-    const blob = new Blob([plainTextReport], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([finalContent], { 
+      type: 'text/plain;charset=utf-8' 
+    });
+    
+    // 设置文件名
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const fileName = props.objectId 
+      ? `审查报告_对象ID_${props.objectId}_${timestamp}.txt`
+      : `审查报告_${timestamp}.txt`;
     
     // 创建下载链接
     const downloadLink = document.createElement('a');
     downloadLink.href = URL.createObjectURL(blob);
-    
-    // 设置文件名
-    const fileName = props.objectId 
-      ? `审查报告_对象ID_${props.objectId}_${new Date().toISOString().slice(0, 10)}.txt`
-      : `审查报告_${new Date().toISOString().slice(0, 10)}.txt`;
-    
     downloadLink.download = fileName;
+    
+    // 设置链接样式为隐藏
+    downloadLink.style.display = 'none';
     
     // 添加到文档并触发点击
     document.body.appendChild(downloadLink);
     downloadLink.click();
     
-    // 清理
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(downloadLink.href);
+    
+    // 延迟清理以确保下载完成
+    setTimeout(() => {
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(downloadLink.href);
+    }, 100);
     
     ElMessage.success(`报告已导出为 ${fileName}`);
   } catch (error) {
-    console.error('导出报告失败:', error);
     ElMessage.error(`导出报告失败: ${error.message || '未知错误'}`);
   }
 }
@@ -355,4 +384,4 @@ onMounted(() => {
     height: 250px;
   }
 }
-</style> 
+</style>
