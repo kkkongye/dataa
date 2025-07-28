@@ -28,30 +28,30 @@
           border 
           stripe 
           style="width: 100%"
-          max-height="400px"
+          max-height="300px"
           @selection-change="handleSelectionChange"
           ref="directoryTableRef"
           :row-key="row => row.id"
         >
-          <el-table-column type="selection" width="55" />
-          <el-table-column prop="id" label="ID" min-width="350" width="350" show-overflow-tooltip>
+          <el-table-column type="selection" width="35" />
+          <el-table-column prop="id" label="ID" width="320" show-overflow-tooltip>
             <template #default="scope">
               <div class="id-cell">{{ scope.row.id }}</div>
             </template>
           </el-table-column>
-          <el-table-column prop="entity" label="实体" min-width="100">
+          <el-table-column prop="entity" label="实体" width="150">
             <template #default="scope">
               <span class="entity-text">{{ scope.row.entity }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="约束条件" min-width="250" show-overflow-tooltip>
+          <!-- <el-table-column label="约束条件" min-width="250" show-overflow-tooltip>
             <template #default="scope">
               <div class="constraint-text">
                 {{ formatConstraints(scope.row.constraint) }}
               </div>
             </template>
-          </el-table-column>
-          <el-table-column label="传输控制操作" min-width="150">
+          </el-table-column> -->
+          <el-table-column label="传输控制操作" width="180">
             <template #default="scope">
               <div class="control-container">
                 <template v-if="scope.row.transferControl && scope.row.transferControl.length">
@@ -70,7 +70,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="status" label="状态" width="80">
             <template #default="scope">
               <el-tag type="success" effect="plain">{{ scope.row.status }}</el-tag>
             </template>
@@ -309,22 +309,14 @@ const handleViewDetail = (row) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8081/api/objects/list')
+    const response = await axios.get('http://localhost:8083/api/simplified-objects')
     
-    if (response.data) {
-      let dataArray = []
-      
-      if (Array.isArray(response.data)) {
-        dataArray = response.data
-      } else if (response.data.data && Array.isArray(response.data.data)) {
-        dataArray = response.data.data
-      } else if (response.data.list && Array.isArray(response.data.list)) {
-        dataArray = response.data.list
-      }
+    if (response.data && response.data.code === 1 && response.data.data) {
+      let dataArray = response.data.data
       
       if (dataArray.length > 0) {
         dataArray = dataArray.map(item => {
-
+          // 防止空值或非对象类型
           if (!item || typeof item !== 'object') return item
           
           // 处理实体信息
@@ -337,51 +329,45 @@ const fetchData = async () => {
             item.status = item.dataEntity.status;
           }
 
-          // 处理约束条件信息
-          if (item.constraintSet && item.constraintSet.constraints) {
-            const constraintList = [];
-            item.constraintSet.constraints.forEach(c => {
-              const constraints = [];
-              if (c.formatConstraint) constraints.push(`格式约束:${c.formatConstraint}`);
-              if (c.accessConstraint) constraints.push(`访问权限:${c.accessConstraint}`);
-              if (c.pathConstraint) constraints.push(`传输路径约束:${c.pathConstraint}`);
-              if (c.regionConstraint) constraints.push(`地域性约束:${c.regionConstraint}`);
-              if (c.shareConstraint) constraints.push(`共享约束:${c.shareConstraint}`);
-              constraintList.push(constraints.join(', '));
-            });
-            item.constraint = constraintList;
-          }
+          // 处理约束条件信息 - 简化版本暂时设置为空
+          item.constraint = [];
 
-          // 处理传输控制操作
-          if (item.propagationControl) {
-            const controls = [];
-            if (item.propagationControl.canRead === true || 
-                (item.propagationControl.selectedOperations && 
-                item.propagationControl.selectedOperations.read === true)) {
-              controls.push('可读');
-            }
-            if (item.propagationControl.canShare === true || 
-                (item.propagationControl.selectedOperations && 
-                item.propagationControl.selectedOperations.share === true)) {
-              controls.push('可共享');
-            }
-            if (item.propagationControl.canModify === true || 
-                (item.propagationControl.selectedOperations && 
-                item.propagationControl.selectedOperations.modify === true)) {
-              controls.push('可修改');
-            }
-            if (item.propagationControl.canDestroy === true || 
-                (item.propagationControl.selectedOperations && 
-                item.propagationControl.selectedOperations.destroy === true)) {
-              controls.push('可销毁');
-            }
-            if (item.propagationControl.canDelegate === true || 
-                (item.propagationControl.selectedOperations && 
-                item.propagationControl.selectedOperations.delegate === true)) {
-              controls.push('可委托');
-            }
-            if (controls.length > 0) {
-              item.transferControl = controls;
+          // 处理传输控制操作 - 解析propagationControlJson
+          if (item.propagationControlJson) {
+            try {
+              const propagationControl = JSON.parse(item.propagationControlJson);
+              const controls = [];
+              if (propagationControl.canRead === true || 
+                  (propagationControl.selectedOperations && 
+                  propagationControl.selectedOperations.read === true)) {
+                controls.push('可读');
+              }
+              if (propagationControl.canShare === true || 
+                  (propagationControl.selectedOperations && 
+                  propagationControl.selectedOperations.share === true)) {
+                controls.push('可共享');
+              }
+              if (propagationControl.canModify === true || 
+                  (propagationControl.selectedOperations && 
+                  propagationControl.selectedOperations.modify === true)) {
+                controls.push('可修改');
+              }
+              if (propagationControl.canDestroy === true || 
+                  (propagationControl.selectedOperations && 
+                  propagationControl.selectedOperations.destroy === true)) {
+                controls.push('可销毁');
+              }
+              if (propagationControl.canDelegate === true || 
+                  (propagationControl.selectedOperations && 
+                  propagationControl.selectedOperations.delegate === true)) {
+                controls.push('可委托');
+              }
+              if (controls.length > 0) {
+                item.transferControl = controls;
+              }
+            } catch (e) {
+              console.error('解析propagationControlJson失败:', e);
+              item.transferControl = [];
             }
           }
           
@@ -411,13 +397,12 @@ const fetchData = async () => {
           ElMessage.warning('未找到已合格的数据')
         }
       } else {
-        ElMessage.warning('未找到可用的数据对象')
+        // ElMessage.warning('未找到可用的数据对象')
       }
     } else {
       ElMessage.warning('API返回的数据格式不正确')
     }
-    
-    await markApplyStatusForUser()
+
   } catch (error) {
     console.error('获取数据失败:', error)
     ElMessage.error(`获取数据失败: ${error.message}`)
@@ -485,31 +470,6 @@ function handleSelectionChange(val) {
 // function isRowSelectable(row) {
 //   return row.sourceAgreed === true && row.governanceAgreed === true;
 // }
-
-async function markApplyStatusForUser() {
-  try {
-    const res = await axios.get('http://localhost:8080/api/applications/records', { withCredentials: true })
-    if (res.data && res.data.code === 1) {
-      const records = res.data.data || []
-      const username = localStorage.getItem('username')
-      tableData.value.forEach(row => {
-
-        const record = records.find(r => r.objectId === row.id && r.applicant === username)
-        if (record) {
-          row.applied = true
-          row.sourceAgreed = record.sourceAgreed
-          row.governanceAgreed = record.governanceAgreed
-        } else {
-          row.applied = false
-          row.sourceAgreed = false
-          row.governanceAgreed = false
-        }
-      })
-    }
-  } catch (e) {
-    console.error('获取申请记录失败', e)
-  }
-}
 
 function handleApply() {
   if (selectedRows.value.length === 0) {
@@ -626,6 +586,7 @@ function handleDecrypt() {
 .id-cell {
   text-align: center;
   word-break: break-all;
+  padding: 0 2px;
 }
 
 .entity-text {
@@ -650,4 +611,4 @@ function handleDecrypt() {
   display: flex;
   justify-content: center;
 }
-</style> 
+</style>

@@ -193,7 +193,7 @@
   <el-dialog
     v-model="directoryDialogVisible"
     title="目录"
-    width="80%"
+    width="60%"
     :close-on-click-modal="false"
     :show-close="true"
     draggable
@@ -1129,8 +1129,7 @@ const resetDecryption = () => {
 const fetchLatestDataFromApi = async () => {
   try {
     ElMessage.info('正在从API获取最新数据...')
-
-    const apiUrl = 'http://localhost:8081/api/objects/list'
+    const apiUrl = 'http://localhost:8083/api/simplified-objects'
     const response = await axios.get(apiUrl)
     
     if (response.data) {
