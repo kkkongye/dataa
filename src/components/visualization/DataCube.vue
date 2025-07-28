@@ -207,7 +207,8 @@ const processBackendData = async () => {
           entity: entityName,
           statusInfo: status,
           metadata: metadata,
-          gradeValue: gradeValue
+          gradeValue: gradeValue,
+          id: item.id // 添加原始ID字段
         };
       } catch (err) {
         console.error('处理数据项时出错:', err);
@@ -615,7 +616,8 @@ const forceRender = async () => {
             entity: item.entity,
             statusInfo: item.statusInfo,
             metadata: item.metadata,
-            gradeValue: item.gradeValue
+            gradeValue: item.gradeValue,
+            id: item.id // 确保ID字段被传递
           })),
           emphasis: {
             itemStyle: {
@@ -636,13 +638,35 @@ const forceRender = async () => {
           console.log('数据点被点击:', params.data);
           // 发送点击事件到父组件
           emit('data-point-click', {
-            id: params.data.entity || params.data.name,
+            id: params.data.id || params.data.entity || params.data.name,
             name: params.data.name,
             entity: params.data.entity,
             industry: params.data.industry,
             status: params.data.status,
             metadata: params.data.metadata
           });
+        }
+      });
+      
+      // 添加鼠标悬浮事件监听器
+      chart.on('mouseover', (params) => {
+        if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
+          console.log('鼠标悬浮在数据点上:', {
+            数据名称: params.data.name,
+            实体名称: params.data.entity,
+            行业分类: params.data.industry,
+            状态: params.data.status,
+            分类值: params.data.value[2],
+            分级值: params.data.gradeValue,
+            元数据: params.data.metadata
+          });
+        }
+      });
+      
+      // 添加鼠标离开事件监听器
+      chart.on('mouseout', (params) => {
+        if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
+          console.log('鼠标离开数据点:', params.data.name);
         }
       });
       
@@ -968,7 +992,8 @@ const initChart = async () => {
           entity: item.entity,
           statusInfo: item.statusInfo,
           metadata: item.metadata,
-          gradeValue: item.gradeValue
+          gradeValue: item.gradeValue,
+          id: item.id // 确保ID字段被传递
         })),
         emphasis: {
           itemStyle: {
@@ -988,13 +1013,35 @@ const initChart = async () => {
         console.log('数据点被点击:', params.data);
         // 发送点击事件到父组件
         emit('data-point-click', {
-          id: params.data.entity || params.data.name,
+          id: params.data.id || params.data.entity || params.data.name,
           name: params.data.name,
           entity: params.data.entity,
           industry: params.data.industry,
           status: params.data.status,
           metadata: params.data.metadata
         });
+      }
+    });
+    
+    // 添加鼠标悬浮事件监听器
+    chart.on('mouseover', (params) => {
+      if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
+        console.log('鼠标悬浮在数据点上:', {
+          数据名称: params.data.name,
+          实体名称: params.data.entity,
+          行业分类: params.data.industry,
+          状态: params.data.status,
+          分类值: params.data.value[2],
+          分级值: params.data.gradeValue,
+          元数据: params.data.metadata
+        });
+      }
+    });
+    
+    // 添加鼠标离开事件监听器
+    chart.on('mouseout', (params) => {
+      if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
+        console.log('鼠标离开数据点:', params.data.name);
       }
     });
 

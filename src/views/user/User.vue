@@ -373,12 +373,81 @@ const isRequestingToken = ref(false)
 const isGeneratingCapsule = ref(false)
 
 // 显示解密对话框
-const showDecryptDialog = (ids) => {
-  decryptForm.objectId = ids.join(', ')
-  decryptedObjectIds.value = ids
-  
-  // 直接调用解密函数，不显示弹窗
-  handleDecrypt()
+const showDecryptDialog = (data) => {
+  if (typeof data === 'object' && data.ids && data.decryptedData) {
+    // 新格式：包含解密后的数据
+    decryptForm.objectId = data.ids.join(', ')
+    decryptedObjectIds.value = data.ids
+    
+    // 处理解密后的数据并更新表格
+    handleDecryptedData(data.decryptedData)
+  } else {
+    // 兼容旧格式：只有ids数组
+    const ids = Array.isArray(data) ? data : [data]
+    decryptForm.objectId = ids.join(', ')
+    decryptedObjectIds.value = ids
+    
+    // 直接调用解密函数，不显示弹窗
+    handleDecrypt()
+  }
+}
+
+// 处理解密后的数据
+const handleDecryptedData = (decryptedData) => {
+  try {
+    console.log('处理解密后的数据:', decryptedData)
+    
+    // 将解密后的数据转换为表格格式
+    const processedData = decryptedData.map(item => {
+      const processedItem = {
+        id: item.id,
+        entity: item.dataEntity?.entity || '',
+        status: item.dataEntity?.status || '',
+        feedback: item.dataEntity?.feedback || '',
+        industryCategory: item.industryCategory || '',
+        processingTimeCategory: item.processingTimeCategory || '',
+        dataSourceCategory: item.dataSourceCategory || '',
+        totalCategoryValue: item.totalCategoryValue || '',
+        totalGradeValue: item.totalGradeValue || '',
+        dbGrade: item.dbGrade || 0,
+        tableGrade: item.tableGrade || 0,
+        locationInfo: {
+          databaseName: item.locationInfo?.databaseName || '',
+          tableName: item.locationInfo?.tableName || '',
+          selectFields: item.locationInfo?.selectFields || ''
+        },
+        // 处理约束条件
+        constraintSet: item.constraintSet || {},
+        // 处理传输控制
+        propagationControl: item.propagationControl || {},
+        // 处理审计信息
+        auditInfo: item.auditInfo || {},
+        // 处理数据项
+        dataItems: item.dataEntity?.dataItems || [],
+        // 处理元数据
+        metadata: item.dataEntity?.metadata || {}
+      }
+      
+      return processedItem
+    })
+    
+    // 更新表格数据
+    tableData.value = processedData
+    
+    // 设置解密状态
+    isDecrypted.value = true
+    const idList = decryptForm.objectId.split(',').map(id => id.trim()).filter(id => id)
+    decryptedObjectIds.value = idList
+    decryptedObjectId.value = idList.length === 1 ? idList[0] : ''
+    
+    // 关闭目录弹窗
+    directoryDialogVisible.value = false
+    
+    ElMessage.success(`解密成功，共获取 ${processedData.length} 条数据`)
+  } catch (error) {
+    console.error('处理解密数据失败:', error)
+    ElMessage.error(`处理解密数据失败: ${error.message}`)
+  }
 }
 
 // 处理解密操作

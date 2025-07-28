@@ -7,11 +7,57 @@
       </div>
       <el-form :model="loginForm" class="login-form" ref="loginFormRef">
         <el-form-item>
-          <el-input v-model="loginForm.username" placeholder="请输入用户名" class="login-input">
-            <template #prefix>
-              <el-icon class="input-icon"><User /></el-icon>
-            </template>
-          </el-input>
+          <div class="username-selector">
+            <el-icon class="input-icon"><User /></el-icon>
+            <el-select v-model="loginForm.province" placeholder="请选择省份" class="province-select">
+              <el-option label="北京市" value="北京市" />
+              <el-option label="天津市" value="天津市" />
+              <el-option label="河北省" value="河北省" />
+              <el-option label="山西省" value="山西省" />
+              <el-option label="内蒙古自治区" value="内蒙古自治区" />
+              <el-option label="辽宁省" value="辽宁省" />
+              <el-option label="吉林省" value="吉林省" />
+              <el-option label="黑龙江省" value="黑龙江省" />
+              <el-option label="上海市" value="上海市" />
+              <el-option label="江苏省" value="江苏省" />
+              <el-option label="浙江省" value="浙江省" />
+              <el-option label="安徽省" value="安徽省" />
+              <el-option label="福建省" value="福建省" />
+              <el-option label="江西省" value="江西省" />
+              <el-option label="山东省" value="山东省" />
+              <el-option label="河南省" value="河南省" />
+              <el-option label="湖北省" value="湖北省" />
+              <el-option label="湖南省" value="湖南省" />
+              <el-option label="广东省" value="广东省" />
+              <el-option label="广西壮族自治区" value="广西壮族自治区" />
+              <el-option label="海南省" value="海南省" />
+              <el-option label="重庆市" value="重庆市" />
+              <el-option label="四川省" value="四川省" />
+              <el-option label="贵州省" value="贵州省" />
+              <el-option label="云南省" value="云南省" />
+              <el-option label="西藏自治区" value="西藏自治区" />
+              <el-option label="陕西省" value="陕西省" />
+              <el-option label="甘肃省" value="甘肃省" />
+              <el-option label="青海省" value="青海省" />
+              <el-option label="宁夏回族自治区" value="宁夏回族自治区" />
+              <el-option label="新疆维吾尔自治区" value="新疆维吾尔自治区" />
+            </el-select>
+            <el-select v-if="loginForm.role !== 'governor'" v-model="loginForm.bureau" placeholder="请选择局" class="bureau-select">
+              <el-option label="税务局" value="税务局" />
+              <el-option label="审计局" value="审计局" />
+              <el-option label="财政局" value="财政局" />
+              <el-option label="统计局" value="统计局" />
+              <el-option label="民政局" value="民政局" />
+              <el-option label="教育局" value="教育局" />
+              <el-option label="医保局" value="医保局" />
+              <el-option label="科技局" value="科技局" />
+              <el-option label="旅游局" value="旅游局" />
+              <el-option label="体育局" value="体育局" />
+              <el-option label="自定义" value="自定义" />
+            </el-select>
+            <span v-if="loginForm.role === 'governor'" class="bureau-text">大数据局</span>
+          </div>
+          <el-input v-if="loginForm.bureau === '自定义'" v-model="loginForm.customBureau" placeholder="请输入局名" class="custom-bureau-input" />
         </el-form-item>
         <el-form-item>
           <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" class="login-input">
@@ -59,14 +105,40 @@ const loading = ref(false)
 const loginForm = reactive({
   username: '',
   password: '',
-  role: 'datasource' // 默认选中数源方
+  role: 'datasource', // 默认选中数源方
+  province: '',
+  bureau: '',
+  customBureau: ''
 })
 
 const handleLogin = async () => {
-  if (!loginForm.username || !loginForm.password) {
-    ElMessage.warning('请输入用户名和密码')
+  // 组合用户名
+  if (!loginForm.province) {
+    ElMessage.warning('请选择省份')
     return
   }
+  
+  // 治理方默认为大数据局
+  if (loginForm.role === 'governor') {
+    loginForm.bureau = '大数据局'
+  } else {
+    if (!loginForm.bureau) {
+      ElMessage.warning('请选择局')
+      return
+    }
+    if (loginForm.bureau === '自定义' && !loginForm.customBureau) {
+      ElMessage.warning('请输入自定义局名')
+      return
+    }
+  }
+  
+  if (!loginForm.password) {
+    ElMessage.warning('请输入密码')
+    return
+  }
+  
+  const bureauName = loginForm.bureau === '自定义' ? loginForm.customBureau : loginForm.bureau
+  loginForm.username = `${loginForm.province}${bureauName}`
   loading.value = true
   try {
 
@@ -203,6 +275,56 @@ const goToRegister = () => {
   border-radius: 3px;
 }
 
+.username-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.username-icon {
+  color: #909399;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.bureau-text {
+  color: #606266;
+  font-size: 14px;
+  padding: 8px 15px;
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.province-select,
+.bureau-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.province-select :deep(.el-input__wrapper),
+.bureau-select :deep(.el-input__wrapper) {
+  padding: 8px 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.province-select :deep(.el-input__wrapper:hover),
+.bureau-select :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #409EFF;
+}
+
+.custom-bureau-input {
+  margin-top: 10px;
+  width: 100%;
+}
+
 .login-form {
   margin-top: 25px;
 }
@@ -212,7 +334,7 @@ const goToRegister = () => {
 }
 
 .login-input :deep(.el-input__wrapper) {
-  padding: 12px 15px;
+  padding: 8px 15px;
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -291,4 +413,4 @@ const goToRegister = () => {
 .register-link:hover {
   text-decoration: underline;
 }
-</style> 
+</style>

@@ -1,8 +1,11 @@
+DROP DATABASE IF EXISTS login_database ;
 CREATE DATABASE IF NOT EXISTS login_database 
     DEFAULT CHARACTER SET utf8mb4 
     DEFAULT COLLATE utf8mb4_unicode_ci;
     
 USE login_database;
+
+DROP TABLE users;
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
@@ -94,6 +97,7 @@ CREATE DATABASE IF NOT EXISTS governance_database
 USE governance_database;
 ALTER TABLE governance_objects ADD COLUMN audit_report TEXT COMMENT '审查报告内容';
 DROP TABLE governance_objects;
+SHOW TABLES LIKE 'governance_objects';
 
 CREATE TABLE governance_objects (
     id VARCHAR(36) PRIMARY KEY COMMENT '唯一标识符',
@@ -112,14 +116,17 @@ CREATE TABLE governance_objects (
 );
 
 ALTER TABLE governance_objects 
+ADD COLUMN data_content TEXT,
 ADD COLUMN metadata_json TEXT,
 ADD COLUMN location_info_json TEXT,
 ADD COLUMN constraint_set_json TEXT,
 ADD COLUMN propagation_control_json TEXT,
 ADD COLUMN audit_info_json TEXT,
-ADD COLUMN numeric_id BIGINT COMMENT '数据库自增长ID';
+ADD COLUMN numeric_id BIGINT COMMENT '数据库自增长ID',
+ADD COLUMN audit_report TEXT COMMENT '审查报告内容';
 
-
+DESC governance_objects;
+SELECT DATABASE();
 CREATE DATABASE IF NOT EXISTS consumer_database 
     DEFAULT CHARACTER SET utf8mb4 
     DEFAULT COLLATE utf8mb4_unicode_ci;
@@ -155,4 +162,38 @@ ADD COLUMN audit_info_json TEXT;
 ALTER TABLE data_objects ADD COLUMN data_content TEXT;
 
 
+DROP DATABASE IF EXISTS consumer_database;
+CREATE DATABASE consumer_database CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE consumer_database;
+DROP TABLE IF EXISTS consumer_objects;
 
+CREATE TABLE consumer_objects (
+    id VARCHAR(255) PRIMARY KEY COMMENT '对象唯一标识',
+    entity VARCHAR(255) COMMENT '数据实体名称',
+    STATUS VARCHAR(50) COMMENT '状态(待校验/已合格/不合格)',
+    propagation_control_json TEXT COMMENT '传播控制集合的JSON'
+) ;
+
+
+CREATE TABLE data_objects (
+    id VARCHAR(255) PRIMARY KEY,
+    numeric_id INT,
+    file_path TEXT,
+    data_content TEXT,
+    metadata_json TEXT,
+    location_info_json TEXT,
+    constraint_set_json TEXT,
+    propagation_control_json TEXT,
+    audit_info_json TEXT,
+    db_grade INT,
+    table_grade INT,
+    row_grades TEXT,
+    column_grades TEXT,
+    total_category_value DOUBLE,
+    total_grade_value DOUBLE,
+    industry_category VARCHAR(255),
+    processing_time_category VARCHAR(255),
+    data_source_category VARCHAR(255),
+    created_at DATETIME,
+    updated_at DATETIME
+);

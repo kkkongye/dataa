@@ -511,9 +511,15 @@ function handleDecrypt() {
   axios.post('http://localhost:8083/api/decrypt', { ids }, { withCredentials: true })
     .then(res => {
       console.log('解密接口返回结果:', res.data)
-      ElMessage.success('解密成功')
-
-      emit('show-decrypt', ids)
+      
+      // 检查新的响应格式
+      if (res.data && res.data.code === 1 && res.data.data) {
+        ElMessage.success('解密成功')
+        // 传递解密后的完整数据给父组件
+        emit('show-decrypt', { ids, decryptedData: res.data.data })
+      } else {
+        ElMessage.error(`解密失败: ${res.data?.msg || '未知错误'}`)
+      }
     })
     .catch(err => {
       console.error('解密接口出错:', err)

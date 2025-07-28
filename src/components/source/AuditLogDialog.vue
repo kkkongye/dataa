@@ -53,6 +53,7 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="emit('close')">关闭</el-button>
+        <el-button type="primary" plain @click="handleViewAuditLog">查看区块链详细日志</el-button>
       </span>
     </template>
   </el-dialog>
@@ -60,6 +61,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   visible: {
@@ -189,6 +191,22 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   currentPage.value = val
 }
+
+function handleViewAuditLog() {
+  ElMessageBox.confirm(
+    '即将跳转到区块链详细日志页面，是否继续？',
+    '确认跳转',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    }
+  ).then(() => {
+    window.open('http://121.36.228.85/home', '_blank')
+  }).catch(() => {
+    ElMessage.info('已取消跳转')
+  })
+}
 </script>
 
 <style scoped>
@@ -222,4 +240,4 @@ const handleCurrentChange = (val) => {
   margin-top: 16px;
   text-align: right;
 }
-</style> 
+</style>

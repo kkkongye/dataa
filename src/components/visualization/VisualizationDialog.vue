@@ -72,8 +72,8 @@
               >
                 <div class="item-info">
                   <div class="item-id">{{ item.id }}</div>
-                  <!-- <div class="item-name">{{ item.name }}</div> -->
-                  <div class="item-industry">{{ item.industry }}</div>
+                  <div class="item-name">{{ item.name }}</div>
+                  <!-- <div class="item-industry">{{ item.industry }}</div> -->
                 </div>
                 <el-button 
                   type="danger" 
@@ -160,7 +160,7 @@ const handleDataPointClick = (dataPoint) => {
   
   // 添加到申请列表
   applicationList.value.push({
-    id: dataPoint.id || dataPoint.name,
+    id: dataPoint.id, // 直接使用传递过来的ID
     name: dataPoint.name || dataPoint.entity || '未知数据',
     industry: dataPoint.industry || '未分类',
     status: dataPoint.status || '未知状态',
@@ -347,7 +347,7 @@ const handleDialogOpened = async () => {
 }
 
 .application-list-section {
-  width: 320px;
+  width: 400px;
   height: 100%;
   background: #f8f9fa;
   border-radius: 8px;
