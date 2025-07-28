@@ -1724,9 +1724,11 @@ const handleInitSystem = async () => {
 const handleGenerateOrgVouchers = async () => {
   const loading = ElLoading.service({ fullscreen: true, text: '正在校验...' })
   try {
-    // 第一步：解密校验
     const res1 = await axios.post('http://localhost:8082/api/decrypt-verify')
-    if (res1.data && (res1.data.code === 0 || res1.data.success)) {
+    if (res1.data && res1.data.code === 0 && res1.data.msg === '尚未接收到加密数据') {
+      loading.close()
+      ElMessage.error('解密校验失败：尚未接收到加密数据，请先确保数据已正确接收')
+    } else if (res1.data && res1.data.code === 1) {
       loading.close()
       await ElMessageBox.confirm('解密校验成功，是否生成组织机构凭证？', '提示', {
         confirmButtonText: '生成',
@@ -1737,7 +1739,9 @@ const handleGenerateOrgVouchers = async () => {
       const loading2 = ElLoading.service({ fullscreen: true, text: '正在生成组织机构凭证...' })
       const res2 = await axios.post('http://localhost:8082/api/generate-org-vouchers')
       loading2.close()
-      if (res2.data && (res2.data.code === 0 || res2.data.success)) {
+      if (res2.data && res2.data.code === 0) {
+        ElMessage.error('生成组织机构凭证失败：' + (res2.data?.msg || res2.data?.message || '未知错误'))
+      } else if (res2.data && res2.data.code === 1) {
         await ElMessageBox.confirm('组织机构凭证生成成功，是否发送共享证书给使用方？', '提示', {
           confirmButtonText: '发送',
           cancelButtonText: '取消',
@@ -1747,7 +1751,9 @@ const handleGenerateOrgVouchers = async () => {
         const loading3 = ElLoading.service({ fullscreen: true, text: '正在发送共享证书...' })
         const res3 = await axios.post('http://localhost:8082/api/send-sc-to-du')
         loading3.close()
-        if (res3.data && (res3.data.code === 0 || res3.data.success)) {
+        if (res3.data && res3.data.code === 0) {
+          ElMessage.error('发送共享证书失败：' + (res3.data?.msg || res3.data?.message || '未知错误'))
+        } else if (res3.data && res3.data.code === 1) {
           ElMessage.success('共享证书已成功发送给使用方！')
         } else {
           ElMessage.error('发送共享证书失败：' + (res3.data?.msg || res3.data?.message || '未知错误'))
@@ -1781,7 +1787,9 @@ const handleGenerateAndSendCapsule = async () => {
     
     loading.close();
     
-    if (response.data && (response.data.code === 0 || response.data.code === 1 || response.data.success === true)) {
+    if (response.data && response.data.code === 0) {
+      ElMessage.error(`操作失败：${response.data?.msg || response.data?.message || '未知错误'}`);
+    } else if (response.data && response.data.code === 1) {
       ElMessage.success('数据胶囊已成功生成并发送给使用方');
     } else {
       ElMessage.error(`操作失败：${response.data?.msg || response.data?.message || '未知错误'}`);

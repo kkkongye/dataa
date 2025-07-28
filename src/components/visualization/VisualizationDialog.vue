@@ -72,7 +72,7 @@
               >
                 <div class="item-info">
                   <div class="item-id">{{ item.id }}</div>
-                  <div class="item-name">{{ item.name }}</div>
+                  <!-- <div class="item-name">{{ item.name }}</div> -->
                   <div class="item-industry">{{ item.industry }}</div>
                 </div>
                 <el-button 

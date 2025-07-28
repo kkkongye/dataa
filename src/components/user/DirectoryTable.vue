@@ -16,7 +16,6 @@
     
     <div class="directory-table">
       <div class="directory-table-header" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
-        <el-button type="primary" plain @click="handleApply">构造共享证书申请</el-button>
         <el-button type="primary" plain @click="handleApply">申请</el-button>
         <el-button type="primary" plain @click="handleDecrypt">解密</el-button>
       </div>

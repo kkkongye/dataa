@@ -10,7 +10,7 @@
         <div class="table-title">我的数据对象列表</div>
         <!-- 搜索和操作区 -->
         <div class="action-bar">
-          <div class="search-area">
+          <div v-if="isDecrypted" class="search-area">
             <el-input
               v-model="searchKeyword"
               placeholder="搜索实体名、约束条件、传输控制操作"
@@ -326,9 +326,29 @@ const handleSelectionChange = (rows) => {
 
 
 // 退出登录
-const logout = () => {
-  localStorage.removeItem('role')
-  router.push('/login')
+const logout = async () => {
+  try {
+    const loadingInstance = ElLoading.service({
+      fullscreen: true,
+      text: '正在清除数据并退出...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    });
+    const response = await axios.delete('http://localhost:8083/api/clear-database');
+    
+    loadingInstance.close();
+    
+    if (response.data && (response.data.code === 1 || response.data.success === true)) {
+      ElMessage.success(response.data.data || '成功清除所有数据');
+    } else {
+      ElMessage.warning('清除数据可能未完全成功，但仍将退出系统');
+    }
+  } catch (error) {
+    console.error('清除数据失败:', error);
+    ElMessage.error('清除数据失败，但仍将退出系统');
+  } finally {
+    localStorage.removeItem('role');
+    router.push('/login');
+  }
 }
 
 // 处理每页显示数量变化
@@ -1182,8 +1202,9 @@ const handleVerifySC = async () => {
 
     loadingInstance.close();
 
-    if (response.data && (response.data.code === 1 || response.data.success === true) && 
-        !(response.data.msg && response.data.msg.includes('验证失败'))) {
+    if (response.data && response.data.code === 0 && response.data.msg === '尚未接收到共享证书') {
+      ElMessage.error('验证失败：尚未接收到共享证书，请联系治理方发送共享证书');
+    } else if (response.data && response.data.code === 1) {
       ElMessage.success('组织机构凭证验证成功！');
     } else {
       ElMessage.error(`组织机构凭证验证失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
@@ -1398,8 +1419,13 @@ onBeforeUnmount(() => {
 /* 搜索和操作区域 */
 .action-bar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 12px;
+  gap: 12px;
+}
+
+.search-area {
+  margin-right: auto;
 }
 
 .search-input {
