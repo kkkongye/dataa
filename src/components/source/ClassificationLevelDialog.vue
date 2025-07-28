@@ -320,8 +320,10 @@ const rowGradeValue = computed(() => {
     const maxValue = Math.max(...numericValues);
     
     // 行分级值 = 行权重最大值 + 列权重平均值
-    const result = maxValue + columnAverageValue.value;
-    return parseFloat(result.toFixed(1));
+    // const result = maxValue + columnAverageValue.value;
+    const result = maxValue;
+
+    return parseFloat(result.toFixed(3));
   } catch (error) {
     return 0;
   }
@@ -353,8 +355,9 @@ const totalGradeValue = computed(() => {
     const colValue = parseFloat(columnGradeValue.value) || 0;
     
     // 表分级值 = 原始表分级值 + 列权重平均值
-    const adjustedTableValue = tableValue + columnAverageValue.value;
-    const result = parseFloat(adjustedTableValue.toFixed(1));
+    // const adjustedTableValue = tableValue + columnAverageValue.value;
+    const adjustedTableValue = tableValue ;
+    const result = parseFloat(adjustedTableValue.toFixed(3));
     
     return result;
   } catch (error) {
@@ -1194,7 +1197,7 @@ function getColumnTableDataWithoutGradeRow() {
 function calcRowGradeValue(idx) {
   const rowWeight = Array.isArray(rowGrades.value) && rowGrades.value[idx] !== undefined ? parseFloat(rowGrades.value[idx]) : 0;
   const colAvg = columnAverageValue.value || 0;
-  return (rowWeight + colAvg).toFixed(1);
+  return (rowWeight).toFixed(3);
 }
 </script>
 

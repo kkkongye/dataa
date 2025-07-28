@@ -56,6 +56,9 @@ import * as echarts from 'echarts';
 import 'echarts-gl';
 import axios from 'axios';
 
+// 定义emit事件
+const emit = defineEmits(['data-point-click']);
+
 const chartContainer = ref(null);
 let chart = null;
 const loading = ref(true);
@@ -627,6 +630,22 @@ const forceRender = async () => {
       // 应用选项
       chart.setOption(option);
       
+      // 添加数据点点击事件监听器
+      chart.on('click', (params) => {
+        if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
+          console.log('数据点被点击:', params.data);
+          // 发送点击事件到父组件
+          emit('data-point-click', {
+            id: params.data.entity || params.data.name,
+            name: params.data.name,
+            entity: params.data.entity,
+            industry: params.data.industry,
+            status: params.data.status,
+            metadata: params.data.metadata
+          });
+        }
+      });
+      
       // 添加resize事件
       window.addEventListener('resize', resizeChart);
       
@@ -962,6 +981,22 @@ const initChart = async () => {
     };
 
     chart.setOption(option);
+    
+    // 添加数据点点击事件监听器
+    chart.on('click', (params) => {
+      if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
+        console.log('数据点被点击:', params.data);
+        // 发送点击事件到父组件
+        emit('data-point-click', {
+          id: params.data.entity || params.data.name,
+          name: params.data.name,
+          entity: params.data.entity,
+          industry: params.data.industry,
+          status: params.data.status,
+          metadata: params.data.metadata
+        });
+      }
+    });
 
     window.addEventListener('resize', resizeChart);
     

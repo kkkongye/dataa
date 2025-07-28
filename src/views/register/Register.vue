@@ -65,8 +65,8 @@ const registerFormRef = ref(null)
 const registerForm = reactive({
   username: '',
   password: '',
-  role: 'datasource', // 默认选中数源方
-  organization: '' // 上级机构
+  role: 'datasource', 
+  organization: ''
 })
 
 const handleRegister = async () => {
@@ -75,12 +75,23 @@ const handleRegister = async () => {
     return
   }
   
+  if (registerForm.role === 'user' && !registerForm.organization) {
+    ElMessage.warning('使用方用户请填写上级机构')
+    return
+  }
+  
   try {
-    const response = await axios.post('http://localhost:8080/api/register', {
+    let requestData = {
       username: registerForm.username,
       password: registerForm.password,
       role: registerForm.role
-    })
+    }
+    
+    if (registerForm.role === 'user') {
+      requestData.superior = registerForm.organization
+    }
+    
+    const response = await axios.post('http://localhost:8080/api/register', requestData)
 
     console.log('注册响应数据:', response.data)
     
