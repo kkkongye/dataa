@@ -20,23 +20,31 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Setting, ArrowDown } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  // 角色名称：数源方、治理方或使用方
-  roleName: {
-    type: String,
-    required: true
-  }
-})
-
 const emit = defineEmits(['logout'])
+const roleName = ref('')
+
+// 获取当前用户信息
+const getCurrentUser = () => {
+  const username = localStorage.getItem('username')
+  if (username) {
+    roleName.value = username
+  } else {
+    roleName.value = '未知用户'
+  }
+}
 
 // 处理退出登录
 const handleLogout = () => {
   emit('logout')
 }
+
+// 组件挂载时获取用户信息
+onMounted(() => {
+  getCurrentUser()
+})
 </script>
 
 <style scoped>
@@ -89,4 +97,4 @@ const handleLogout = () => {
   margin-left: 6px;
   transition: background 0.2s;
 }
-</style> 
+</style>

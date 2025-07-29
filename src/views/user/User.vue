@@ -1,7 +1,7 @@
 <template>
   <div class="datasource-container watermark-bg">
     <!-- 头部导航 -->
-    <AppHeader role-name="某街道居委会(使用方)" @logout="logout" />
+    <AppHeader @logout="logout" />
     
     <!-- 主内容区域 -->
     <div class="main-content">
@@ -392,6 +392,96 @@ const showDecryptDialog = (data) => {
   }
 }
 
+// 提取约束条件数组
+const extractConstraintArray = (constraintSet) => {
+  if (!constraintSet || typeof constraintSet !== 'object') return []
+  
+  const constraints = []
+  
+  // 中文字段映射
+  const fieldMapping = {
+    'formatConstraint': '格式约束',
+    'accessConstraint': '访问约束', 
+    'pathConstraint': '路径约束',
+    'regionConstraint': '区域约束',
+    'shareConstraint': '共享约束'
+  }
+  
+  // 处理新的数据结构：constraintSet.constraints数组
+  if (constraintSet.constraints && Array.isArray(constraintSet.constraints)) {
+    constraintSet.constraints.forEach(constraintObj => {
+      Object.entries(constraintObj).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          const chineseKey = fieldMapping[key] || key
+          constraints.push(`${chineseKey}: ${value}`)
+        }
+      })
+    })
+  } else {
+    // 兼容旧的直接键值对结构
+    Object.entries(constraintSet).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        const chineseKey = fieldMapping[key] || key
+        constraints.push(`${chineseKey}: ${value}`)
+      }
+    })
+  }
+  
+  return constraints
+}
+
+// 提取传输控制操作数组
+const extractTransferControlArray = (propagationControl) => {
+  if (!propagationControl || typeof propagationControl !== 'object') return []
+  
+  const controlsSet = new Set()
+  
+  // 中文操作映射
+  const operationMapping = {
+    'delegate': '可委托',
+    'modify': '可修改', 
+    'read': '可读取',
+    'destroy': '可销毁',
+    'share': '可共享',
+    'canShare': '可共享',
+    'canRead': '可读取', 
+    'canModify': '可修改',
+    'canDelegate': '可委托',
+    'canDestroy': '可销毁'
+  }
+  
+  // 处理selectedOperations对象
+  if (propagationControl.selectedOperations && typeof propagationControl.selectedOperations === 'object') {
+    Object.entries(propagationControl.selectedOperations).forEach(([key, value]) => {
+      if (typeof value === 'boolean' && value === true) {
+        const chineseOperation = operationMapping[key] || key
+        controlsSet.add(chineseOperation)
+      }
+    })
+  }
+  
+  // 处理其他直接的布尔值字段
+  const directFields = ['canShare', 'canRead', 'canModify', 'canDelegate', 'canDestroy']
+  directFields.forEach(field => {
+    if (propagationControl[field] === true) {
+      const chineseOperation = operationMapping[field] || field
+      controlsSet.add(chineseOperation)
+    }
+  })
+  
+  // 兼容旧的直接键值对结构
+  if (controlsSet.size === 0) {
+    Object.entries(propagationControl).forEach(([key, value]) => {
+      if (value === true || (typeof value === 'string' && value !== '')) {
+        const chineseOperation = operationMapping[key] || key
+        controlsSet.add(chineseOperation)
+      }
+    })
+  }
+  
+  return Array.from(controlsSet)
+}
+
 // 处理解密后的数据
 const handleDecryptedData = (decryptedData) => {
   try {
@@ -416,9 +506,11 @@ const handleDecryptedData = (decryptedData) => {
           tableName: item.locationInfo?.tableName || '',
           selectFields: item.locationInfo?.selectFields || ''
         },
-        // 处理约束条件
+        // 处理约束条件 - 转换为表格显示格式
+        constraint: extractConstraintArray(item.constraintSet),
         constraintSet: item.constraintSet || {},
-        // 处理传输控制
+        // 处理传输控制 - 转换为表格显示格式
+        transferControl: extractTransferControlArray(item.propagationControl),
         propagationControl: item.propagationControl || {},
         // 处理审计信息
         auditInfo: item.auditInfo || {},
@@ -1385,15 +1477,15 @@ function setWatermark(text) {
     wm.parentNode.removeChild(wm)
   }
   const can = document.createElement('canvas')
-  can.width = 300
-  can.height = 200
+  can.width = 600
+  can.height = 400
   const ctx = can.getContext('2d')
-  ctx.rotate(-20 * Math.PI / 180)
-  ctx.font = '16px Microsoft YaHei'
+  ctx.rotate(-30 * Math.PI / 180)
+  ctx.font = '50px Microsoft YaHei'
   ctx.fillStyle = 'rgba(150,150,150,0.22)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, 40, 100)
+  ctx.fillText(text, 80, 200)
   const base64Url = can.toDataURL()
   const div = document.createElement('div')
   div.id = id
@@ -1414,8 +1506,8 @@ function removeWatermark() {
 }
 
 onMounted(async () => {
-  setWatermark('使用方')
-  window.addEventListener('resize', () => setWatermark('使用方'))
+  setWatermark('使  用  方')
+  window.addEventListener('resize', () => setWatermark('使  用  方'))
   
   try {
     const response = await axios.post('http://localhost:8083/api/send-du-info');
@@ -1431,7 +1523,7 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   removeWatermark()
-  window.removeEventListener('resize', () => setWatermark('使用方'))
+  window.removeEventListener('resize', () => setWatermark('使  用  方'))
 })
 </script>
 

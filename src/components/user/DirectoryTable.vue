@@ -442,26 +442,6 @@ function assignRandomApplyStatus() {
 
 
 
-// function handleApply(row) {
-//   loading.value = true;
-//   const url = `http://localhost:8083/api/apply/${row.id}`;
-//   axios.post(url, null, { withCredentials: true })
-//     .then(res => {
-//       console.log('接口返回结果:', res.data);
-//       ElMessage.success(`已对实体【${row.entity}】发起申请`);
-
-//       row.applyStatus = '待处理';
-//       row.applied = true;
-//     })
-//     .catch(err => {
-//       console.error('申请接口出错:', err);
-//       ElMessage.error(`申请失败: ${err.response?.data?.message || err.message}`);
-//     })
-//     .finally(() => {
-//       loading.value = false;
-//     });
-// }
-
 function handleSelectionChange(val) {
   selectedRows.value = val
 }

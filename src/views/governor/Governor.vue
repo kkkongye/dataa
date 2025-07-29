@@ -1,6 +1,6 @@
 <template>
   <div class="datasource-container watermark-bg">
-    <AppHeader role-name="某市大数据局(治理方)" @logout="logout" />
+    <AppHeader @logout="logout" />
     <div class="main-content">
       <div class="content-card">
         <div class="table-title">待治理的数据对象列表</div>
@@ -195,13 +195,12 @@
   <ReportViewer ref="reportViewer" v-model:visible="reportDialogVisible" :object-id="currentReviewObjectId">
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="reportDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="$refs.reportViewer.exportReport()">导出报告</el-button>
         <template v-if="showJudgeButtons">
           <el-button type="success" plain @click="handleJudge('pass')">正确</el-button>
           <el-button type="danger" plain @click="handleJudge('fail')">错误</el-button>
         </template>
         <el-button type="warning" plain @click="handleSendAuditReport">发送审查报告至数源方</el-button>
+        <el-button type="primary" @click="$refs.reportViewer.exportReport()">导出报告</el-button>
       </span>
     </template>
   </ReportViewer>
@@ -458,8 +457,8 @@ const loadDataFromBackend = async () => {
 }
 
 onMounted(() => {
-  setWatermark('治理方')
-  window.addEventListener('resize', () => setWatermark('治理方'))
+  setWatermark('治  理  方')
+  window.addEventListener('resize', () => setWatermark('治  理  方'))
   const currentRole = localStorage.getItem('role');
   if (currentRole === 'governor') { 
     handleInitSystem();
@@ -469,7 +468,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   removeWatermark()
-  window.removeEventListener('resize', () => setWatermark('治理方'))
+  window.removeEventListener('resize', () => setWatermark('治  理  方'))
 })
 
 // 计算实际数据量
@@ -1822,15 +1821,15 @@ function setWatermark(text) {
     wm.parentNode.removeChild(wm)
   }
   const can = document.createElement('canvas')
-  can.width = 300
-  can.height = 200
+  can.width = 600
+  can.height = 400
   const ctx = can.getContext('2d')
-  ctx.rotate(-20 * Math.PI / 180)
-  ctx.font = '16px Microsoft YaHei'
+  ctx.rotate(-30 * Math.PI / 180)
+  ctx.font = '50px Microsoft YaHei'
   ctx.fillStyle = 'rgba(150,150,150,0.22)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, 40, 100)
+  ctx.fillText(text, 80, 200)
   const base64Url = can.toDataURL()
   const div = document.createElement('div')
   div.id = id
@@ -1851,12 +1850,12 @@ function removeWatermark() {
 }
 
 onMounted(() => {
-  setWatermark('治理方')
-  window.addEventListener('resize', () => setWatermark('治理方'))
+  setWatermark('治  理  方')
+  window.addEventListener('resize', () => setWatermark('治  理  方'))
 })
 onBeforeUnmount(() => {
   removeWatermark()
-  window.removeEventListener('resize', () => setWatermark('治理方'))
+  window.removeEventListener('resize', () => setWatermark('治  理  方'))
 })
 </script>
 

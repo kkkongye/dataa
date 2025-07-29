@@ -754,11 +754,11 @@ const initChart = async () => {
     // 设置图表选项
     const option = {
       title: {
-        text: '数据立体化可视化看板',
+        text: '可申请的数据对象',
         left: 'center',
         top: 10,
         textStyle: {
-          fontSize: 18,
+          fontSize: 25,
           fontWeight: 'bold'
         }
       },

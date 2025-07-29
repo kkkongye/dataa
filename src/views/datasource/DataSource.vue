@@ -1,6 +1,6 @@
 <template>
   <div class="datasource-container watermark-bg">
-    <AppHeader role-name="税务局(数源方)" @logout="logout" />
+    <AppHeader @logout="logout" />
     
     <!-- API错误提示 -->
     <div v-if="apiErrorVisible" class="api-error-alert">
@@ -246,7 +246,7 @@ import CommonPagination from '@/components/CommonPagination.vue'
 import dataObjectService from '@/services/dataObjectService'
 import axios from 'axios'
 import { API_URL, axiosInstance, testApiConnection } from '@/services/apiConfig'
-import VisualizationDialog from '../../components/visualization/VisualizationDialog.vue'
+import VisualizationDialog from '../../components/visualization/visualizationdialog.vue'
 import ApplicationListDialog from '@/components/source/ApplicationListDialog.vue'
 import ObjectPreviewDialog from '@/components/ObjectPreviewDialog.vue'
 import ClassificationLevelDialog from '@/components/source/ClassificationLevelDialog.vue'
@@ -1614,12 +1614,12 @@ onMounted(() => {
     apiErrorVisible.value = true;
   });
 
-  setWatermark('数源方')
-  window.addEventListener('resize', () => setWatermark('数源方'))
+  setWatermark('数  源  方')
+  window.addEventListener('resize', () => setWatermark('数  源  方'))
 })
 onBeforeUnmount(() => {
   removeWatermark()
-  window.removeEventListener('resize', () => setWatermark('数源方'))
+  window.removeEventListener('resize', () => setWatermark('数  源  方'))
 })
 
 // 添加新的变量和方法
@@ -2988,15 +2988,15 @@ function setWatermark(text) {
     wm.parentNode.removeChild(wm)
   }
   const can = document.createElement('canvas')
-  can.width = 300
-  can.height = 200
+  can.width = 600
+  can.height = 400
   const ctx = can.getContext('2d')
-  ctx.rotate(-20 * Math.PI / 180)
-  ctx.font = '16px Microsoft YaHei'
+  ctx.rotate(-30 * Math.PI / 180)
+  ctx.font = '50px Microsoft YaHei'
   ctx.fillStyle = 'rgba(150,150,150,0.22)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, 40, 100)
+  ctx.fillText(text, 80, 200)
   const base64Url = can.toDataURL()
   const div = document.createElement('div')
   div.id = id
@@ -3625,4 +3625,4 @@ pre {
   display: flex;
   gap: 10px;
 }
-</style> 
+</style>
