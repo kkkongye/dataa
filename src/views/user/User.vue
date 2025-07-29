@@ -775,10 +775,12 @@ const fetchExcelDataFromApi = async (objectId) => {
     }
 
     if (!dataItems || dataItems.length === 0) {
-      console.log(`【Excel数据】未找到ID为${objectId}的对象数据，使用模拟数据`)
-      ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
-
-      dataItems = generateMockDataForObject(objectId)
+      console.log(`【Excel数据】未找到ID为${objectId}的对象数据`)
+      ElMessage.warning(`未找到ID为${objectId}的Excel数据`)
+      excelTableData.value = []
+      excelTableColumns.value = []
+      isExcelLoading.value = false
+      return
     }
     
     // 创建Excel数据
@@ -787,9 +789,10 @@ const fetchExcelDataFromApi = async (objectId) => {
     console.error('【Excel数据】API请求失败:', error.message)
     ElMessage.error(`获取Excel数据失败: ${error.message}`)
     
-    // 使用带有对象ID的模拟数据
-    const mockData = generateMockDataForObject(objectId)
-    createExcelFromDataItems(mockData)
+    // 错误时不显示任何数据
+    excelTableData.value = []
+    excelTableColumns.value = []
+    isExcelLoading.value = false
   }
 }
 

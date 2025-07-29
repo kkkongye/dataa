@@ -1055,42 +1055,14 @@ const fetchExcelData = async (type = 'row') => {
   } catch (error) {
     console.error('[分类分级详情] 获取数据失败:', error.message);
     
-    // 生成模拟数据
-    const id = props.objectId || '';
-    const shortId = id.substring(0, 4);
-    
-    const mockData = [
-      {
-        "产品ID": `P${shortId}-001`,
-        "名称": "手机",
-        "库存量": "200",
-        "重要性": "重要",
-        "对象ID": id
-      },
-      {
-        "产品ID": `P${shortId}-002`,
-        "名称": "耳机",
-        "库存量": "500",
-        "重要性": "重要",
-        "对象ID": id
-      },
-      {
-        "产品ID": `P${shortId}-003`,
-        "名称": "充电器",
-        "库存量": "300",
-        "重要性": "核心",
-        "对象ID": id
-      }
-    ];
-
-    
+    // 不使用模拟数据，直接设置为空
     if (type === 'row') {
-      rowExcelData.value = mockData;
+      rowExcelData.value = [];
     } else {
-      columnExcelData.value = mockData;
+      columnExcelData.value = [];
     }
 
-    return true;
+    return false;
   }
 }
 
@@ -1379,4 +1351,4 @@ function calcRowGradeValue(idx) {
   align-items: center;
   box-shadow: 0 1px 4px rgba(64,158,255,0.06);
 }
-</style> 
+</style>

@@ -185,8 +185,8 @@
   >
     <template v-slot:footer>
       <span class="dialog-footer">
-        <el-button v-if="showJudgeButtonsForPreview" type="success" plain @click="handlePreviewJudge('pass')">正确</el-button>
-        <el-button v-if="showJudgeButtonsForPreview" type="danger" plain @click="handlePreviewJudge('fail')">错误</el-button>
+        <el-button v-if="showJudgeButtonsForPreview" type="success" plain @click="handlePreviewJudge('pass')">合格</el-button>
+        <el-button v-if="showJudgeButtonsForPreview" type="danger" plain @click="handlePreviewJudge('fail')">不合格</el-button>
       </span>
     </template>
   </ObjectPreviewDialog>
@@ -196,8 +196,8 @@
     <template #footer>
       <span class="dialog-footer">
         <template v-if="showJudgeButtons">
-          <el-button type="success" plain @click="handleJudge('pass')">正确</el-button>
-          <el-button type="danger" plain @click="handleJudge('fail')">错误</el-button>
+          <el-button type="success" plain @click="handleJudge('pass')">合格小结</el-button>
+          <el-button type="danger" plain @click="handleJudge('fail')">不合格反馈意见</el-button>
         </template>
         <el-button type="warning" plain @click="handleSendAuditReport">发送审查报告至数源方</el-button>
         <el-button type="primary" @click="$refs.reportViewer.exportReport()">导出报告</el-button>
@@ -575,13 +575,53 @@ const handleReview = async (row) => {
 
 const handleJudge = async (result) => {
   if (!judgeRow.value) return;
+  
+  const currentRow = judgeRow.value; // 保存当前行数据
+  
   if (result === 'pass') {
-    await updateStatus(judgeRow.value, '已合格');
+    // 弹出合格小结弹窗
+    ElMessageBox.prompt('请输入合格小结', '合格小结', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: '',
+      customClass: 'feedback-dialog',
+      inputType: 'textarea',
+      inputPlaceholder: '请详细描述合格的原因和小结...',
+      inputValidator: (value) => {
+        return value.trim() !== '' || '合格小结不能为空';
+      }
+    }).then(async ({ value }) => {
+      try {
+        // 以待校验状态和合格小结上传到后端
+        const result = await updateStatusViaBothPorts(currentRow.id, '待校验', value);
+        if (result) {
+          // 弹出确认对话框而不是使用ElMessage
+          await ElMessageBox.alert('自动化审查已合格，请继续手工审查', '提示', {
+            confirmButtonText: '好的',
+            type: 'success'
+          });
+          loadDataFromBackend(); // 重新加载数据
+        } else {
+          ElMessage.warning(`${currentRow.entity} 状态更新失败`);
+        }
+      } catch (error) {
+        console.error('更新状态时出错:', error);
+        ElMessage.error(`更新 ${currentRow.entity} 状态失败: ${error.message || '未知错误'}`);
+      }
+      // 操作完成后清理状态
+      showJudgeButtons.value = false;
+      judgeRow.value = null;
+    }).catch(() => {
+      ElMessage.info('已取消操作');
+      // 取消操作后也要清理状态
+      showJudgeButtons.value = false;
+      judgeRow.value = null;
+    });
   } else if (result === 'fail') {
-    await updateStatus(judgeRow.value, '不合格');
+    await updateStatus(currentRow, '不合格');
+    showJudgeButtons.value = false;
+    judgeRow.value = null;
   }
-  showJudgeButtons.value = false;
-  judgeRow.value = null;
 };
 
 const handleSendAuditReport = async () => {
@@ -666,7 +706,9 @@ const updateStatus = async (row, newStatus) => {
   // 处理已合格或待校验状态
   if (newStatus === '已合格' || newStatus === '待校验') {
     try {
-      const result = await updateStatusViaBothPorts(row.id, newStatus, '');
+      // 保留现有的反馈意见，不覆盖为空
+      const existingFeedback = row.feedback || (row.dataContent ? extractFeedback(row.dataContent) : '') || '';
+      const result = await updateStatusViaBothPorts(row.id, newStatus, existingFeedback);
       if (result) {
         ElMessage.success(`${row.entity} 已更新为"${newStatus}"状态`);
         loadDataFromBackend(); // 重新加载数据
@@ -1066,10 +1108,11 @@ const fetchExcelDataFromApi = async (objectId) => {
     
 
     if (!dataItems || dataItems.length === 0) {
-
-      ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
-
-      dataItems = generateMockDataForObject(objectId)
+      ElMessage.warning(`未找到ID为${objectId}的Excel数据`)
+      excelTableData.value = []
+      excelTableColumns.value = []
+      isExcelLoading.value = false
+      return
     }
     
     // 创建Excel数据
@@ -1078,8 +1121,10 @@ const fetchExcelDataFromApi = async (objectId) => {
     console.error('【Excel数据】API请求失败:', error.message)
     ElMessage.error(`获取Excel数据失败: ${error.message}`)
     
-    const mockData = generateMockDataForObject(objectId)
-    createExcelFromDataItems(mockData)
+    // 错误时不显示任何数据
+    excelTableData.value = []
+    excelTableColumns.value = []
+    isExcelLoading.value = false
   }
 }
 
@@ -1158,53 +1203,53 @@ const extractClassificationValues = (obj) => {
 }
 
 // 根据对象ID生成不同的模拟数据
-const generateMockDataForObject = (objectId) => {
+// const generateMockDataForObject = (objectId) => {
 
-  const idNum = parseInt(objectId.slice(-2), 10) || 1
+//   const idNum = parseInt(objectId.slice(-2), 10) || 1
 
-  if (objectId.includes('user') || objectId.includes('用户')) {
-    return [
-      { "用户ID": "U10001", "用户名": "张三", "年龄": "28", "性别": "男", "注册日期": "2023-01-15" },
-      { "用户ID": "U10002", "用户名": "李四", "年龄": "34", "性别": "男", "注册日期": "2023-02-22" },
-      { "用户ID": "U10003", "用户名": "王五", "年龄": "26", "性别": "女", "注册日期": "2023-03-08" },
-      { "用户ID": "U10004", "用户名": "赵六", "年龄": "31", "性别": "男", "注册日期": "2023-04-19" },
-      { "用户ID": "U10005", "用户名": "钱七", "年龄": "29", "性别": "女", "注册日期": "2023-05-25" }
-    ]
-  } else if (objectId.includes('order') || objectId.includes('订单')) {
-    return [
-      { "订单ID": "O20001", "用户ID": "U10001", "商品": "笔记本电脑", "金额": "6999", "下单日期": "2023-06-12" },
-      { "订单ID": "O20002", "用户ID": "U10002", "商品": "手机", "金额": "4299", "下单日期": "2023-06-18" },
-      { "订单ID": "O20003", "用户ID": "U10003", "商品": "耳机", "金额": "799", "下单日期": "2023-06-25" },
-      { "订单ID": "O20004", "用户ID": "U10004", "商品": "平板电脑", "金额": "3599", "下单日期": "2023-07-03" },
-      { "订单ID": "O20005", "用户ID": "U10005", "商品": "智能手表", "金额": "1599", "下单日期": "2023-07-10" }
-    ]
-  } else if (objectId.includes('product') || objectId.includes('产品')) {
-    return [
-      { "产品ID": "P30001", "产品名称": "华为MateBook", "类别": "笔记本电脑", "价格": "6999", "库存": "120" },
-      { "产品ID": "P30002", "产品名称": "iPhone 14", "类别": "手机", "价格": "5999", "库存": "350" },
-      { "产品ID": "P30003", "产品名称": "AirPods Pro", "类别": "耳机", "价格": "1999", "库存": "500" },
-      { "产品ID": "P30004", "产品名称": "iPad Air", "类别": "平板电脑", "价格": "4599", "库存": "230" },
-      { "产品ID": "P30005", "产品名称": "Apple Watch", "类别": "智能手表", "价格": "2999", "库存": "180" }
-    ]
-  } else if (objectId.includes('inventory') || objectId.includes('库存')) {
-    return [
-      { "仓库编号": "WH001", "产品ID": "P30001", "产品名称": "华为MateBook", "库存数量": "120", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH001", "产品ID": "P30002", "产品名称": "iPhone 14", "库存数量": "350", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH001", "产品ID": "P30003", "产品名称": "AirPods Pro", "库存数量": "500", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH002", "产品ID": "P30004", "产品名称": "iPad Air", "库存数量": "230", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH002", "产品ID": "P30005", "产品名称": "Apple Watch", "库存数量": "180", "更新日期": "2023-07-01" }
-    ]
-  } else {
-    // 通用数据
-    return [
-      { "姓名": `${idNum}-张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
-      { "姓名": `${idNum}-李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
-      { "姓名": `${idNum}-王五`, "rowNumber": "3", "性别": "女", "对象ID": objectId },
-      { "姓名": `${idNum}-赵六`, "rowNumber": "4", "性别": "男", "对象ID": objectId },
-      { "姓名": `${idNum}-钱七`, "rowNumber": "5", "性别": "女", "对象ID": objectId }
-    ]
-  }
-}
+//   if (objectId.includes('user') || objectId.includes('用户')) {
+//     return [
+//       { "用户ID": "U10001", "用户名": "张三", "年龄": "28", "性别": "男", "注册日期": "2023-01-15" },
+//       { "用户ID": "U10002", "用户名": "李四", "年龄": "34", "性别": "男", "注册日期": "2023-02-22" },
+//       { "用户ID": "U10003", "用户名": "王五", "年龄": "26", "性别": "女", "注册日期": "2023-03-08" },
+//       { "用户ID": "U10004", "用户名": "赵六", "年龄": "31", "性别": "男", "注册日期": "2023-04-19" },
+//       { "用户ID": "U10005", "用户名": "钱七", "年龄": "29", "性别": "女", "注册日期": "2023-05-25" }
+//     ]
+//   } else if (objectId.includes('order') || objectId.includes('订单')) {
+//     return [
+//       { "订单ID": "O20001", "用户ID": "U10001", "商品": "笔记本电脑", "金额": "6999", "下单日期": "2023-06-12" },
+//       { "订单ID": "O20002", "用户ID": "U10002", "商品": "手机", "金额": "4299", "下单日期": "2023-06-18" },
+//       { "订单ID": "O20003", "用户ID": "U10003", "商品": "耳机", "金额": "799", "下单日期": "2023-06-25" },
+//       { "订单ID": "O20004", "用户ID": "U10004", "商品": "平板电脑", "金额": "3599", "下单日期": "2023-07-03" },
+//       { "订单ID": "O20005", "用户ID": "U10005", "商品": "智能手表", "金额": "1599", "下单日期": "2023-07-10" }
+//     ]
+//   } else if (objectId.includes('product') || objectId.includes('产品')) {
+//     return [
+//       { "产品ID": "P30001", "产品名称": "华为MateBook", "类别": "笔记本电脑", "价格": "6999", "库存": "120" },
+//       { "产品ID": "P30002", "产品名称": "iPhone 14", "类别": "手机", "价格": "5999", "库存": "350" },
+//       { "产品ID": "P30003", "产品名称": "AirPods Pro", "类别": "耳机", "价格": "1999", "库存": "500" },
+//       { "产品ID": "P30004", "产品名称": "iPad Air", "类别": "平板电脑", "价格": "4599", "库存": "230" },
+//       { "产品ID": "P30005", "产品名称": "Apple Watch", "类别": "智能手表", "价格": "2999", "库存": "180" }
+//     ]
+//   } else if (objectId.includes('inventory') || objectId.includes('库存')) {
+//     return [
+//       { "仓库编号": "WH001", "产品ID": "P30001", "产品名称": "华为MateBook", "库存数量": "120", "更新日期": "2023-07-01" },
+//       { "仓库编号": "WH001", "产品ID": "P30002", "产品名称": "iPhone 14", "库存数量": "350", "更新日期": "2023-07-01" },
+//       { "仓库编号": "WH001", "产品ID": "P30003", "产品名称": "AirPods Pro", "库存数量": "500", "更新日期": "2023-07-01" },
+//       { "仓库编号": "WH002", "产品ID": "P30004", "产品名称": "iPad Air", "库存数量": "230", "更新日期": "2023-07-01" },
+//       { "仓库编号": "WH002", "产品ID": "P30005", "产品名称": "Apple Watch", "库存数量": "180", "更新日期": "2023-07-01" }
+//     ]
+//   } else {
+//     // 通用数据
+//     return [
+//       { "姓名": `${idNum}-张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
+//       { "姓名": `${idNum}-李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
+//       { "姓名": `${idNum}-王五`, "rowNumber": "3", "性别": "女", "对象ID": objectId },
+//       { "姓名": `${idNum}-赵六`, "rowNumber": "4", "性别": "男", "对象ID": objectId },
+//       { "姓名": `${idNum}-钱七`, "rowNumber": "5", "性别": "女", "对象ID": objectId }
+//     ]
+//   }
+// }
 
 // 创建Excel数据
 const createExcelFromDataItems = (dataItems) => {

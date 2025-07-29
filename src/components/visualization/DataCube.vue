@@ -365,9 +365,8 @@ const forceRender = async () => {
       
       let chartData = data;
       if (data.length === 0) {
-
-        const mockData = generateMockData();
-        chartData = mockData;
+        console.log('没有可用数据，显示空图表');
+        chartData = [];
       }
       
 
@@ -739,11 +738,11 @@ const initChart = async () => {
     // 获取后端数据
     const { data, industries } = await processBackendData();
     
-    // 如果没有数据，使用模拟数据作为备选方案
+    // 如果没有数据，显示空图表
     let chartData = data;
     if (data.length === 0) {
-      const mockData = generateMockData();
-      chartData = mockData;
+      console.log('没有可用数据，显示空图表');
+      chartData = [];
     }
     
 

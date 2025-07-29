@@ -62,6 +62,7 @@
         border
         height="100%"
         fit
+        empty-text="暂无数据"
       >
         <el-table-column 
           prop="id" 
@@ -1309,4 +1310,4 @@ const handleGenerateDV = async () => {
 .select-fields-link {
   text-decoration: underline;
 }
-</style> 
+</style>

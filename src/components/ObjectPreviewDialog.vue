@@ -89,8 +89,8 @@
     <template v-slot:footer>
       <span class="dialog-footer">
         <!-- <el-button @click="closeDialog">关闭</el-button> -->
-        <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
         <slot name="footer"></slot>
+        <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
       </span>
     </template>
   </el-dialog>

@@ -2,31 +2,6 @@
   <div class="datasource-container watermark-bg">
     <AppHeader @logout="logout" />
     
-    <!-- API错误提示 -->
-    <div v-if="apiErrorVisible" class="api-error-alert">
-      <el-alert
-        title="接口连接错误"
-        type="warning"
-        description="无法连接到后端API服务，可能原因: 1.后端服务未启动 2.跨域(CORS)限制 3.网络连接问题"
-        show-icon
-        :closable="true"
-        @close="apiErrorVisible = false"
-      >
-        <template #default>
-          <div class="api-error-content">
-            <p>可能的解决方案:</p>
-            <ol>
-              <li>确保后端服务在 http://localhost:8081 正常运行</li>
-            </ol>
-            <div class="api-error-actions">
-              <el-button size="small" @click="apiErrorVisible = false">知道了</el-button>
-              <el-button size="small" type="primary" @click="refreshData">重试连接</el-button>
-            </div>
-          </div>
-        </template>
-      </el-alert>
-    </div>
-    
     <!-- 主内容区域 -->
     <div class="main-content">
       <div class="content-card">
@@ -208,12 +183,6 @@
     :excelData="excelTableData"
   />
 
-  <!-- 添加调试指示器 -->
-  <div v-if="showDebugTools" class="debug-dialog-status">
-    <p>编辑对话框状态: {{ editDialogVisible ? '可见' : '隐藏' }}</p>
-    <p>编辑ID: {{ currentEditId || '无' }}</p>
-    <el-button @click="testEditDialog">测试打开编辑对话框</el-button>
-  </div>
 
   <!-- 在底部添加可视化对话框组件 -->
   <VisualizationDialog v-model:visible="visualizationVisible" />
@@ -1299,11 +1268,13 @@ const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
       console.log('使用原始dataItems数据:', dataItems ? dataItems.length : 0)
     }
     
-    // 如果仍然没有数据，才使用模拟数据
+    // 如果没有数据，直接显示空状态
     if (!dataItems || dataItems.length === 0) {
-      ElMessage.info(`未找到ID为${objectId}的Excel数据，显示示例数据`)
-      dataItems = generateMockDataForObject(objectId)
-      console.log('使用模拟数据:', dataItems.length)
+      ElMessage.warning(`未找到ID为${objectId}的Excel数据`)
+      excelTableData.value = []
+      excelTableColumns.value = []
+      isExcelLoading.value = false
+      return
     }
     
     createExcelFromDataItems(dataItems)
@@ -1317,9 +1288,10 @@ const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
       console.log('API请求出错，使用原始dataItems:', originalDataItems.length)
       createExcelFromDataItems(originalDataItems)
     } else {
-      console.log('API请求出错，使用模拟数据')
-      const mockData = generateMockDataForObject(objectId)
-      createExcelFromDataItems(mockData)
+      console.log('API请求出错，无数据可显示')
+      excelTableData.value = []
+      excelTableColumns.value = []
+      isExcelLoading.value = false
     }
   }
 }
