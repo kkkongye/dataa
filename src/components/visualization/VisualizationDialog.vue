@@ -104,12 +104,19 @@ import { ref, watch, nextTick } from 'vue';
 import DataCube from './DataCube.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Document, Close } from '@element-plus/icons-vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
+
+const router = useRouter();
 
 const props = defineProps({
   visible: {
     type: Boolean,
     default: false
+  },
+  sourcePage: {
+    type: String,
+    default: 'user'
   }
 });
 
@@ -145,8 +152,10 @@ watch(() => props.visible, (val) => {
 });
 
 const handleClose = () => {
-  console.log('关闭对话框');
+  const targetPage = props.sourcePage === 'user-main' ? '/user-main' : '/user';
+  console.log(`关闭对话框，跳转到${targetPage}页面`);
   emit('update:visible', false);
+  router.push(targetPage);
 };
 
 const handleDataPointClick = (dataPoint) => {

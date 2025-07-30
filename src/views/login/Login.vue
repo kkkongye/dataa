@@ -10,6 +10,7 @@
           <div class="username-selector">
             <el-icon class="input-icon"><User /></el-icon>
             <el-select v-model="loginForm.province" placeholder="请选择省份" class="province-select">
+              <el-option label="浙江省" value="浙江省" />
               <el-option label="北京市" value="北京市" />
               <el-option label="天津市" value="天津市" />
               <el-option label="河北省" value="河北省" />
@@ -20,7 +21,6 @@
               <el-option label="黑龙江省" value="黑龙江省" />
               <el-option label="上海市" value="上海市" />
               <el-option label="江苏省" value="江苏省" />
-              <el-option label="浙江省" value="浙江省" />
               <el-option label="安徽省" value="安徽省" />
               <el-option label="福建省" value="福建省" />
               <el-option label="江西省" value="江西省" />
@@ -165,13 +165,13 @@ const handleLogin = async () => {
           router.push('/governor')
           break
         case 'user':
-          router.push('/user')
+          router.push('/user-main')
           break
         default:
           router.push('/datasource')
       }
     } else {
-      ElMessage.error(response.data?.error || response.data?.msg || '用户名或密码错误')
+      ElMessage.error('登录失败，用户名或密码错误')
     }
   } catch (error) {
     console.error('登录失败:', error)

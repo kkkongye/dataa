@@ -448,7 +448,7 @@ const loadDataFromBackend = async () => {
     if (tableData.value.length === 0) {
       ElMessage.warning('没有获取到数据对象,请等待数源方发送')
     } else {
-      ElMessage.success(`成功加载 ${tableData.value.length} 条数据对象`)
+      ElMessage.success(`成功加载数据对象`)
     }
   } catch (error) {
     console.error('获取数据失败:', error)

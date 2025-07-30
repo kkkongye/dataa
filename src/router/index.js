@@ -29,6 +29,11 @@ const routes = [
     path: '/user',
     name: 'User',
     component: () => import('../views/user/User.vue')
+  },
+  {
+    path: '/user-main',
+    name: 'UserMain',
+    component: () => import('../views/user/user-main.vue')
   }
 ]
 
@@ -37,4 +42,4 @@ const router = createRouter({
   routes
 })
 
-export default router 
+export default router

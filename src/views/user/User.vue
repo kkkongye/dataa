@@ -29,6 +29,10 @@
             <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button>
             <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
             <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button>
+            <el-button type="success" plain @click="goToUserMain">
+              <el-icon><Back /></el-icon>
+              返回查看申请的数据对象
+            </el-button>
           </div>
         </div>
         
@@ -51,17 +55,43 @@
             :row-style="{ height: '45px' }"
             :header-cell-style="headerCellStyle"
           >
-            <el-table-column prop="id" label="ID" width="400" align="center" fixed>
+            <!-- <el-table-column prop="id" label="ID" width="400" align="center" fixed>
               <template #default="scope">
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
-            </el-table-column>
-            <el-table-column prop="entity" label="实体" width="120" align="center">
+            </el-table-column> -->
+            <el-table-column prop="entity" label="实体" width="300" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
               </template>
             </el-table-column>
-            <el-table-column prop="locationInfo" label="定位信息" min-width="200" align="center">
+            <el-table-column prop="metadata" label="元数据信息" min-width="250" align="center">
+              <template #default="scope">
+                <div class="metadata-container">
+                  <template v-if="scope.row.metadata && Object.keys(scope.row.metadata).length">
+                    <div 
+                      v-for="(_, rowIndex) in Math.ceil(Object.entries(scope.row.metadata).filter(([key, value]) => key !== 'headers' && value !== null && value !== undefined && value !== '').length / 2)" 
+                      :key="rowIndex"
+                      class="metadata-row"
+                    >
+                      <!-- 第一项 -->
+                      <div class="metadata-item-pair">
+                        <span v-if="Object.entries(scope.row.metadata).filter(([key, value]) => key !== 'headers' && value !== null && value !== undefined && value !== '')[rowIndex * 2]" 
+                              v-html="formatMetadataText(Object.entries(scope.row.metadata).filter(([key, value]) => key !== 'headers' && value !== null && value !== undefined && value !== '')[rowIndex * 2])"></span>
+                      </div>
+                      
+                      <!-- 第二项 -->
+                      <div class="metadata-item-pair">
+                        <span v-if="Object.entries(scope.row.metadata).filter(([key, value]) => key !== 'headers' && value !== null && value !== undefined && value !== '')[rowIndex * 2 + 1]" 
+                              v-html="formatMetadataText(Object.entries(scope.row.metadata).filter(([key, value]) => key !== 'headers' && value !== null && value !== undefined && value !== '')[rowIndex * 2 + 1])"></span>
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else>-</template>
+                </div>
+              </template>
+            </el-table-column>
+            <!-- <el-table-column prop="locationInfo" label="定位信息" min-width="200" align="center">
               <template #default="scope">
                 <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
                   ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
@@ -76,8 +106,8 @@
                 </span>
                 <span v-else>-</span>
               </template>
-            </el-table-column>
-            <el-table-column prop="constraint" label="约束条件" min-width="250" align="center">
+            </el-table-column> -->
+            <el-table-column prop="constraint" label="约束条件" min-width="200" align="center">
               <template #default="scope">
                 <div class="constraint-container">
                   <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -209,7 +239,7 @@
   </el-dialog>
 
   <!-- 添加三维可视化对话框组件 -->
-  <VisualizationDialog v-model:visible="visualizationVisible" />
+  <VisualizationDialog v-model:visible="visualizationVisible" :source-page="'user'" />
 
   <!-- 构造共享证书申请对话框 -->
   <el-dialog v-model="scrDialogVisible" title="构造共享证书申请" width="500px">
@@ -235,7 +265,7 @@
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Search, Lock, Document, DataAnalysis } from '@element-plus/icons-vue'
+import { Search, Lock, Document, DataAnalysis, Back } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '@/components/ExcelPreview.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -264,8 +294,6 @@ const tableData = ref(dataObjectService.getAllDataObjects())
 onMounted(() => {
   dataObjectService.addChangeListener((newData) => {
   })
-
-  showVisualization()
 })
 
 // 计算实际数据量
@@ -555,8 +583,7 @@ const handleDecrypt = async () => {
     
     ElMessage.success('解密成功')
   } catch (error) {
-    console.error('解密失败:', error)
-    ElMessage.error(`解密失败: ${error.message}`)
+    ElMessage.error(`解密失败`)
   }
 }
 
@@ -1233,6 +1260,27 @@ const formatConstraintText = (text) => {
   return text
 }
 
+// 格式化元数据信息文本
+const formatMetadataText = (entry) => {
+  if (!entry || !Array.isArray(entry) || entry.length < 2) return ''
+  
+  const [key, value] = entry
+  if (value === null || value === undefined || value === '') return ''
+  
+  // 中文字段映射
+  const metadataMapping = {
+    'dataName': '数据名称',
+    'sourceUnit': '来源单位',
+    'contactPerson': '联系人',
+    'contactPhone': '联系电话',
+    'resourceSummary': '资源摘要',
+    'fieldClassification': '字段分类'
+  }
+  
+  const chineseKey = metadataMapping[key] || key
+  return `<span class="constraint-prefix">${chineseKey}:</span>${value}`
+}
+
 // 处理下载数字对象
 const handleDownload = () => {
   if (selectedRows.value.length === 0) {
@@ -1350,6 +1398,11 @@ const showVisualization = () => {
   visualizationVisible.value = true
 }
 
+// 跳转到user-main页面
+const goToUserMain = () => {
+  router.push('/user-main')
+}
+
 
 
 // 处理验证组织机构凭证
@@ -1396,6 +1449,7 @@ const headerCellStyle = ({ column }) => {
   const blueProps = [
     'id',
     'entity',
+    'metadata',
     'locationInfo',
     'constraint',
     'transferControl',
@@ -1977,6 +2031,28 @@ onBeforeUnmount(() => {
   font-weight: bold !important;
   color: #303133 !important;
   margin-right: 4px !important;
+}
+
+/* 元数据信息相关样式 */
+.metadata-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+}
+
+.metadata-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.metadata-item-pair {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 传输控制操作样式 */
