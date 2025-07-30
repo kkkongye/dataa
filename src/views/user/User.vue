@@ -26,12 +26,12 @@
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
             </el-button>
-            <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button>
-            <el-button type="info" plain @click="showDirectoryDialog">目录</el-button>
+            <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button> -->
+            <el-button type="info" plain @click="showDirectoryDialog">可解密的数据对象目录</el-button>
             <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button>
             <el-button type="success" plain @click="goToUserMain">
               <el-icon><Back /></el-icon>
-              返回查看申请的数据对象
+              返回查看请求的数据对象
             </el-button>
           </div>
         </div>
@@ -953,7 +953,6 @@ const createExcelFromDataItems = (dataItems) => {
     excelTableData.value = processedItems;
     
     isExcelLoading.value = false;
-    ElMessage.success(`成功获取${processedItems.length}条数据记录`);
   } catch (error) {
     console.error('【Excel数据】创建Excel数据失败:', error);
     ElMessage.error(`创建Excel数据失败: ${error.message}`);
@@ -1359,7 +1358,7 @@ const fetchLatestDataFromApi = async () => {
       if (newData.length > 0) {
 
         dataObjectService.updateDataObjects(newData)
-        ElMessage.success(`成功获取${newData.length}条最新数据`)
+        ElMessage.success(`成功获取最新数据`)
       } else {
         ElMessage.warning('API返回的数据为空')
       }

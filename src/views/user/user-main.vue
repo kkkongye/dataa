@@ -13,7 +13,7 @@
           <div class="search-area">
             <el-input
               v-model="searchKeyword"
-              placeholder="搜索实体名、约束条件、传输控制操作、状态"
+              placeholder="搜索实体名、约束条件、传输控制操作"
               class="search-input"
             >
               <template #suffix>
@@ -26,7 +26,7 @@
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
             </el-button>
-            <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button>
+            <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button> -->
             <el-button type="warning" plain @click="goToDecrypt">
               <el-icon><Lock /></el-icon>
               去解密
@@ -43,15 +43,23 @@
             border
             height="100%"
             fit
-            :row-style="{ height: '45px' }"
+            :row-style="{ height: '70px' }"
             :header-cell-style="headerCellStyle"
+            :span-method="spanMethod"
           >
-            <el-table-column prop="entity" label="实体" width="200" align="center">
+            <el-table-column prop="groupId" label="组序号" width="120" align="center">
               <template #default="scope">
-                <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
+                <span style="font-weight: bold; ">
+                  {{ scope.row.groupId }}
+                </span>
               </template>
             </el-table-column>
-            <el-table-column prop="constraint" label="约束条件" width="280" align="center">
+            <el-table-column prop="entity" label="实体" width="150" align="center">
+              <template #default="scope">
+                {{ scope.row.entity }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="constraint" label="约束条件" width="330" align="center">
               <template #default="scope">
                 <div class="constraint-container">
                   <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -96,17 +104,43 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="150" align="center">
-              <template #default="scope">
-                <el-tag
-                  :type="getStatusType(scope.row.status)"
-                  effect="plain"
-                  size="small"
-                >
-                  {{ scope.row.status }}
-                </el-tag>
-              </template>
-            </el-table-column>
+            <el-table-column prop="status" label="申请状态" width="350" align="center">
+                 <template #default="scope">
+                   <div style="display: flex; justify-content: center; align-items: center; min-height: 70px; padding: 10px;">
+                      <el-timeline style="max-width: 320px; text-align: left;">
+                        <el-timeline-item
+                          v-for="(step, index) in getTimelineSteps(currentGroup)"
+                          :key="index"
+                          :color="step.color"
+                          size="large"
+                          :hollow="step.hollow"
+                        >
+                          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <div>
+                              <span :style="{ fontWeight: 'bold', color: step.color }">{{ step.content }}</span>
+                              <span v-if="step.extraInfo" style="font-weight: normal;">{{ step.extraInfo }}</span>
+                            </div>
+                            <el-button 
+                              v-if="step.content === '待获得共享证书' && currentGroup && currentGroup.dataCredentialStatus && currentGroup.orgCredentialStatus && !currentGroup.sharedCertificateStatus"
+                              type="primary" 
+                              plain 
+                              @click="handleVerifySC"
+                              size="medium"
+                              style="margin-left: 20px;"
+                            >
+                              验证组织机构凭证
+                            </el-button>
+                          </div>
+                        </el-timeline-item>
+                      </el-timeline>
+                    </div>
+                 </template>
+               </el-table-column>
+              <el-table-column prop="applyTime" label="申请时间" width="180" align="center">
+                <template #default="scope">
+                  {{ scope.row.applyTime }}
+                </template>
+              </el-table-column>
           </el-table>
         </div>
         
@@ -116,9 +150,8 @@
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
             :total-count="totalCount"
-            :page-sizes="[5, 10, 20]"
             background
-            @size-change="handleSizeChange"
+            :show-sizes="false"
           />
         </div>
       </div>
@@ -143,111 +176,179 @@ import { advancedSearch } from '@/utils/searchUtils'
 const router = useRouter()
 const searchKeyword = ref('')
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(1) // 每页显示一组
 const selectedRows = ref([])
 
-// 模拟数据
-const tableData = ref([
+// 模拟分组数据
+const groupData = ref([
   {
-    id: '1',
-    entity: 'CivilAffairs',
-    constraint: [
-      '格式约束: xlsx',
-      '访问约束: 全部允许',
-      '路径约束: 点对点',
-      '区域约束: 内网',
-      '共享约束: 允许共享'
-    ],
-    transferControl: ['可读取', '可修改', '可共享'],
-    status: '已合格'
+    groupId: 'G001',
+    applyTime: '2024-01-15 10:30:00',
+    dataSourceUser: '浙江省税务局',
+    governorUser: '浙江省大数据局',
+    dataCredentialStatus: false,
+    orgCredentialStatus: false,
+    sharedCertificateStatus: false,
+    entities: [
+      {
+        id: '1',
+        entity: 'CivilAffairs',
+        constraint: [
+          '格式约束: xlsx',
+          '访问约束: 全部允许',
+          '路径约束: 点对点',
+          '区域约束: 内网',
+          '共享约束: 允许共享'
+        ],
+        transferControl: ['可读取', '可修改', '可共享']
+      },
+      {
+        id: '2',
+        entity: 'EducationData',
+        constraint: [
+          '格式约束: json',
+          '访问约束: 只允许管理方获取',
+          '路径约束: 点对点',
+          '区域约束: 内网',
+          '共享约束: 允许共享'          
+        ],
+        transferControl: ['可读取', '可委托']
+      },
+      {
+        id: '3',
+        entity: 'HealthRecord',
+        constraint: [
+          '格式约束: csv',
+          '访问约束: 全部允许',
+          '路径约束: 多跳',
+          '区域约束: 外网',
+          '共享约束: 禁止共享'
+        ],
+        transferControl: ['可读取', '可修改', '可销毁']
+      }
+    ]
   },
   {
-    id: '2',
-    entity: 'EducationData',
-    constraint: [
-      '格式约束: json',
-      '访问约束: 只允许管理方获取',
-      '路径约束: 点对点',
-      '区域约束: 内网'
-    ],
-    transferControl: ['可读取', '可委托'],
-    status: '待校验'
+    groupId: 'G002',
+    applyTime: '2024-01-16 14:20:00',
+    dataSourceUser: '浙江省税务局',
+    governorUser: '浙江省大数据局',
+    dataCredentialStatus: true,
+    orgCredentialStatus: false,
+    sharedCertificateStatus: false,
+    entities: [
+      {
+        id: '4',
+        entity: 'FinancialData',
+        constraint: [
+          '格式约束: pdf',
+          '访问约束: 只允许管理方获取',
+          '路径约束: 点对点',
+          '区域约束: 内网',
+          '共享约束: 允许共享'
+        ],
+        transferControl: ['可读取']
+      },
+      {
+        id: '5',
+        entity: 'TrafficInfo',
+        constraint: [
+          '格式约束: txt',
+          '访问约束: 全部允许',
+          '路径约束: 多跳',
+          '区域约束: 内网',
+          '共享约束: 允许共享'
+        ],
+        transferControl: ['可读取', '可修改', '可共享', '可委托']
+      }
+    ]
   },
   {
-    id: '3',
-    entity: 'HealthRecord',
-    constraint: [
-      '格式约束: csv',
-      '访问约束: 全部允许',
-      '路径约束: 多跳',
-      '区域约束: 外网',
-      '共享约束: 禁止共享'
-    ],
-    transferControl: ['可读取', '可修改', '可销毁'],
-    status: '不合格'
+    groupId: 'G003',
+    applyTime: '2024-01-18 16:30:00',
+    dataSourceUser: '浙江省税务局',
+    governorUser: '浙江省大数据局',
+    dataCredentialStatus: true,
+    orgCredentialStatus: true,
+    sharedCertificateStatus: false,
+    entities: [
+      {
+        id: '7',
+        entity: 'PolicyData',
+        constraint: [
+          '格式约束: xml',
+          '访问约束: 只允许管理方获取',
+          '路径约束: 点对点',
+          '区域约束: 内网',
+          '共享约束: 允许共享'
+        ],
+        transferControl: ['可读取', '可共享']
+      }
+    ]
   },
   {
-    id: '4',
-    entity: 'FinancialData',
-    constraint: [
-      '格式约束: pdf',
-      '访问约束: 只允许管理方获取',
-      '路径约束: 点对点',
-      '区域约束: 内网',
-      '共享约束: 允许共享'
-    ],
-    transferControl: ['可读取'],
-    status: '已合格'
-  },
-  {
-    id: '5',
-    entity: 'TrafficInfo',
-    constraint: [
-      '格式约束: txt',
-      '访问约束: 全部允许',
-      '路径约束: 多跳',
-      '区域约束: 内网'
-    ],
-    transferControl: ['可读取', '可修改', '可共享', '可委托'],
-    status: '待校验'
-  },
-  {
-    id: '6',
-    entity: 'WeatherData',
-    constraint: [
-      '格式约束: json',
-      '访问约束: 全部允许',
-      '路径约束: 点对点',
-      '区域约束: 外网',
-      '共享约束: 允许共享'
-    ],
-    transferControl: ['可读取', '可共享'],
-    status: '已合格'
+    groupId: 'G004',
+    applyTime: '2024-01-17 09:15:00',
+    dataSourceUser: '浙江省税务局',
+    governorUser: '浙江省大数据局',
+    dataCredentialStatus: true,
+    orgCredentialStatus: true,
+    sharedCertificateStatus: true,
+    entities: [
+      {
+        id: '6',
+        entity: 'WeatherData',
+        constraint: [
+          '格式约束: json',
+          '访问约束: 全部允许',
+          '路径约束: 点对点',
+          '区域约束: 外网',
+          '共享约束: 允许共享'
+        ],
+        transferControl: ['可读取', '可共享']
+      },
+      {
+        id: '7',
+        entity: 'SensorData',
+        constraint: [
+          '格式约束: xml',
+          '访问约束: 全部允许',
+          '路径约束: 点对点',
+          '区域约束: 内网',
+          '共享约束: 允许共享'
+        ],
+        transferControl: ['可读取', '可修改']
+      }
+    ]
   }
 ])
 
-// 计算总数据量
-const totalCount = computed(() => {
-  let result = tableData.value
-  
-  if (searchKeyword.value) {
-    result = advancedSearch(result, searchKeyword.value)
-  }
-  
-  return result.length
+// 当前显示的组
+const currentGroup = computed(() => {
+  const groupIndex = currentPage.value - 1
+  return groupData.value[groupIndex] || null
 })
 
-// 根据搜索条件过滤数据
+// 当前组的实体数据（用于表格显示）
+const tableData = computed(() => {
+  if (!currentGroup.value) return []
+  return currentGroup.value.entities.map((entity, index) => ({
+    ...entity,
+    groupId: currentGroup.value.groupId,
+    status: currentGroup.value.status,
+    applyTime: currentGroup.value.applyTime,
+    entityIndex: index + 1
+  }))
+})
+
+// 计算总组数
+const totalCount = computed(() => {
+  return groupData.value.length
+})
+
+// 当前组的实体数据（已在上面定义为tableData）
 const filteredTableData = computed(() => {
-  let result = tableData.value
-
-  if (searchKeyword.value) {
-    result = advancedSearch(result, searchKeyword.value)
-  }
-
-  const startIndex = (currentPage.value - 1) * pageSize.value
-  const endIndex = startIndex + pageSize.value
-  return result.slice(startIndex, endIndex)
+  return tableData.value
 })
 
 // 处理表格选择变更
@@ -261,19 +362,35 @@ const logout = () => {
   router.push('/login')
 }
 
-// 处理每页显示数量变化
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  currentPage.value = 1
+// 表格单元格合并方法
+const spanMethod = ({ row, column, rowIndex, columnIndex }) => {
+  // 组序号列(第0列)、状态列(第4列)、申请时间列(第5列)需要合并
+  if (columnIndex === 0 || columnIndex === 4 || columnIndex === 5) {
+    if (rowIndex === 0) {
+      return {
+        rowspan: tableData.value.length,
+        colspan: 1
+      }
+    } else {
+      return {
+        rowspan: 0,
+        colspan: 0
+      }
+    }
+  }
+  return {
+    rowspan: 1,
+    colspan: 1
+  }
 }
 
 // 表头样式
 const headerCellStyle = ({ column }) => {
   const blueProps = [
+    'groupId',
     'entity',
     'constraint',
-    'transferControl',
-    'status'
+    'transferControl'
   ]
   if (blueProps.includes(column.property)) {
     return {
@@ -308,18 +425,60 @@ const formatConstraintText = (text) => {
   return text
 }
 
-// 获取状态类型
-const getStatusType = (status) => {
-  switch (status) {
-    case '已合格':
-      return 'success'
-    case '不合格':
-      return 'danger'
-    case '待校验':
-      return 'warning'
-    default:
-      return 'info'
+// 获取时间线步骤数据
+const getTimelineSteps = (groupData) => {
+  if (!groupData) return []
+  
+  const allSteps = [
+    '待数源方生成数据凭证',
+    '待治理方生成组织机构凭证', 
+    '待获得共享证书',
+    '已获得共享证书,可解密'
+  ]
+  
+  // 根据布尔状态计算当前进行的步骤
+  let currentStepIndex = 0
+  if (!groupData.dataCredentialStatus) {
+    currentStepIndex = 0 // 待数源方生成数据凭证
+  } else if (!groupData.orgCredentialStatus) {
+    currentStepIndex = 1 // 待治理方生成组织机构凭证
+  } else if (!groupData.sharedCertificateStatus) {
+    currentStepIndex = 2 // 待获得共享证书
+  } else {
+    currentStepIndex = 3 // 已获得共享证书
   }
+  
+  const steps = allSteps.map((stepContent, index) => {
+    let stepConfig = {
+      content: stepContent,
+      color: '#C0C4CC', 
+      hollow: true,
+      extraInfo: ''
+    }
+    
+    // 添加括号内容（只有当对应状态为true时才显示）
+    if (stepContent === '待数源方生成数据凭证' && groupData.dataCredentialStatus) {
+      stepConfig.extraInfo = `（数源方：${groupData.dataSourceUser}）`
+    } else if (stepContent === '待治理方生成组织机构凭证' && groupData.orgCredentialStatus) {
+      stepConfig.extraInfo = `（治理方：${groupData.governorUser}）`
+    }
+    
+    // 根据状态设置颜色
+    if (index < currentStepIndex) {
+      // 已完成的步骤 - 绿色圆点
+      stepConfig.color = '#67C23A'
+      stepConfig.hollow = false
+    } else if (index === currentStepIndex) {
+      // 当前进行的步骤 - 蓝色圆点
+      stepConfig.color = '#409EFF'
+      stepConfig.hollow = false
+    }
+    // 其他保持灰色空心
+    
+    return stepConfig
+  })
+  
+  return steps
 }
 
 // 预览实体
@@ -521,8 +680,13 @@ onBeforeUnmount(() => {
 
 :deep(.el-table__cell) {
   text-align: center;
-  padding: 8px 0;
   box-sizing: border-box;
+}
+
+:deep(.el-table__body .el-table__cell) {
+  padding: 15px 0 !important;
+  height: 70px !important;
+  line-height: 40px !important;
 }
 
 :deep(.el-table .el-table__cell .cell) {
@@ -536,7 +700,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.el-table__row) {
-  height: 45px !important;
+  height: 70px !important;
 }
 
 :deep(.el-table__header tr) {
@@ -549,6 +713,7 @@ onBeforeUnmount(() => {
   font-weight: bold;
   padding: 8px 0;
   text-align: center;
+  height: 45px !important;
 }
 
 /* 分页区域 */
@@ -583,6 +748,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-left: 15px;
 }
 
 :deep(.constraint-prefix) {
@@ -611,5 +777,39 @@ onBeforeUnmount(() => {
   text-align: center;
   margin-bottom: 12px;
   color: #222;
+}
+
+/* 状态标签样式 */
+.status-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.status-success {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.status-error {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+}
+
+.status-pending {
+  background-color: #e0e2e6;
+  color: #8b8e8f;
+}
+
+/* 已获得共享证书状态样式 */
+.status-certificate {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+/* 时间线组件文本对齐样式 */
+.el-timeline-item__content {
+  text-align: left !important;
 }
 </style>
