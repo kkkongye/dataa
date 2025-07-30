@@ -134,7 +134,23 @@ const processBackendData = async () => {
     
     const industries = [...new Set(dataArray.map(item => item.industryCategory || '未分类'))];
     
-    const data = dataArray.map((item, index) => {
+    const data = dataArray.filter(item => {
+      // 过滤出状态为"已合格"的对象
+      let status = '待校验';
+      if (item.dataEntity && item.dataEntity.status) {
+        status = item.dataEntity.status === '待检验' ? '待校验' : item.dataEntity.status;
+      } else if (item.dataContent) {
+        try {
+          const dataContent = JSON.parse(item.dataContent);
+          if (dataContent.status) {
+            status = dataContent.status === '待检验' ? '待校验' : dataContent.status;
+          }
+        } catch (e) {
+          console.error('解析dataContent失败:', e);
+        }
+      }
+      return status === '已合格';
+    }).map((item, index) => {
       try {
         const timeValue = item.updatedAt ? new Date(item.updatedAt).getTime() : new Date().getTime();
         const categoryValue = parseFloat(item.totalCategoryValue || 0);

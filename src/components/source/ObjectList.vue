@@ -43,10 +43,11 @@
           <el-icon><DataAnalysis /></el-icon>
           三维数据可视化
         </el-button> -->
-        <!-- <el-button type="primary" plain @click="$emit('show-application-list')" style="margin-left: 8px;">申请列表</el-button> -->
         <el-button type="primary" plain @click="$emit('create')">新建数据对象</el-button>
         <el-button type="primary" plain @click="handlePushToGovernance">发送数字对象至治理方</el-button>
-        <el-button type="primary" plain @click="handleGenerateDV">生成数据凭证</el-button>
+        <!-- <el-button type="primary" plain @click="handleGenerateDV">生成数据凭证</el-button> -->
+        <el-button type="info" plain  @click="$emit('show-application-list')" style="margin-left: 8px;">申请列表</el-button>
+
       </div>
     </div>
     
@@ -259,7 +260,8 @@
               {{ extractFeedback(scope.row.dataContent) }}
             </span>
               <span v-else style="margin-bottom: 10px;"></span>
-              <el-button v-if="scope.row.auditReport && scope.row.status !== '已合格'" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button>
+              <el-button  link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button>
+              <!-- <el-button v-if="scope.row.auditReport && scope.row.status !== '已合格'" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button> -->
             </div>
           </template>
         </el-table-column>

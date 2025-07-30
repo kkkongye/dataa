@@ -28,7 +28,7 @@
             </el-button>
             <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button> -->
             <el-button type="info" plain @click="showDirectoryDialog">可解密的数据对象目录</el-button>
-            <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button>
+            <!-- <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button> -->
             <el-button type="success" plain @click="goToUserMain">
               <el-icon><Back /></el-icon>
               返回查看请求的数据对象
@@ -38,13 +38,22 @@
         
         <!-- 数据表格 -->
         <div class="table-container">
-          <div v-if="!isDecrypted" class="data-locked-placeholder">
+          <!-- <div v-if="!isDecrypted" class="data-locked-placeholder">
             <el-icon class="locked-icon"><Lock /></el-icon>
             <p>数据已加密，请点击右上角"目录"按钮并选择数据对象ID发送解密申请</p>
             <p>发送解密申请后请等待治理方生成并发送数字胶囊进行解密</p>
             <p class="locked-subtitle">解密后将显示所有匹配ID的数据对象数据</p>
-          </div>
+          </div> -->
           <el-table
+            style="width: 100%"
+            @selection-change="handleSelectionChange"
+            border
+            height="100%"
+            fit
+            :row-style="{ height: '45px' }"
+            :header-cell-style="headerCellStyle"
+          >
+           <!-- <el-table
             v-else
             :data="filteredTableData"
             style="width: 100%"
@@ -54,7 +63,7 @@
             fit
             :row-style="{ height: '45px' }"
             :header-cell-style="headerCellStyle"
-          >
+          > -->
             <!-- <el-table-column prop="id" label="ID" width="400" align="center" fixed>
               <template #default="scope">
                 <div class="id-cell">{{ scope.row.id }}</div>
@@ -1538,7 +1547,7 @@ function setWatermark(text) {
   const ctx = can.getContext('2d')
   ctx.rotate(-30 * Math.PI / 180)
   ctx.font = '50px Microsoft YaHei'
-  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.fillStyle = 'rgba(150,150,150,0.15)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, 80, 200)

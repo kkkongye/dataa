@@ -2965,7 +2965,7 @@ function setWatermark(text) {
   const ctx = can.getContext('2d')
   ctx.rotate(-30 * Math.PI / 180)
   ctx.font = '50px Microsoft YaHei'
-  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.fillStyle = 'rgba(150,150,150,0.15)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, 80, 200)

@@ -24,9 +24,9 @@
           </div>
           <div class="action-buttons">
 
-            <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button>
+            <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button> -->
             <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
-            <!-- <el-button type="primary" plain @click="applicationListVisible = true">申请列表</el-button> -->
+            <el-button type="info" plain @click="applicationListVisible = true">申请列表</el-button>
           </div>
         </div>
         
@@ -205,7 +205,11 @@
     </template>
   </ReportViewer>
 
-  <AuditLogDialog :visible="auditLogVisible" @close="auditLogVisible = false" />
+  <AuditLogDialog 
+    :visible="auditLogVisible" 
+    :object-id="currentRow?.id"
+    @close="auditLogVisible = false" 
+  />
 
   <ApplicationListDialog v-model:visible="applicationListVisible" />
 </template>
@@ -593,7 +597,7 @@ const handleJudge = async (result) => {
     }).then(async ({ value }) => {
       try {
         // 以待校验状态和合格小结上传到后端
-        const result = await updateStatusViaBothPorts(currentRow.id, '待校验', value);
+        const result = await updateStatusViaBothPorts(currentRow.id, '待校验', `合格小结：${value}`);
         if (result) {
           // 弹出确认对话框而不是使用ElMessage
           await ElMessageBox.alert('自动化审查已合格，请继续手工审查', '提示', {
@@ -1202,54 +1206,6 @@ const extractClassificationValues = (obj) => {
   }
 }
 
-// 根据对象ID生成不同的模拟数据
-// const generateMockDataForObject = (objectId) => {
-
-//   const idNum = parseInt(objectId.slice(-2), 10) || 1
-
-//   if (objectId.includes('user') || objectId.includes('用户')) {
-//     return [
-//       { "用户ID": "U10001", "用户名": "张三", "年龄": "28", "性别": "男", "注册日期": "2023-01-15" },
-//       { "用户ID": "U10002", "用户名": "李四", "年龄": "34", "性别": "男", "注册日期": "2023-02-22" },
-//       { "用户ID": "U10003", "用户名": "王五", "年龄": "26", "性别": "女", "注册日期": "2023-03-08" },
-//       { "用户ID": "U10004", "用户名": "赵六", "年龄": "31", "性别": "男", "注册日期": "2023-04-19" },
-//       { "用户ID": "U10005", "用户名": "钱七", "年龄": "29", "性别": "女", "注册日期": "2023-05-25" }
-//     ]
-//   } else if (objectId.includes('order') || objectId.includes('订单')) {
-//     return [
-//       { "订单ID": "O20001", "用户ID": "U10001", "商品": "笔记本电脑", "金额": "6999", "下单日期": "2023-06-12" },
-//       { "订单ID": "O20002", "用户ID": "U10002", "商品": "手机", "金额": "4299", "下单日期": "2023-06-18" },
-//       { "订单ID": "O20003", "用户ID": "U10003", "商品": "耳机", "金额": "799", "下单日期": "2023-06-25" },
-//       { "订单ID": "O20004", "用户ID": "U10004", "商品": "平板电脑", "金额": "3599", "下单日期": "2023-07-03" },
-//       { "订单ID": "O20005", "用户ID": "U10005", "商品": "智能手表", "金额": "1599", "下单日期": "2023-07-10" }
-//     ]
-//   } else if (objectId.includes('product') || objectId.includes('产品')) {
-//     return [
-//       { "产品ID": "P30001", "产品名称": "华为MateBook", "类别": "笔记本电脑", "价格": "6999", "库存": "120" },
-//       { "产品ID": "P30002", "产品名称": "iPhone 14", "类别": "手机", "价格": "5999", "库存": "350" },
-//       { "产品ID": "P30003", "产品名称": "AirPods Pro", "类别": "耳机", "价格": "1999", "库存": "500" },
-//       { "产品ID": "P30004", "产品名称": "iPad Air", "类别": "平板电脑", "价格": "4599", "库存": "230" },
-//       { "产品ID": "P30005", "产品名称": "Apple Watch", "类别": "智能手表", "价格": "2999", "库存": "180" }
-//     ]
-//   } else if (objectId.includes('inventory') || objectId.includes('库存')) {
-//     return [
-//       { "仓库编号": "WH001", "产品ID": "P30001", "产品名称": "华为MateBook", "库存数量": "120", "更新日期": "2023-07-01" },
-//       { "仓库编号": "WH001", "产品ID": "P30002", "产品名称": "iPhone 14", "库存数量": "350", "更新日期": "2023-07-01" },
-//       { "仓库编号": "WH001", "产品ID": "P30003", "产品名称": "AirPods Pro", "库存数量": "500", "更新日期": "2023-07-01" },
-//       { "仓库编号": "WH002", "产品ID": "P30004", "产品名称": "iPad Air", "库存数量": "230", "更新日期": "2023-07-01" },
-//       { "仓库编号": "WH002", "产品ID": "P30005", "产品名称": "Apple Watch", "库存数量": "180", "更新日期": "2023-07-01" }
-//     ]
-//   } else {
-//     // 通用数据
-//     return [
-//       { "姓名": `${idNum}-张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
-//       { "姓名": `${idNum}-李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
-//       { "姓名": `${idNum}-王五`, "rowNumber": "3", "性别": "女", "对象ID": objectId },
-//       { "姓名": `${idNum}-赵六`, "rowNumber": "4", "性别": "男", "对象ID": objectId },
-//       { "姓名": `${idNum}-钱七`, "rowNumber": "5", "性别": "女", "对象ID": objectId }
-//     ]
-//   }
-// }
 
 // 创建Excel数据
 const createExcelFromDataItems = (dataItems) => {
@@ -1643,7 +1599,9 @@ const isRequestingToken = ref(false)
 const isGeneratingCapsule = ref(false)
 
 const auditLogVisible = ref(false)
+const currentRow = ref(null)
 const showAuditLogDialog = (row) => {
+  currentRow.value = row
   auditLogVisible.value = true
 }
 
@@ -1871,7 +1829,7 @@ function setWatermark(text) {
   const ctx = can.getContext('2d')
   ctx.rotate(-30 * Math.PI / 180)
   ctx.font = '50px Microsoft YaHei'
-  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.fillStyle = 'rgba(150,150,150,0.15)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, 80, 200)
@@ -2082,7 +2040,8 @@ onBeforeUnmount(() => {
 
 /* 自定义反馈意见弹窗样式 */
 :deep(.feedback-dialog) {
-  width: 500px !important;
+  width: 700px !important;
+  max-width: 90vw !important;
 }
 
 :deep(.feedback-dialog .el-message-box__input) {
@@ -2090,8 +2049,9 @@ onBeforeUnmount(() => {
 }
 
 :deep(.feedback-dialog .el-textarea__inner) {
-  min-height: 120px !important;
+  min-height: 200px !important;
   font-size: 14px;
+  resize: vertical;
 }
 
 :deep(.feedback-dialog .el-message-box__header) {

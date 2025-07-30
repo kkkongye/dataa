@@ -558,7 +558,7 @@ function setWatermark(text) {
   const ctx = can.getContext('2d')
   ctx.rotate(-30 * Math.PI / 180)
   ctx.font = '50px Microsoft YaHei'
-  ctx.fillStyle = 'rgba(150,150,150,0.22)'
+  ctx.fillStyle = 'rgba(150,150,150,0.15)'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, 80, 200)
@@ -585,6 +585,7 @@ onMounted(() => {
   console.log('使用方数据对象列表页面已加载')
   setWatermark('使  用  方')
   window.addEventListener('resize', () => setWatermark('使  用  方'))
+  showVisualization()
 })
 
 onBeforeUnmount(() => {
