@@ -1,6 +1,6 @@
 <template>
   <div class="directory-container">
-    
+<!--     
     <div class="search-bar">
       <el-input 
         v-model="searchKeyword" 
@@ -12,13 +12,10 @@
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-    </div>
+    </div> -->
     
     <div class="directory-table">
-      <div class="directory-table-header" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
-        <el-button type="primary" plain @click="handleApply">申请</el-button>
-        <el-button type="primary" plain @click="handleDecrypt">解密</el-button>
-      </div>
+
       <div v-if="loading" class="loading-container">
         <el-loading :fullscreen="false" text="加载数据中..." />
       </div>
@@ -28,13 +25,12 @@
           border 
           stripe 
           style="width: 100%"
-          max-height="300px"
-          @selection-change="handleSelectionChange"
+          max-height="650px"
           ref="directoryTableRef"
           :row-key="row => row.id"
+          :span-method="spanMethod"
         >
-          <el-table-column type="selection" width="35" />
-          <el-table-column prop="id" label="ID" width="320" show-overflow-tooltip>
+          <el-table-column prop="id" label="ID" width="300" show-overflow-tooltip>
             <template #default="scope">
               <div class="id-cell">{{ scope.row.id }}</div>
             </template>
@@ -44,14 +40,33 @@
               <span class="entity-text">{{ scope.row.entity }}</span>
             </template>
           </el-table-column>
-          <!-- <el-table-column label="约束条件" min-width="250" show-overflow-tooltip>
+          <el-table-column prop="constraint" label="约束条件" width="450" align="center">
             <template #default="scope">
-              <div class="constraint-text">
-                {{ formatConstraints(scope.row.constraint) }}
+              <div class="constraint-container">
+                <template v-if="scope.row.constraint && scope.row.constraint.length">
+                  <div 
+                    v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint]).length / 2)" 
+                    :key="rowIndex"
+                    class="constraint-row"
+                  >
+                    <!-- 第一项 -->
+                    <div class="constraint-item-pair">
+                      <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2]" 
+                            v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2])"></span>
+                    </div>
+                    
+                    <!-- 第二项 -->
+                    <div class="constraint-item-pair">
+                      <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1]" 
+                            v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1])"></span>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>-</template>
               </div>
             </template>
-          </el-table-column> -->
-          <el-table-column label="传输控制操作" width="180">
+          </el-table-column>
+          <el-table-column label="传输控制操作" width="200">
             <template #default="scope">
               <div class="control-container">
                 <template v-if="scope.row.transferControl && scope.row.transferControl.length">
@@ -70,26 +85,25 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="80">
+          <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
-              <el-tag type="success" effect="plain">{{ scope.row.status }}</el-tag>
+              <div class="operation-buttons">
+                <el-button type="primary" plain @click="handleApplyForGroup" size="small">申请</el-button>
+                <el-button type="success" plain @click="handleDecryptForGroup" size="small">解密</el-button>
+              </div>
             </template>
           </el-table-column>
-          <!-- <el-table-column label="申请状态" width="200">
-            <template #default="scope">
-              <el-tag :type="getApplyStatusTagType(scope.row)">{{ getApplyStatusText(scope.row) }}</el-tag>
-            </template>
-          </el-table-column> -->
         </el-table>
         
         <div class="pagination-area">
+          <div class="group-info" style="margin-bottom: 10px; text-align: center; color: #606266;">
+            <span v-if="currentGroup">当前显示：{{ currentGroup.groupId }} - 申请人：{{ currentGroup.applicant }} - 申请时间：{{ currentGroup.applyTime }}</span>
+          </div>
           <el-pagination
             v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[5, 10, 15, 20]"
-            layout="total, sizes, prev, pager, next, jumper"
+            :page-size="1"
+            layout="total, prev, pager, next, jumper"
             :total="totalCount"
-            @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
           />
         </div>
@@ -115,20 +129,28 @@ const props = defineProps({
 const emit = defineEmits(['close', 'view-detail', 'show-decrypt'])
 
 const tableData = ref([])
+const groupData = ref([])
 const loading = ref(false)
 const searchKeyword = ref('')
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(1) // 每页显示一组
 const selectedRows = ref([])
 
-// 计算属性：过滤后的表格数据
+// 当前显示的组
+const currentGroup = computed(() => {
+  const groupIndex = currentPage.value - 1
+  return groupData.value[groupIndex] || null
+})
+
+// 当前组的实体数据（用于表格显示）
 const filteredTableData = computed(() => {
-  let result = tableData.value.filter(item => item.status === '已合格')
+  if (!currentGroup.value) return []
+  
+  let result = currentGroup.value.entities || []
   
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     result = result.filter(item => {
-
       if ((item.id && item.id.toString().toLowerCase().includes(keyword)) || 
           (item.entity && item.entity.toLowerCase().includes(keyword))) {
         return true;
@@ -146,24 +168,9 @@ const filteredTableData = computed(() => {
                 item.constraint.toLowerCase().includes(keyword)) {
           return true;
         }
-
-        else if (typeof item.constraint === 'object') {
-          try {
-            const entries = Object.entries(item.constraint)
-            if (entries.some(([key, value]) => 
-              (key && key.toLowerCase().includes(keyword)) || 
-              (value && value.toString().toLowerCase().includes(keyword))
-            )) {
-              return true;
-            }
-          } catch (e) {
-            console.error('搜索约束条件对象失败:', e)
-          }
-        }
       }
       
       if (item.transferControl) {
-
         if (Array.isArray(item.transferControl)) {
           if (item.transferControl.some(control => 
             control && control.toString().toLowerCase().includes(keyword)
@@ -181,123 +188,34 @@ const filteredTableData = computed(() => {
     });
   }
   
-  const startIndex = (currentPage.value - 1) * pageSize.value
-  const endIndex = startIndex + pageSize.value
-  return result.slice(startIndex, endIndex)
+  return result
 })
 
 
 const totalCount = computed(() => {
-  const qualified = tableData.value.filter(item => item.status === '已合格')
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    return qualified.filter(item => {
-
-      if ((item.id && item.id.toString().toLowerCase().includes(keyword)) || 
-          (item.entity && item.entity.toLowerCase().includes(keyword))) {
-        return true;
-      }
-
-      if (item.constraint) {
-
-        if (Array.isArray(item.constraint)) {
-          if (item.constraint.some(constraint => 
-            constraint && constraint.toString().toLowerCase().includes(keyword)
-          )) {
-            return true;
-          }
-        } 
-
-        else if (typeof item.constraint === 'string' && 
-                item.constraint.toLowerCase().includes(keyword)) {
-          return true;
-        }
-
-        else if (typeof item.constraint === 'object') {
-          try {
-            const entries = Object.entries(item.constraint)
-            if (entries.some(([key, value]) => 
-              (key && key.toLowerCase().includes(keyword)) || 
-              (value && value.toString().toLowerCase().includes(keyword))
-            )) {
-              return true;
-            }
-          } catch (e) {
-            console.error('搜索约束条件对象失败:', e)
-          }
-        }
-      }
-
-      if (item.transferControl) {
-
-        if (Array.isArray(item.transferControl)) {
-          if (item.transferControl.some(control => 
-            control && control.toString().toLowerCase().includes(keyword)
-          )) {
-            return true;
-          }
-        }
-
-        else if (typeof item.transferControl === 'string' && 
-                item.transferControl.toLowerCase().includes(keyword)) {
-          return true;
-        }
-      }
-      
-      return false;
-    }).length
-  }
-  return qualified.length
+  return groupData.value.length
 })
 
 
-const formatConstraints = (constraints) => {
-  if (!constraints) return '-'
-  
 
-  if (Array.isArray(constraints)) {
-
-    if (constraints.some(item => typeof item === 'string' && item.includes(':'))) {
-      return constraints.join(', ')
-    }
-    
-    return constraints.join(', ')
-  }
-  
-
-  if (typeof constraints === 'string') {
-
-    if (constraints.includes(',') && !constraints.includes(', ')) {
-      return constraints.replace(/,/g, ', ')
-    }
-    return constraints
-  }
-  
-
-  if (typeof constraints === 'object') {
-    try {
-      const entries = Object.entries(constraints)
-      if (entries.length > 0) {
-        return entries.map(([key, value]) => `${key}: ${value}`).join(', ')
-      }
-    } catch (e) {
-      console.error('格式化约束条件对象失败:', e)
-    }
-  }
-  
-
-  return String(constraints)
-}
 
 // 页码变化处理
 const handleCurrentChange = (val) => {
   currentPage.value = val
+  // 清空选择
+  selectedRows.value = []
 }
 
-// 每页显示数量变化处理
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  currentPage.value = 1
+// 格式化约束条件文本
+const formatConstraintText = (text) => {
+  if (!text) return text
+  
+  if (text.includes(':')) {
+    const parts = text.split(':')
+    return `<span class="constraint-prefix">${parts[0]}:</span>${parts[1]}`
+  }
+  
+  return text
 }
 
 
@@ -306,105 +224,129 @@ const handleViewDetail = (row) => {
 }
 
 
-const fetchData = async () => {
-  loading.value = true
+// 获取申请记录数据
+const fetchApplicationRecords = async () => {
   try {
-    const response = await axios.get('http://localhost:8083/api/simplified-objects')
+    const response = await axios.get('http://localhost:8083/api/application-records')
     
     if (response.data && response.data.code === 1 && response.data.data) {
-      let dataArray = response.data.data
-      
-      if (dataArray.length > 0) {
-        dataArray = dataArray.map(item => {
-          // 防止空值或非对象类型
-          if (!item || typeof item !== 'object') return item
-          
-          // 处理实体信息
-          if (item.dataEntity && item.dataEntity.entity) {
-            item.entity = item.dataEntity.entity;
-          }
-
-          // 处理状态信息
-          if (item.dataEntity && item.dataEntity.status) {
-            item.status = item.dataEntity.status;
-          }
-
-          // 处理约束条件信息 - 简化版本暂时设置为空
-          item.constraint = [];
-
-          // 处理传输控制操作 - 解析propagationControlJson
-          if (item.propagationControlJson) {
-            try {
-              const propagationControl = JSON.parse(item.propagationControlJson);
-              const controls = [];
-              if (propagationControl.canRead === true || 
-                  (propagationControl.selectedOperations && 
-                  propagationControl.selectedOperations.read === true)) {
-                controls.push('可读');
-              }
-              if (propagationControl.canShare === true || 
-                  (propagationControl.selectedOperations && 
-                  propagationControl.selectedOperations.share === true)) {
-                controls.push('可共享');
-              }
-              if (propagationControl.canModify === true || 
-                  (propagationControl.selectedOperations && 
-                  propagationControl.selectedOperations.modify === true)) {
-                controls.push('可修改');
-              }
-              if (propagationControl.canDestroy === true || 
-                  (propagationControl.selectedOperations && 
-                  propagationControl.selectedOperations.destroy === true)) {
-                controls.push('可销毁');
-              }
-              if (propagationControl.canDelegate === true || 
-                  (propagationControl.selectedOperations && 
-                  propagationControl.selectedOperations.delegate === true)) {
-                controls.push('可委托');
-              }
-              if (controls.length > 0) {
-                item.transferControl = controls;
-              }
-            } catch (e) {
-              console.error('解析propagationControlJson失败:', e);
-              item.transferControl = [];
-            }
-          }
-          
-          if (item.qualified === true || 
-              item.isQualified === true || 
-              (item.status && (item.status === 'QUALIFIED' || 
-                             item.status === 'qualified' ||
-                             item.status === '合格' ||
-                             item.status === '已合格' ||
-                             item.status === '通过' ||
-                             item.status === 'pass' ||
-                             item.status === 'PASS'))) {
-            item.status = '已合格'
-          }
-          
-          return item
-        })
-        
-        tableData.value = dataArray
-        assignRandomApplyStatus()
-        
-        const qualifiedCount = dataArray.filter(item => item.status === '已合格').length
-        
-        if (qualifiedCount > 0) {
-        } else {
-          ElMessage.warning('未找到已合格的数据')
-        }
-      } else {
-        // ElMessage.warning('未找到可用的数据对象')
-      }
+      // 只获取已完成所有审批流程的数据组
+      return response.data.data.filter(record => 
+        record.sourceAgreed === true && 
+        record.governanceAgreed1 === true && 
+        record.governanceAgreed2 === true
+      )
     } else {
-      ElMessage.warning('API返回的数据格式不正确')
+      console.warn('获取申请记录失败:', response.data?.msg || '未知错误')
+      return []
     }
-
   } catch (error) {
-    console.error('获取数据失败:', error)
-    ElMessage.error(`获取数据失败: ${error.message}`)
+    console.error('获取申请记录失败:', error)
+    ElMessage.error('获取申请记录失败')
+    return []
+  }
+}
+
+// 获取对象详情数据
+const fetchObjectDetails = async (objectIds) => {
+  try {
+    const response = await axios.get('http://localhost:8081/api/objects/list')
+    
+    if (response.data && response.data.code === 1 && response.data.data) {
+      const allObjects = response.data.data
+      // 根据objectIds筛选对象
+      const filteredObjects = allObjects.filter(obj => objectIds.includes(obj.id))
+      return filteredObjects
+    } else {
+      console.warn('获取对象详情失败:', response.data?.msg || '未知错误')
+      return []
+    }
+  } catch (error) {
+    console.error('获取对象详情失败:', error)
+    return []
+  }
+}
+
+// 格式化约束条件
+const formatConstraints = (constraintSet) => {
+  if (!constraintSet || !constraintSet.constraints || !constraintSet.constraints.length) {
+    return []
+  }
+  
+  const constraint = constraintSet.constraints[0]
+  return [
+    `格式约束: ${constraint.formatConstraint || '-'}`,
+    `访问约束: ${constraint.accessConstraint || '-'}`,
+    `路径约束: ${constraint.pathConstraint || '-'}`,
+    `区域约束: ${constraint.regionConstraint || '-'}`,
+    `共享约束: ${constraint.shareConstraint || '-'}`
+  ]
+}
+
+// 格式化传输控制操作
+const formatTransferControl = (propagationControl) => {
+  if (!propagationControl || !propagationControl.selectedOperations) {
+    return []
+  }
+  
+  const operations = propagationControl.selectedOperations
+  const controls = []
+  
+  if (operations.read) controls.push('可读取')
+  if (operations.modify) controls.push('可修改')
+  if (operations.share) controls.push('可共享')
+  if (operations.delegate) controls.push('可委托')
+  if (operations.destroy) controls.push('可销毁')
+  
+  return controls
+}
+
+// 加载数据
+const fetchData = async () => {
+  try {
+    loading.value = true
+    
+    // 获取申请记录
+    const applicationRecords = await fetchApplicationRecords()
+    
+    if (applicationRecords.length === 0) {
+      groupData.value = []
+      ElMessage.info('暂无已完成审批的申请记录')
+      return
+    }
+    
+    // 处理每个申请记录
+    const processedGroups = await Promise.all(
+      applicationRecords.map(async (record, index) => {
+        // 解析objectIds
+        const objectIds = record.objectIds ? record.objectIds.split(',') : []
+        
+        // 获取对象详情
+        const objectDetails = await fetchObjectDetails(objectIds)
+        
+        // 构建实体数据
+        const entities = objectDetails.map(obj => ({
+          id: obj.id,
+          entity: obj.dataEntity?.entity || '未知实体',
+          constraint: formatConstraints(obj.constraintSet),
+          transferControl: formatTransferControl(obj.propagationControl),
+          status: obj.dataEntity?.status || '未知状态'
+        }))
+        
+        return {
+          groupId: `组${String(index + 1).padStart(3, '0')}`,
+          applyTime: record.applyTime ? new Date(record.applyTime).toLocaleString('zh-CN') : '-',
+          applicant: record.applicant || '未知申请方',
+          entities: entities
+        }
+      })
+    )
+    
+    groupData.value = processedGroups
+    
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
   }
@@ -423,69 +365,114 @@ watch(() => props.visible, (newValue) => {
 })
 
 
-
-
-function assignRandomApplyStatus() {
-  tableData.value.forEach((item, idx) => {
-     if (idx === 0) {
-       item.applyStatus = '治理方已同意,请解密查看'
-      } else if (idx === 1) {
-        item.applyStatus = '数源方已同意,等待治理方处理'
-      } else {
-       item.applyStatus = '拒绝申请'
-     }
-   })
-}
-
-
-
-
-
-function handleSelectionChange(val) {
-  selectedRows.value = val
-}
-
-// 移除行选择限制
-// function isRowSelectable(row) {
-//   return row.sourceAgreed === true && row.governanceAgreed === true;
+// function handleSelectionChange(val) {
+//   selectedRows.value = val
 // }
 
-function handleApply() {
-  if (selectedRows.value.length === 0) {
-    ElMessage.info('请先勾选要申请的数据对象')
+// function handleApply() {
+//   if (selectedRows.value.length === 0) {
+//     ElMessage.info('请先勾选要申请的数据对象')
+//     return
+//   }
+  
+//   loading.value = true
+//   const ids = selectedRows.value.map(row => row.id).join(',')
+  
+//   axios.get(`http://localhost:8083/api/selectIds?ids=${encodeURIComponent(ids)}`, { withCredentials: true })
+//     .then(res => {
+//       console.log('申请接口返回结果:', res.data)
+//       ElMessage.success('申请成功')
+      
+//       selectedRows.value.forEach(row => {
+//         row.applied = true
+//         row.applyStatus = '待处理'
+//       })
+//     })
+//     .catch(err => {
+//       console.error('申请接口出错:', err)
+//       ElMessage.error(`请勿重复申请`)
+//     })
+//     .finally(() => {
+//       loading.value = false
+//     })
+// }
+
+// function handleDecrypt() {
+//   if (selectedRows.value.length === 0) {
+//     ElMessage.info('请先勾选要解密的数据对象')
+//     return
+//   }
+  
+//   loading.value = true
+//   const ids = selectedRows.value.map(row => row.id)
+  
+//   axios.post('http://localhost:8083/api/decrypt', { ids }, { withCredentials: true })
+//     .then(res => {
+//       console.log('解密接口返回结果:', res.data)
+      
+//       // 检查新的响应格式
+//       if (res.data && res.data.code === 1 && res.data.data) {
+//         ElMessage.success('解密成功')
+//         // 传递解密后的完整数据给父组件
+//         emit('show-decrypt', { ids, decryptedData: res.data.data })
+//       } else {
+//         ElMessage.error(`解密失败: ${res.data?.msg || '未知错误'}`)
+//       }
+//     })
+//     .catch(err => {
+//       console.error('解密接口出错:', err)
+//       ElMessage.error(`解密失败: ${err.response?.data?.message || err.message}`)
+//     })
+//     .finally(() => {
+//       loading.value = false
+//     })
+// }
+
+// 为当前组申请
+function handleApplyForGroup() {
+  if (!currentGroup.value || !currentGroup.value.entities || currentGroup.value.entities.length === 0) {
+    ElMessage.info('当前组没有可申请的数据对象')
     return
   }
   
   loading.value = true
-  const ids = selectedRows.value.map(row => row.id).join(',')
+  const ids = currentGroup.value.entities.map(row => row.id).join(',')
   
   axios.get(`http://localhost:8083/api/selectIds?ids=${encodeURIComponent(ids)}`, { withCredentials: true })
     .then(res => {
       console.log('申请接口返回结果:', res.data)
+      
+      // 检查返回的code，如果为0则表示错误
+      if (res.data && res.data.code === 0) {
+        ElMessage.error(res.data.msg || '申请失败')
+        return
+      }
+      
       ElMessage.success('申请成功')
       
-      selectedRows.value.forEach(row => {
+      currentGroup.value.entities.forEach(row => {
         row.applied = true
         row.applyStatus = '待处理'
       })
     })
     .catch(err => {
       console.error('申请接口出错:', err)
-      ElMessage.error(`请勿重复申请`)
+      ElMessage.error('网络请求失败，请稍后重试')
     })
     .finally(() => {
       loading.value = false
     })
 }
 
-function handleDecrypt() {
-  if (selectedRows.value.length === 0) {
-    ElMessage.info('请先勾选要解密的数据对象')
+// 为当前组解密
+function handleDecryptForGroup() {
+  if (!currentGroup.value || !currentGroup.value.entities || currentGroup.value.entities.length === 0) {
+    ElMessage.info('当前组没有可解密的数据对象')
     return
   }
   
   loading.value = true
-  const ids = selectedRows.value.map(row => row.id)
+  const ids = currentGroup.value.entities.map(row => row.id)
   
   axios.post('http://localhost:8083/api/decrypt', { ids }, { withCredentials: true })
     .then(res => {
@@ -507,6 +494,39 @@ function handleDecrypt() {
     .finally(() => {
       loading.value = false
     })
+}
+
+// 单元格合并方法
+function spanMethod({ row, column, rowIndex, columnIndex }) {
+  // 只对操作列（最后一列）进行合并
+  if (column.label === '操作') {
+    const currentGroupId = row.groupId
+    const data = filteredTableData.value
+    
+    // 找到当前组的第一行索引
+    const firstRowIndex = data.findIndex(item => item.groupId === currentGroupId)
+    
+    // 如果当前行是该组的第一行，计算该组的行数
+    if (rowIndex === firstRowIndex) {
+      const groupRowCount = data.filter(item => item.groupId === currentGroupId).length
+      return {
+        rowspan: groupRowCount,
+        colspan: 1
+      }
+    } else {
+      // 如果不是第一行，则隐藏该单元格
+      return {
+        rowspan: 0,
+        colspan: 0
+      }
+    }
+  }
+  
+  // 其他列不合并
+  return {
+    rowspan: 1,
+    colspan: 1
+  }
 }
 </script>
 
@@ -591,9 +611,49 @@ function handleDecrypt() {
   margin: 2px;
 }
 
+.constraint-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+}
+
+.constraint-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.constraint-item-pair {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 15px;
+}
+
+.operation-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.constraint-prefix {
+  font-weight: bold;
+  color: #409EFF;
+}
+
 .pagination-area {
   margin-top: 16px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+.group-info {
+  font-size: 14px;
+  font-weight: 500;
 }
 </style>

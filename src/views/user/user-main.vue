@@ -22,6 +22,10 @@
             </el-input>
           </div>
           <div class="action-buttons">
+            <el-button type="success" plain @click="handleRefresh" :loading="loading">
+              <el-icon><Refresh /></el-icon>
+              刷新数据
+            </el-button>
             <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
@@ -46,6 +50,8 @@
             :row-style="{ height: '70px' }"
             :header-cell-style="headerCellStyle"
             :span-method="spanMethod"
+            v-loading="loading"
+            element-loading-text="正在加载数据..."
           >
             <el-table-column prop="groupId" label="组序号" width="120" align="center">
               <template #default="scope">
@@ -179,149 +185,139 @@ const currentPage = ref(1)
 const pageSize = ref(1) // 每页显示一组
 const selectedRows = ref([])
 
-// 模拟分组数据
-const groupData = ref([
-  {
-    groupId: 'G001',
-    applyTime: '2024-01-15 10:30:00',
-    dataSourceUser: '浙江省税务局',
-    governorUser: '浙江省大数据局',
-    dataCredentialStatus: false,
-    orgCredentialStatus: false,
-    sharedCertificateStatus: false,
-    entities: [
-      {
-        id: '1',
-        entity: 'CivilAffairs',
-        constraint: [
-          '格式约束: xlsx',
-          '访问约束: 全部允许',
-          '路径约束: 点对点',
-          '区域约束: 内网',
-          '共享约束: 允许共享'
-        ],
-        transferControl: ['可读取', '可修改', '可共享']
-      },
-      {
-        id: '2',
-        entity: 'EducationData',
-        constraint: [
-          '格式约束: json',
-          '访问约束: 只允许管理方获取',
-          '路径约束: 点对点',
-          '区域约束: 内网',
-          '共享约束: 允许共享'          
-        ],
-        transferControl: ['可读取', '可委托']
-      },
-      {
-        id: '3',
-        entity: 'HealthRecord',
-        constraint: [
-          '格式约束: csv',
-          '访问约束: 全部允许',
-          '路径约束: 多跳',
-          '区域约束: 外网',
-          '共享约束: 禁止共享'
-        ],
-        transferControl: ['可读取', '可修改', '可销毁']
-      }
-    ]
-  },
-  {
-    groupId: 'G002',
-    applyTime: '2024-01-16 14:20:00',
-    dataSourceUser: '浙江省税务局',
-    governorUser: '浙江省大数据局',
-    dataCredentialStatus: true,
-    orgCredentialStatus: false,
-    sharedCertificateStatus: false,
-    entities: [
-      {
-        id: '4',
-        entity: 'FinancialData',
-        constraint: [
-          '格式约束: pdf',
-          '访问约束: 只允许管理方获取',
-          '路径约束: 点对点',
-          '区域约束: 内网',
-          '共享约束: 允许共享'
-        ],
-        transferControl: ['可读取']
-      },
-      {
-        id: '5',
-        entity: 'TrafficInfo',
-        constraint: [
-          '格式约束: txt',
-          '访问约束: 全部允许',
-          '路径约束: 多跳',
-          '区域约束: 内网',
-          '共享约束: 允许共享'
-        ],
-        transferControl: ['可读取', '可修改', '可共享', '可委托']
-      }
-    ]
-  },
-  {
-    groupId: 'G003',
-    applyTime: '2024-01-18 16:30:00',
-    dataSourceUser: '浙江省税务局',
-    governorUser: '浙江省大数据局',
-    dataCredentialStatus: true,
-    orgCredentialStatus: true,
-    sharedCertificateStatus: false,
-    entities: [
-      {
-        id: '7',
-        entity: 'PolicyData',
-        constraint: [
-          '格式约束: xml',
-          '访问约束: 只允许管理方获取',
-          '路径约束: 点对点',
-          '区域约束: 内网',
-          '共享约束: 允许共享'
-        ],
-        transferControl: ['可读取', '可共享']
-      }
-    ]
-  },
-  {
-    groupId: 'G004',
-    applyTime: '2024-01-17 09:15:00',
-    dataSourceUser: '浙江省税务局',
-    governorUser: '浙江省大数据局',
-    dataCredentialStatus: true,
-    orgCredentialStatus: true,
-    sharedCertificateStatus: true,
-    entities: [
-      {
-        id: '6',
-        entity: 'WeatherData',
-        constraint: [
-          '格式约束: json',
-          '访问约束: 全部允许',
-          '路径约束: 点对点',
-          '区域约束: 外网',
-          '共享约束: 允许共享'
-        ],
-        transferControl: ['可读取', '可共享']
-      },
-      {
-        id: '7',
-        entity: 'SensorData',
-        constraint: [
-          '格式约束: xml',
-          '访问约束: 全部允许',
-          '路径约束: 点对点',
-          '区域约束: 内网',
-          '共享约束: 允许共享'
-        ],
-        transferControl: ['可读取', '可修改']
-      }
-    ]
+// 后端数据
+const groupData = ref([])
+const loading = ref(false)
+
+// 获取申请记录数据
+const fetchApplicationRecords = async () => {
+  try {
+    loading.value = true
+    const response = await axios.get('http://localhost:8083/api/application-records')
+    
+    if (response.data && response.data.code === 1 && response.data.data) {
+      return response.data.data
+    } else {
+      console.warn('获取申请记录失败:', response.data?.msg || '未知错误')
+      return []
+    }
+  } catch (error) {
+    console.error('获取申请记录失败:', error)
+    ElMessage.error('获取申请记录失败')
+    return []
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 获取对象详情数据
+const fetchObjectDetails = async (objectIds) => {
+  try {
+    const response = await axios.get('http://localhost:8081/api/objects/list')
+    
+    if (response.data && response.data.code === 1 && response.data.data) {
+      const allObjects = response.data.data
+      // 根据objectIds筛选对象
+      const filteredObjects = allObjects.filter(obj => objectIds.includes(obj.id))
+      return filteredObjects
+    } else {
+      console.warn('获取对象详情失败:', response.data?.msg || '未知错误')
+      return []
+    }
+  } catch (error) {
+    console.error('获取对象详情失败:', error)
+    return []
+  }
+}
+
+// 格式化约束条件
+const formatConstraints = (constraintSet) => {
+  if (!constraintSet || !constraintSet.constraints || !constraintSet.constraints.length) {
+    return []
+  }
+  
+  const constraint = constraintSet.constraints[0]
+  return [
+    `格式约束: ${constraint.formatConstraint || '-'}`,
+    `访问约束: ${constraint.accessConstraint || '-'}`,
+    `路径约束: ${constraint.pathConstraint || '-'}`,
+    `区域约束: ${constraint.regionConstraint || '-'}`,
+    `共享约束: ${constraint.shareConstraint || '-'}`
+  ]
+}
+
+// 格式化传输控制操作
+const formatTransferControl = (propagationControl) => {
+  if (!propagationControl || !propagationControl.selectedOperations) {
+    return []
+  }
+  
+  const operations = propagationControl.selectedOperations
+  const controls = []
+  
+  if (operations.read) controls.push('可读取')
+  if (operations.modify) controls.push('可修改')
+  if (operations.share) controls.push('可共享')
+  if (operations.delegate) controls.push('可委托')
+  if (operations.destroy) controls.push('可销毁')
+  
+  return controls
+}
+
+// 加载数据
+const loadData = async () => {
+  try {
+    loading.value = true
+    
+    // 获取申请记录
+    const applicationRecords = await fetchApplicationRecords()
+    
+    if (applicationRecords.length === 0) {
+      groupData.value = []
+      return
+    }
+    
+    // 处理每个申请记录
+    const processedGroups = await Promise.all(
+      applicationRecords.map(async (record, index) => {
+        // 解析objectIds
+        const objectIds = record.objectIds ? record.objectIds.split(',') : []
+        
+        // 获取对象详情
+        const objectDetails = await fetchObjectDetails(objectIds)
+        
+        // 构建实体数据
+        const entities = objectDetails.map(obj => ({
+          id: obj.id,
+          entity: obj.dataEntity?.entity || '未知实体',
+          constraint: formatConstraints(obj.constraintSet),
+          transferControl: formatTransferControl(obj.propagationControl)
+        }))
+        
+        return {
+          groupId: `组${String(index + 1).padStart(3, '0')}`,
+          applyTime: record.applyTime ? new Date(record.applyTime).toLocaleString('zh-CN') : '-',
+          originalApplyTime: record.applyTime,
+          applicant: record.applicant || '未知申请方',
+          dataSourceUser: record.sourceOperator ||'数据源方', 
+          governorUser: record.governanceOperator || '治理方', 
+          dataCredentialStatus: record.sourceAgreed || false,
+          orgCredentialStatus: record.governanceAgreed1 || false,
+          sharedCertificateStatus: record.governanceAgreed2 || false,
+          entities: entities
+        }
+      })
+    )
+    
+    groupData.value = processedGroups
+    
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 当前显示的组
 const currentGroup = computed(() => {
@@ -487,7 +483,8 @@ const previewEntity = (row) => {
 }
 
 // 刷新数据
-const handleRefresh = () => {
+const handleRefresh = async () => {
+  await loadData()
   ElMessage.success('数据已刷新')
 }
 
@@ -509,6 +506,20 @@ const showVisualization = () => {
 
 // 处理验证组织机构凭证
 const handleVerifySC = async () => {
+  // 获取当前组的申请人和申请时间
+  if (!currentGroup.value) {
+    ElMessage.error('当前组数据不完整')
+    return
+  }
+  
+  const applicant = currentGroup.value.applicant
+  const applyTime = currentGroup.value.originalApplyTime || currentGroup.value.applyTime
+  
+  if (!applicant || !applyTime) {
+    ElMessage.error('申请人或申请时间不能为空')
+    return
+  }
+  
   try {
     const loadingInstance = ElLoading.service({
       fullscreen: true,
@@ -516,7 +527,7 @@ const handleVerifySC = async () => {
       background: 'rgba(0, 0, 0, 0.7)'
     });
 
-    const response = await axios.post('http://localhost:8083/api/verify-sc');
+    const response = await axios.post(`http://localhost:8083/api/verify-sc?applicant=${encodeURIComponent(applicant)}&applyTime=${encodeURIComponent(applyTime)}`);
 
     loadingInstance.close();
 
@@ -586,6 +597,8 @@ onMounted(async () => {
   setWatermark('使  用  方')
   window.addEventListener('resize', () => setWatermark('使  用  方'))
   showVisualization()
+  
+  await loadData()
   
   // 使用方系统自动初始化
   try {

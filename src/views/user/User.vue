@@ -232,7 +232,7 @@
   <el-dialog
     v-model="directoryDialogVisible"
     title="目录"
-    width="60%"
+    width="75%"
     :close-on-click-modal="false"
     :show-close="true"
     draggable

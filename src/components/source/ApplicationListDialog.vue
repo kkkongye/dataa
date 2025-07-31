@@ -7,6 +7,8 @@
       style="width: 100%"
       :span-method="spanMethod"
       :row-style="{ height: '60px' }"
+      v-loading="loading"
+      element-loading-text="正在加载数据..."
     >
       <el-table-column prop="groupId" label="组序号" width="120" align="center">
         <template #default="scope">
@@ -15,7 +17,8 @@
       </el-table-column>
       <el-table-column prop="objectId" label="ID" min-width="240"  align="center"/>
       <el-table-column prop="entity" label="实体名" min-width="120" align="center" />
-      <el-table-column prop="applicant" label="使用方用户名" min-width="120" align="center" />
+      <el-table-column prop="applicant" label="申请人" min-width="120" align="center" />
+      <el-table-column prop="applyTime" label="申请时间" min-width="160" align="center" />
       <el-table-column label="操作" width="160" align="center">
         <template #default="scope">
           <el-button type="primary" plain @click="handleGenerateDV" size="small">生成数据凭证</el-button>
@@ -31,7 +34,11 @@
     </el-table>
     
     <!-- 分页组件 -->
-    <div class="pagination-area" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+    <div class="pagination-area" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <el-button type="primary" plain @click="handleRefresh" :loading="loading" size="small">
+        <el-icon><Refresh /></el-icon>
+        刷新数据
+      </el-button>
       <el-pagination
         v-model:current-page="currentPage"
         :page-size="1"
@@ -47,6 +54,7 @@
 <script setup>
 import { ref, defineProps, watch, computed } from 'vue'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -61,66 +69,103 @@ watch(() => props.visible, v => dialogVisible.value = v)
 const currentPage = ref(1)
 const totalGroups = ref(0)
 
-// 分组数据
-const groupData = ref([
-  {
-    groupId: 'G001',
-    applyTime: '2024-01-15 10:30:00',
-    dataCredentialStatus: false, 
-    applications: [
-      {
-        id: 1,
-        objectId: '2e5f5221-e3b2-46de-ae66-53330b14e55a',
-        applicant: '浙江省税务局',
-        entity: 'CivilAffairs'
-      },
-      {
-        id: 2,
-        objectId: 'bc1e9474-6a35-4d5d-9e50-3c99a518a65d',
-        applicant: '浙江省税务局',
-        entity: 'EducationData'
-      },
-      {
-        id: 3,
-        objectId: '7ad2b71e-1804-4720-b20c-ea11cf18499a',
-        applicant: '浙江省税务局',
-        entity: 'HealthRecord'
-      }
-    ]
-  },
-  {
-    groupId: 'G002',
-    applyTime: '2024-01-16 14:20:00',
-    dataCredentialStatus: true, // 数据凭证状态
-    applications: [
-      {
-        id: 4,
-        objectId: 'OBJ004_FinancialData',
-        applicant: '浙江省教育厅',
-        entity: 'FinancialData'
-      },
-      {
-        id: 5,
-        objectId: 'OBJ005_TrafficInfo',
-        applicant: '浙江省教育厅',
-        entity: 'TrafficInfo'
-      }
-    ]
-  },
-  {
-    groupId: 'G003',
-    applyTime: '2024-01-18 16:30:00',
-    dataCredentialStatus: false, // 数据凭证状态
-    applications: [
-      {
-        id: 6,
-        objectId: 'OBJ006_PolicyData',
-        applicant: '浙江省民政厅',
-        entity: 'PolicyData'
-      }
-    ]
+// 后端数据
+const groupData = ref([])
+const loading = ref(false)
+
+// 获取申请记录数据
+const fetchApplicationRecords = async () => {
+  try {
+    loading.value = true
+    const response = await axios.get('http://localhost:8083/api/application-records')
+    
+    if (response.data && response.data.code === 1 && response.data.data) {
+      return response.data.data
+    } else {
+      console.warn('获取申请记录失败:', response.data?.msg || '未知错误')
+      return []
+    }
+  } catch (error) {
+    console.error('获取申请记录失败:', error)
+    ElMessage.error('获取申请记录失败')
+    return []
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 获取对象详情数据
+const fetchObjectDetails = async (objectIds) => {
+  try {
+    const response = await axios.get('http://localhost:8081/api/objects/list')
+    
+    if (response.data && response.data.code === 1 && response.data.data) {
+      const allObjects = response.data.data
+      // 根据objectIds筛选对象
+      const filteredObjects = allObjects.filter(obj => objectIds.includes(obj.id))
+      return filteredObjects
+    } else {
+      console.warn('获取对象详情失败:', response.data?.msg || '未知错误')
+      return []
+    }
+  } catch (error) {
+    console.error('获取对象详情失败:', error)
+    return []
+  }
+}
+
+// 加载数据
+const loadData = async () => {
+  try {
+    loading.value = true
+    
+    // 获取申请记录
+    const applicationRecords = await fetchApplicationRecords()
+    
+    if (applicationRecords.length === 0) {
+      groupData.value = []
+      totalGroups.value = 0
+      return
+    }
+    
+    // 处理每个申请记录
+    const processedGroups = await Promise.all(
+      applicationRecords.map(async (record, index) => {
+        // 解析objectIds
+        const objectIds = record.objectIds ? record.objectIds.split(',') : []
+        
+        // 获取对象详情
+        const objectDetails = await fetchObjectDetails(objectIds)
+        
+        // 构建申请数据
+        const applications = objectDetails.map((obj, objIndex) => ({
+          id: objIndex + 1,
+          objectId: obj.id,
+          applicant: record.applicant || '未知申请方',
+          entity: obj.dataEntity?.entity || '未知实体',
+          applyTime: record.applyTime ? new Date(record.applyTime).toLocaleString('zh-CN') : '-'
+        }))
+        
+        return {
+          groupId: `组${String(index + 1).padStart(3, '0')}`,
+          applyTime: record.applyTime ? new Date(record.applyTime).toLocaleString('zh-CN') : '-',
+          originalApplyTime: record.applyTime,
+          dataCredentialStatus: record.sourceAgreed || false,
+          applications: applications
+        }
+      })
+    )
+    
+    groupData.value = processedGroups
+    totalGroups.value = processedGroups.length
+    
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 当前组数据
 const currentGroupData = computed(() => {
@@ -141,7 +186,7 @@ const tableData = ref([])
 // 单元格合并方法
 const spanMethod = ({ row, column, rowIndex, columnIndex }) => {
   // 组序号列(第0列)、用户名列(第3列)、操作列(第4列)、申请状态列(第5列)需要合并
-  if (columnIndex === 0 || columnIndex === 3 || columnIndex === 4 || columnIndex === 5) {
+  if (columnIndex === 0 || columnIndex === 3 || columnIndex === 4 || columnIndex === 5|| columnIndex === 6) {
     if (rowIndex === 0) {
       return {
         rowspan: currentGroupData.value.length,
@@ -165,25 +210,16 @@ const handlePageChange = (page) => {
   currentPage.value = page
 }
 
-function fetchRecords() {
-  // 使用模拟数据，设置总组数
-  totalGroups.value = groupData.value.length
+async function fetchRecords() {
+  // 从后端获取数据
+  await loadData()
   currentPage.value = 1
-  
-  // 如果需要从API获取数据，可以取消注释下面的代码
-  /*
-  axios.get('http://localhost:8080/api/applications/records', { withCredentials: true })
-    .then(res => {
-      if (res.data && res.data.code === 1) {
-        tableData.value = res.data.data || []
-      } else {
-        ElMessage.error(res.data.msg || '获取申请记录失败')
-      }
-    })
-    .catch(err => {
-      ElMessage.error('获取申请记录失败: ' + (err.response?.data?.message || err.message))
-    })
-  */
+}
+
+// 刷新数据
+const handleRefresh = async () => {
+  await loadData()
+  ElMessage.success('数据已刷新')
 }
 
 watch(dialogVisible, v => {
@@ -195,6 +231,30 @@ watch(dialogVisible, v => {
 // 生成数据凭证方法
 const handleGenerateDV = async () => {
   try {
+    // 获取当前组的申请信息
+    const groupIndex = currentPage.value - 1
+    const group = groupData.value[groupIndex]
+    if (!group || !group.applications || group.applications.length === 0) {
+      ElMessage.error('无法获取申请信息')
+      return
+    }
+    
+    const applicant = group.applications[0].applicant
+    const applyTime = group.originalApplyTime || group.applyTime
+    
+    if (!applicant || !applyTime) {
+      ElMessage.error('申请人或申请时间信息缺失')
+      return
+    }
+    
+    // 直接使用接口返回的原始时间，不进行任何转换
+    const originalApplyTime = applyTime
+    
+    if (!originalApplyTime) {
+      ElMessage.error('申请时间不能为空')
+      return
+    }
+    
     // 显示加载状态
     const loadingInstance = ElLoading.service({
       fullscreen: true,
@@ -202,8 +262,8 @@ const handleGenerateDV = async () => {
       background: 'rgba(0, 0, 0, 0.7)'
     });
     
-    // 调用生成数据凭证接口
-    const response = await axios.post('http://localhost:8081/api/generate-dv');
+    // 调用生成数据凭证接口，传递申请人和申请时间参数
+    const response = await axios.post(`http://localhost:8081/api/generate-dv?applicant=${encodeURIComponent(applicant)}&applyTime=${encodeURIComponent(originalApplyTime)}`);
     
     loadingInstance.close();
     
@@ -292,7 +352,7 @@ const handleGenerateDV = async () => {
 }
 function getStatusText(row) {
   if (row.dataCredentialStatus === true) return '数源方已生成数据凭证'
-  return '数源方待生成数据凭证'
+  return '待数源方生成数据凭证'
 }
 function getStatusTagType(status) {
   if (!status) return 'info'
