@@ -1192,7 +1192,6 @@ const previewEntity = (row) => {
       }
     }, 100)
   } else {
-    console.log('没有本地Excel数据，尝试从API获取')
     fetchExcelDataFromApi(rowCopy.id, previewForm.dataItems)
   }
 }

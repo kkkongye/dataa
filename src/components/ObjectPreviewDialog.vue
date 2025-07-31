@@ -88,9 +88,9 @@
     </div>
     <template v-slot:footer>
       <span class="dialog-footer">
-        <!-- <el-button @click="closeDialog">关闭</el-button> -->
         <slot name="footer"></slot>
         <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
+        <el-button @click="closeDialog">关闭</el-button>
       </span>
     </template>
   </el-dialog>
@@ -123,17 +123,14 @@ const updateTableData = () => {
   // 优先使用传入的excelData
   if (props.excelData && props.excelData.length > 0) {
     excelTableData.value = [...props.excelData]
-    console.log('使用excelData作为数据源:', excelTableData.value.length)
   } 
   // 如果excelData为空但object.dataItems存在，则使用object.dataItems
   else if (props.object && props.object.dataItems && props.object.dataItems.length > 0) {
     excelTableData.value = [...props.object.dataItems]
-    console.log('使用object.dataItems作为数据源:', excelTableData.value.length)
   } 
   // 如果都为空则清空数据
   else {
     excelTableData.value = []
-    console.log('无可用数据源')
   }
 }
 

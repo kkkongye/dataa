@@ -1570,21 +1570,9 @@ function removeWatermark() {
   if (wm) wm.parentNode.removeChild(wm)
 }
 
-onMounted(async () => {
+onMounted(() => {
   setWatermark('使  用  方')
   window.addEventListener('resize', () => setWatermark('使  用  方'))
-  
-  try {
-    const response = await axios.post('http://localhost:8083/api/send-du-info');
-    
-    if (response.data && (response.data.code === 1 || response.data.success === true)) {
-      console.log('使用方系统自动初始化成功');
-    } else {
-      console.warn('使用方系统自动初始化失败:', response.data?.message || response.data?.msg || '未知错误');
-    }
-  } catch (error) {
-    console.error('使用方系统自动初始化失败:', error);
-  }
 })
 onBeforeUnmount(() => {
   removeWatermark()

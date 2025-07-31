@@ -392,7 +392,6 @@ const fetchData = async () => {
         const qualifiedCount = dataArray.filter(item => item.status === '已合格').length
         
         if (qualifiedCount > 0) {
-          ElMessage.success(`成功获取${dataArray.length}条数据，其中${qualifiedCount}条已合格`)
         } else {
           ElMessage.warning('未找到已合格的数据')
         }

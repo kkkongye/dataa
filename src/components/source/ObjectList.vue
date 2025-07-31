@@ -84,7 +84,7 @@
         <el-table-column prop="locationInfo" label="定位信息" min-width="140" align="center">
           <template #default="scope">
             <!-- 增加调试输出 -->
-            <span style="display: none;">{{ console.log('渲染定位信息:', scope.row.id, scope.row.locationInfo) }}</span>
+            <!-- <span style="display: none;">{{ console.log('渲染定位信息:', scope.row.id, scope.row.locationInfo) }}</span> -->
             <span v-if="scope.row.locationInfo">
               <!-- 对象格式的locationInfo -->
               <template v-if="typeof scope.row.locationInfo === 'object' && scope.row.locationInfo !== null">

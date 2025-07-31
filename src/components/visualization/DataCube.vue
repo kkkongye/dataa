@@ -85,11 +85,11 @@ const industryValues = {
 };
 
 // 修改状态颜色映射
-const statusColors = {
-  '已合格': '#91cc75',  // 绿色
-  '不合格': '#ee6666',  // 红色
-  '待校验': '#909399'   // 灰色
-};
+// const statusColors = {
+//   '已合格': '#91cc75',  // 绿色
+//   '不合格': '#ee6666',  // 红色
+//   '待校验': '#909399'   // 灰色
+// };
 
 // 从后端获取数据
 const fetchDataFromBackend = async () => {
@@ -173,7 +173,8 @@ const processBackendData = async () => {
           }
         }
         
-        const statusColor = statusColors[status] || statusColors['待校验'];
+        // const statusColor = statusColors[status] || statusColors['待校验'];
+        const statusColor = '#91cc75'; // 默认绿色
         
         const dataSize = pointSize.value;
         const completeness = 0.8;
@@ -209,7 +210,7 @@ const processBackendData = async () => {
           value: [
             timeValue,
             industryIndex,
-            categoryValue
+            gradeValue
           ],
           industry: industry,
           status: status,
@@ -237,11 +238,13 @@ const processBackendData = async () => {
           ],
           industry: '未知',
           status: '待校验',
-          statusColor: statusColors['待校验'],
+          // statusColor: statusColors['待校验'],
+          statusColor: '#91cc75', // 默认绿色
           completeness: 0.8,
           symbolSize: pointSize.value,
           itemStyle: {
-            color: statusColors['待校验'],
+            // color: statusColors['待校验'],
+            color: '#91cc75', // 默认绿色
             opacity: 0.8
           },
           entity: `错误数据${index+1}`,
@@ -313,7 +316,7 @@ const generateMockData = () => {
       value: [
         timeValue,          
         industries.indexOf(industry),  
-        value             
+        gradeValue             
       ],
       industry: industry,
       securityLevel: securityLevel,
@@ -404,22 +407,22 @@ const forceRender = async () => {
         tooltip: {
           formatter: tooltipFormatter
         },
-        visualMap: {
-          show: true,
-          type: 'piecewise',
-          dimension: 2,
-          pieces: [
-            { value: 0, label: '待校验', color: statusColors['待校验'] },
-            { value: 1, label: '已合格', color: statusColors['已合格'] },
-            { value: 2, label: '不合格', color: statusColors['不合格'] }
-          ],
-          left: 'left',
-          top: 'middle',
-          orient: 'vertical',
-          textStyle: {
-            color: '#333'
-          }
-        },
+        // visualMap: {
+        //   show: true,
+        //   type: 'piecewise',
+        //   dimension: 2,
+        //   pieces: [
+        //     { value: 0, label: '待校验', color: statusColors['待校验'] },
+        //     { value: 1, label: '已合格', color: statusColors['已合格'] },
+        //     { value: 2, label: '不合格', color: statusColors['不合格'] }
+        //   ],
+        //   left: 'left',
+        //   top: 'middle',
+        //   orient: 'vertical',
+        //   textStyle: {
+        //     color: '#333'
+        //   }
+        // },
         xAxis3D: {
           type: 'time',
           name: '最近编辑时间',
@@ -530,7 +533,7 @@ const forceRender = async () => {
             }
           },
           min: 0,
-          max: 100,
+          max: 40,
           splitNumber: 5,
           axisLabel: {
             formatter: '{value}',
@@ -780,22 +783,22 @@ const initChart = async () => {
       tooltip: {
         formatter: tooltipFormatter
       },
-      visualMap: {
-        show: true,
-        type: 'piecewise',
-        dimension: 2,
-        pieces: [
-          { value: 0, label: '待校验', color: statusColors['待校验'] },
-          { value: 1, label: '已合格', color: statusColors['已合格'] },
-          { value: 2, label: '不合格', color: statusColors['不合格'] }
-        ],
-        left: 'left',
-        top: 'middle',
-        orient: 'vertical',
-        textStyle: {
-          color: '#333'
-        }
-      },
+      // visualMap: {
+      //   show: true,
+      //   type: 'piecewise',
+      //   dimension: 2,
+      //   pieces: [
+      //     { value: 0, label: '待校验', color: statusColors['待校验'] },
+      //     { value: 1, label: '已合格', color: statusColors['已合格'] },
+      //     { value: 2, label: '不合格', color: statusColors['不合格'] }
+      //   ],
+      //   left: 'left',
+      //   top: 'middle',
+      //   orient: 'vertical',
+      //   textStyle: {
+      //     color: '#333'
+      //   }
+      // },
       xAxis3D: {
         type: 'time',
         name: '最近编辑时间',
@@ -906,7 +909,7 @@ const initChart = async () => {
           }
         },
         min: 0,
-        max: 100,
+        max: 40,
         splitNumber: 5,
         axisLabel: {
           formatter: '{value}',

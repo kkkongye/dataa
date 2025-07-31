@@ -174,8 +174,7 @@ const handleLogin = async () => {
       ElMessage.error('登录失败，用户名或密码错误')
     }
   } catch (error) {
-    console.error('登录失败:', error)
-    ElMessage.error(error.message || '登录失败，请重试')
+    ElMessage.error('登录失败，请重试')
   } finally {
     loading.value = false
   }

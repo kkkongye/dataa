@@ -245,7 +245,7 @@ const submitApplications = async () => {
     if (error.response) {
       ElMessage.error(error.response.data?.msg || '提交申请失败，请稍后再试');
     } else {
-      ElMessage.error('提交申请失败，可能网络连接问题');
+      ElMessage.error('提交申请失败');
     }
   }
 };
