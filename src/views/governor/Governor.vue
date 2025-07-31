@@ -23,7 +23,7 @@
               </el-input>
           </div>
           <div class="action-buttons">
-
+            <el-button type="success" plain @click="refreshTableData"><el-icon><Refresh /></el-icon>刷新数据</el-button>
             <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button> -->
             <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
             <el-button type="info" plain @click="applicationListVisible = true">申请列表</el-button>
@@ -212,13 +212,74 @@
   />
 
   <ApplicationListDialog v-model:visible="applicationListVisible" />
+
+  <!-- 请求通知弹窗 -->
+  <el-dialog
+    v-model="requestNotificationVisible"
+    title="收到数据胶囊申请"
+    width="500px"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    :show-close="false"
+    class="centered-dialog"
+  >
+    <div class="request-notification-content">
+      <div class="notification-info">
+        <p><strong>申请人：</strong>{{ pendingRequest?.applicant || '未知' }}</p>
+        <div v-if="pendingRequest?.ids">
+          <p><strong>申请数据对象：</strong></p>
+          <template v-if="Array.isArray(pendingRequest.ids)">
+            <p v-for="(id, index) in pendingRequest.ids" :key="index" style="margin-top: 5px;">
+              {{ id }}
+            </p>
+          </template>
+          <template v-else-if="typeof pendingRequest.ids === 'string' && pendingRequest.ids.includes(',')">
+            <p v-for="(id, index) in pendingRequest.ids.split(',')" :key="index" style="margin-top: 5px;">
+              {{ id.trim() }}
+            </p>
+          </template>
+          <template v-else>
+            <p style="margin-top: 5px;">{{ pendingRequest.ids }}</p>
+          </template>
+        </div>
+        <p v-else><strong>申请数据对象：</strong>未知</p>
+        <div v-if="pendingRequest?.entityName">
+          <p><strong>实体名：</strong></p>
+          <template v-if="Array.isArray(pendingRequest.entityName)">
+            <p v-for="(name, index) in pendingRequest.entityName" :key="index" style="margin-top: 5px;">
+              {{ name }}
+            </p>
+          </template>
+          <template v-else-if="typeof pendingRequest.entityName === 'string' && pendingRequest.entityName.includes(',')">
+            <p v-for="(name, index) in pendingRequest.entityName.split(',')" :key="index" style="margin-top: 5px;">
+              {{ name.trim() }}
+            </p>
+          </template>
+          <template v-else>
+            <p style="margin-top: 5px;">{{ pendingRequest.entityName }}</p>
+          </template>
+        </div>
+        <p v-else><strong>实体名：</strong>未知实体</p>
+        <p><strong>申请时间：</strong>{{ new Date().toLocaleString() }}</p>
+      </div>
+    </div>
+    
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handleRequestNotification('later')">稍后处理</el-button>
+        <el-button type="primary" @click="handleRequestNotification('generate')">
+          立即生成并发送数据胶囊
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Search, Lock, Document, UploadFilled, Download } from '@element-plus/icons-vue'
+import { Search, Lock, Document, UploadFilled, Download, Refresh } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '../../components/ExcelPreview.vue'
 import AppHeader from '../../components/AppHeader.vue'
@@ -257,6 +318,13 @@ const editingIndex = ref(-1)
 
 // 表格数据 - 从共享服务获取
 const tableData = ref([])
+
+// 轮询相关变量
+const pollingTimer = ref(null)
+const requestNotificationVisible = ref(false)
+const pendingRequest = ref(null)
+const pollingInterval = ref(5000) // 轮询间隔，默认5秒
+const processedRequestId = ref(null) // 已处理的请求ID，防止重复弹窗
 
 // 适配后端数据到前端格式（增强版）
 function adaptBackendData(backendItem) {
@@ -457,6 +525,18 @@ const loadDataFromBackend = async () => {
   } catch (error) {
     console.error('获取数据失败:', error)
     ElMessage.error('获取数据失败: ' + (error.message || '未知错误'))
+  }
+}
+
+// 刷新表格数据
+const refreshTableData = async () => {
+  try {
+    ElMessage.info('正在刷新数据...')
+    await loadDataFromBackend()
+    ElMessage.success('数据刷新完成')
+  } catch (error) {
+    console.error('刷新数据失败:', error)
+    ElMessage.error('刷新数据失败: ' + (error.message || '未知错误'))
   }
 }
 
@@ -1241,11 +1321,11 @@ const previewEntity = (row) => {
   previewForm.transferControl = row.transferControl
   previewForm.status = row.status
   
-
-  previewForm.totalCategoryValue = ''
-  previewForm.totalGradeValue = ''
-  previewForm.classificationValue = ''
-  previewForm.levelValue = ''
+  // 保留原有的分类分级值，不要重置为空
+  previewForm.totalCategoryValue = row.totalCategoryValue || ''
+  previewForm.totalGradeValue = row.totalGradeValue || ''
+  previewForm.classificationValue = row.classificationValue || ''
+  previewForm.levelValue = row.levelValue || ''
 
   previewForm.metadata = extractMetadata(row)
 
@@ -1778,6 +1858,138 @@ const handleGenerateOrgVouchers = async () => {
 }
 
 // 处理生成并发送数据胶囊给使用方
+// 轮询相关函数
+const startPollingForRequests = () => {
+  if (pollingTimer.value) {
+    clearInterval(pollingTimer.value)
+  }
+  
+  pollingTimer.value = setInterval(async () => {
+    try {
+      const response = await axios.get('http://localhost:8082/api/last-capsule-request')
+      
+      if (response.data && response.data.code === 1 && response.data.data) {
+        // 检查是否已经处理过该请求，防止重复弹窗
+        const currentRequestId = response.data.data.id || response.data.data.requestId || JSON.stringify(response.data.data)
+        if (processedRequestId.value === currentRequestId) {
+          return // 已经处理过该请求，跳过
+        }
+        
+        stopPollingForRequests()
+        
+        // 记录当前请求ID
+        processedRequestId.value = currentRequestId
+        
+        // 获取实体名
+        try {
+          const objectsResponse = await axios.get('http://localhost:8082/api/objects')
+          let entityNames = []
+          
+          let objects = []
+          if (Array.isArray(objectsResponse.data)) {
+            objects = objectsResponse.data
+          } else if (objectsResponse.data.data && Array.isArray(objectsResponse.data.data)) {
+            objects = objectsResponse.data.data
+          } else if (objectsResponse.data.list && Array.isArray(objectsResponse.data.list)) {
+            objects = objectsResponse.data.list
+          }
+          
+          if (objects.length > 0) {
+            const requestIds = response.data.data.ids
+            
+            // 处理多个ID的情况
+            let idsArray = []
+            if (Array.isArray(requestIds)) {
+              idsArray = requestIds
+            } else if (typeof requestIds === 'string' && requestIds.includes(',')) {
+              idsArray = requestIds.split(',').map(id => id.trim())
+            } else {
+              idsArray = [requestIds]
+            }
+            
+            // 为每个ID获取对应的实体名
+             entityNames = idsArray.map(id => {
+               const foundObject = objects.find(obj => obj.id === id)
+               if (foundObject) {
+                 // 根据治理方页面的数据结构获取实体名
+                 let entityName = '未知实体'
+                 if (foundObject.dataEntity && foundObject.dataEntity.entity) {
+                   entityName = foundObject.dataEntity.entity
+                 } else if (foundObject.entity) {
+                   entityName = foundObject.entity
+                 } else if (foundObject.name) {
+                   entityName = foundObject.name
+                 } else if (foundObject.dataContent) {
+                   try {
+                     const dataContent = typeof foundObject.dataContent === 'string' 
+                       ? JSON.parse(foundObject.dataContent) 
+                       : foundObject.dataContent
+                     if (dataContent && dataContent.entity) {
+                       entityName = dataContent.entity
+                     } else if (dataContent && dataContent.dataEntity && dataContent.dataEntity.entity) {
+                       entityName = dataContent.dataEntity.entity
+                     }
+                   } catch (e) {
+                     console.warn('从dataContent解析实体名称失败:', e)
+                   }
+                 }
+                 return entityName
+               }
+               return '未知实体'
+             })
+          }
+          
+          pendingRequest.value = {
+            ...response.data.data,
+            entityName: entityNames.length === 1 ? entityNames[0] : entityNames
+          }
+        } catch (error) {
+          console.log('获取实体名失败:', error.message)
+          pendingRequest.value = {
+            ...response.data.data,
+            entityName: '未知实体'
+          }
+        }
+        
+        requestNotificationVisible.value = true
+      }
+    } catch (error) {
+      // 静默处理错误，避免频繁弹出错误信息
+      console.log('轮询请求失败:', error.message)
+    }
+  }, pollingInterval.value) // 使用动态轮询间隔
+}
+
+const stopPollingForRequests = () => {
+  if (pollingTimer.value) {
+    clearInterval(pollingTimer.value)
+    pollingTimer.value = null
+  }
+  // 重置已处理的请求ID
+  processedRequestId.value = null
+}
+
+const handleRequestNotification = async (action) => {
+  requestNotificationVisible.value = false
+  
+  if (action === 'generate') {
+    // 自动触发生成并发送数据胶囊的逻辑
+    await handleGenerateAndSendCapsule()
+    // 生成后不再轮询，任务完成
+    console.log('数据胶囊生成完成，停止轮询')
+    // 重置已处理的请求ID
+    processedRequestId.value = null
+  } else if (action === 'later') {
+    // 稍后处理，延长轮询间隔到30秒并重新开始轮询
+    pollingInterval.value = 5000
+    // 重置已处理的请求ID，允许稍后重新提醒
+    processedRequestId.value = null
+    setTimeout(() => {
+      startPollingForRequests()
+    }, 1000)
+  }
+}
+
 const handleGenerateAndSendCapsule = async () => {
   const loading = ElLoading.service({ 
     fullscreen: true, 
@@ -1855,10 +2067,12 @@ function removeWatermark() {
 onMounted(() => {
   setWatermark('治  理  方')
   window.addEventListener('resize', () => setWatermark('治  理  方'))
+  startPollingForRequests()
 })
 onBeforeUnmount(() => {
   removeWatermark()
   window.removeEventListener('resize', () => setWatermark('治  理  方'))
+  stopPollingForRequests()
 })
 </script>
 
@@ -2459,5 +2673,45 @@ onBeforeUnmount(() => {
   background-color: #fff7e6;
   color: #fa8c16;
   border: 1px solid #ffd591;
+}
+/* 请求通知弹窗样式 */
+.request-notification-content {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.notification-info {
+  text-align: left;
+  max-width: 400px;
+}
+
+.notification-info p {
+  text-align: left;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notification-info strong {
+  color: #303133;
+  font-weight: 600;
+}
+
+.dialog-footer {
+  text-align: right;
+}
+
+.dialog-footer .el-button {
+  margin-left: 10px;
+}
+
+/* 弹窗标题左对齐样式 */
+.centered-dialog :deep(.el-dialog__header) {
+  text-align: left;
+}
+
+.centered-dialog :deep(.el-dialog__title) {
+  text-align: left;
 }
 </style>

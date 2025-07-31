@@ -7,7 +7,7 @@
     <div class="main-content">
       <!-- 标签页 -->
       <div class="content-card">
-        <div class="table-title">使用方请求的数据对象列表</div>
+        <div class="table-title">我请求的数据对象列表</div>
         <!-- 搜索和操作区 -->
         <div class="action-bar">
           <div class="search-area">
@@ -196,6 +196,10 @@ const fetchApplicationRecords = async () => {
     const response = await axios.get('http://localhost:8083/api/application-records')
     
     if (response.data && response.data.code === 1 && response.data.data) {
+      const currentUsername = localStorage.getItem('username')
+      if (currentUsername) {
+        return response.data.data.filter(record => record.applicant === currentUsername)
+      }
       return response.data.data
     } else {
       console.warn('获取申请记录失败:', response.data?.msg || '未知错误')

@@ -97,7 +97,7 @@
         
         <div class="pagination-area">
           <div class="group-info" style="margin-bottom: 10px; text-align: center; color: #606266;">
-            <span v-if="currentGroup">当前显示：{{ currentGroup.groupId }} - 申请人：{{ currentGroup.applicant }} - 申请时间：{{ currentGroup.applyTime }}</span>
+            <span v-if="currentGroup">当前显示：{{ currentGroup.groupId }} - 申请时间：{{ currentGroup.applyTime }}</span>
           </div>
           <el-pagination
             v-model:current-page="currentPage"
@@ -230,8 +230,13 @@ const fetchApplicationRecords = async () => {
     const response = await axios.get('http://localhost:8083/api/application-records')
     
     if (response.data && response.data.code === 1 && response.data.data) {
-      // 只获取已完成所有审批流程的数据组
-      return response.data.data.filter(record => 
+
+      const currentUsername = localStorage.getItem('username')
+      let filteredRecords = response.data.data
+      if (currentUsername) {
+        filteredRecords = filteredRecords.filter(record => record.applicant === currentUsername)
+      }
+      return filteredRecords.filter(record => 
         record.sourceAgreed === true && 
         record.governanceAgreed1 === true && 
         record.governanceAgreed2 === true
@@ -474,7 +479,7 @@ function handleDecryptForGroup() {
   loading.value = true
   const ids = currentGroup.value.entities.map(row => row.id)
   
-  axios.post('http://localhost:8083/api/decrypt', { ids }, { withCredentials: true })
+  axios.post('http://localhost:8083/api/decrypt', {}, { withCredentials: true })
     .then(res => {
       console.log('解密接口返回结果:', res.data)
       
@@ -484,12 +489,12 @@ function handleDecryptForGroup() {
         // 传递解密后的完整数据给父组件
         emit('show-decrypt', { ids, decryptedData: res.data.data })
       } else {
-        ElMessage.error(`解密失败: ${res.data?.msg || '未知错误'}`)
+        ElMessage.error(`解密失败,请等待治理方生成发送数据胶囊`)
       }
     })
     .catch(err => {
       console.error('解密接口出错:', err)
-      ElMessage.error(`解密失败: ${err.response?.data?.message || err.message}`)
+      ElMessage.error(`解密失败,请等待治理方生成发送数据胶囊`)
     })
     .finally(() => {
       loading.value = false

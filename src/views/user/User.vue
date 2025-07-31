@@ -38,23 +38,7 @@
         
         <!-- 数据表格 -->
         <div class="table-container">
-          <!-- <div v-if="!isDecrypted" class="data-locked-placeholder">
-            <el-icon class="locked-icon"><Lock /></el-icon>
-            <p>数据已加密，请点击右上角"目录"按钮并选择数据对象ID发送解密申请</p>
-            <p>发送解密申请后请等待治理方生成并发送数字胶囊进行解密</p>
-            <p class="locked-subtitle">解密后将显示所有匹配ID的数据对象数据</p>
-          </div> -->
           <el-table
-            style="width: 100%"
-            @selection-change="handleSelectionChange"
-            border
-            height="100%"
-            fit
-            :row-style="{ height: '45px' }"
-            :header-cell-style="headerCellStyle"
-          >
-           <!-- <el-table
-            v-else
             :data="filteredTableData"
             style="width: 100%"
             @selection-change="handleSelectionChange"
@@ -63,12 +47,9 @@
             fit
             :row-style="{ height: '45px' }"
             :header-cell-style="headerCellStyle"
-          > -->
-            <!-- <el-table-column prop="id" label="ID" width="400" align="center" fixed>
-              <template #default="scope">
-                <div class="id-cell">{{ scope.row.id }}</div>
-              </template>
-            </el-table-column> -->
+            v-loading="loading"
+            element-loading-text="正在加载数据..."
+          >
             <el-table-column prop="entity" label="实体" width="300" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
@@ -297,11 +278,113 @@ const selectedRows = ref([])
 const decryptedObjectId = ref('')
 
 
-const tableData = ref(dataObjectService.getAllDataObjects())
+const tableData = ref([])
+const loading = ref(false)
+
+// 获取ID列表
+const fetchObjectIds = async () => {
+  try {
+    const response = await axios.get('http://localhost:8083/api/objects')
+    if (response.data && response.data.code === 1 && response.data.data) {
+      return response.data.data
+    }
+    return []
+  } catch (error) {
+    console.error('获取对象ID列表失败:', error)
+    return []
+  }
+}
+
+// 获取对象详细信息
+const fetchObjectDetails = async () => {
+  try {
+    const response = await axios.get('http://localhost:8081/api/objects/list')
+    if (response.data && response.data.code === 1 && response.data.data) {
+      return response.data.data
+    }
+    return []
+  } catch (error) {
+    console.error('获取对象详细信息失败:', error)
+    return []
+  }
+}
+
+// 加载数据
+const loadTableData = async () => {
+  try {
+    loading.value = true
+    
+    // 获取ID列表和详细信息
+    const [idList, detailList] = await Promise.all([
+      fetchObjectIds(),
+      fetchObjectDetails()
+    ])
+    
+    // 合并数据
+    const mergedData = idList.map(idItem => {
+      // 从详细信息中找到对应的对象
+      const detailItem = detailList.find(detail => detail.id === idItem.id)
+      
+      if (detailItem) {
+        return {
+          id: idItem.id,
+          entity: detailItem.dataEntity?.entity || '未知实体',
+          // 从idItem获取分类分级值
+          totalCategoryValue: idItem.totalCategoryValue,
+          totalGradeValue: idItem.totalGradeValue,
+          classificationValue: idItem.totalCategoryValue,
+          levelValue: idItem.totalGradeValue,
+          // 从detailItem获取其他信息
+          constraint: extractConstraintArray(detailItem.constraintSet),
+          constraintSet: detailItem.constraintSet || {},
+          transferControl: extractTransferControlArray(detailItem.propagationControl),
+          propagationControl: detailItem.propagationControl || {},
+          metadata: detailItem.dataEntity?.metadata || {},
+          dataItems: detailItem.dataEntity?.dataItems || [],
+          status: detailItem.dataEntity?.status || '未知状态',
+          feedback: detailItem.dataEntity?.feedback || '',
+          locationInfo: detailItem.locationInfo || {},
+          auditInfo: detailItem.auditInfo || {}
+        }
+      } else {
+        // 如果没有找到详细信息，只使用ID信息
+        return {
+          id: idItem.id,
+          entity: '未知实体',
+          totalCategoryValue: idItem.totalCategoryValue,
+          totalGradeValue: idItem.totalGradeValue,
+          classificationValue: idItem.totalCategoryValue,
+          levelValue: idItem.totalGradeValue,
+          constraint: [],
+          constraintSet: {},
+          transferControl: extractTransferControlArray(idItem.propagationControl),
+          propagationControl: idItem.propagationControl || {},
+          metadata: {},
+          dataItems: [],
+          status: '未知状态',
+          feedback: '',
+          locationInfo: {},
+          auditInfo: {}
+        }
+      }
+    })
+    
+    tableData.value = mergedData
+    console.log('数据加载完成，共', mergedData.length, '条记录')
+    
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 监听共享服务数据变化
 onMounted(() => {
+  loadTableData()
   dataObjectService.addChangeListener((newData) => {
+    // 可以选择是否重新加载数据
   })
 })
 
@@ -596,45 +679,6 @@ const handleDecrypt = async () => {
   }
 }
 
-// 修改申请token的处理函数
-const handleRequestToken = async () => {
-  if (!decryptForm.objectId) {
-    ElMessage.warning('请先填写数据对象ID')
-    return
-  }
-  
-  isRequestingToken.value = true
-  
-  try {
-    const apiUrl = 'http://localhost:8083/api/getToken'
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    if (data && data.code === 1 && data.msg === 'success' && data.data) {
-      const token = data.data
-      decryptForm.token = token
-      localStorage.setItem('receivedToken', token)
-      ElMessage.success('成功获取token')
-    } else {
-      throw new Error('返回数据格式不符合预期')
-    }
-  } catch (error) {
-    console.error('获取token失败:', error)
-    ElMessage.error(`获取token失败: ${error.message}`)
-  } finally {
-    isRequestingToken.value = false
-  }
-}
 
 const handleGenerateCapsule = async () => {
   if (!decryptForm.objectId) {
@@ -688,56 +732,6 @@ const excelBinaryData = ref(null)
 const excelTableData = ref([])
 const isExcelLoading = ref(false)
 
-const handleExcelDataLoaded = (data) => {
-  console.log('Excel数据加载完成:', data)
-}
-
-const handleExcelError = (error) => {
-  console.error('Excel加载错误:', error)
-  ElMessage.error('加载Excel数据时出错: ' + error)
-}
-
-const getObjectKeys = (dataArray) => {
-  if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) {
-    return [];
-  }
-  
-
-  const keySets = dataArray.map(item => {
-    if (item && typeof item === 'object') {
-      return Object.keys(item);
-    }
-    return [];
-  });
-
-  const allKeys = [...new Set(keySets.flat())];
-  
-  return allKeys;
-}
-
-
-const handleExportExcel = () => {
-  if (excelTableData.value.length === 0) {
-    ElMessage.warning('没有数据可导出');
-    return;
-  }
-  
-  try {
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelTableData.value);
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-
-    const fileName = `${previewForm.entity || 'excel_data'}.xlsx`;
-
-    XLSX.writeFile(wb, fileName);
-    
-    ElMessage.success(`已成功导出 ${fileName}`);
-  } catch (error) {
-    console.error('导出Excel失败:', error);
-    ElMessage.error(`导出Excel失败: ${error.message}`);
-  }
-}
 
 const fetchExcelDataFromApi = async (objectId) => {
   if (!objectId) {
@@ -876,55 +870,6 @@ const extractClassificationValues = (obj) => {
   }
 }
 
-// 根据对象ID生成不同的模拟数据
-const generateMockDataForObject = (objectId) => {
-  // 获取ID的最后两位作为数字（用于生成不同的数据）
-  const idNum = parseInt(objectId.slice(-2), 10) || 1
-  
-  // 根据ID生成不同类型的数据
-  if (objectId.includes('user') || objectId.includes('用户')) {
-    return [
-      { "用户ID": "U10001", "用户名": "张三", "年龄": "28", "性别": "男", "注册日期": "2023-01-15" },
-      { "用户ID": "U10002", "用户名": "李四", "年龄": "34", "性别": "男", "注册日期": "2023-02-22" },
-      { "用户ID": "U10003", "用户名": "王五", "年龄": "26", "性别": "女", "注册日期": "2023-03-08" },
-      { "用户ID": "U10004", "用户名": "赵六", "年龄": "31", "性别": "男", "注册日期": "2023-04-19" },
-      { "用户ID": "U10005", "用户名": "钱七", "年龄": "29", "性别": "女", "注册日期": "2023-05-25" }
-    ]
-  } else if (objectId.includes('order') || objectId.includes('订单')) {
-    return [
-      { "订单ID": "O20001", "用户ID": "U10001", "商品": "笔记本电脑", "金额": "6999", "下单日期": "2023-06-12" },
-      { "订单ID": "O20002", "用户ID": "U10002", "商品": "手机", "金额": "4299", "下单日期": "2023-06-18" },
-      { "订单ID": "O20003", "用户ID": "U10003", "商品": "耳机", "金额": "799", "下单日期": "2023-06-25" },
-      { "订单ID": "O20004", "用户ID": "U10004", "商品": "平板电脑", "金额": "3599", "下单日期": "2023-07-03" },
-      { "订单ID": "O20005", "用户ID": "U10005", "商品": "智能手表", "金额": "1599", "下单日期": "2023-07-10" }
-    ]
-  } else if (objectId.includes('product') || objectId.includes('产品')) {
-    return [
-      { "产品ID": "P30001", "产品名称": "华为MateBook", "类别": "笔记本电脑", "价格": "6999", "库存": "120" },
-      { "产品ID": "P30002", "产品名称": "iPhone 14", "类别": "手机", "价格": "5999", "库存": "350" },
-      { "产品ID": "P30003", "产品名称": "AirPods Pro", "类别": "耳机", "价格": "1999", "库存": "500" },
-      { "产品ID": "P30004", "产品名称": "iPad Air", "类别": "平板电脑", "价格": "4599", "库存": "230" },
-      { "产品ID": "P30005", "产品名称": "Apple Watch", "类别": "智能手表", "价格": "2999", "库存": "180" }
-    ]
-  } else if (objectId.includes('inventory') || objectId.includes('库存')) {
-    return [
-      { "仓库编号": "WH001", "产品ID": "P30001", "产品名称": "华为MateBook", "库存数量": "120", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH001", "产品ID": "P30002", "产品名称": "iPhone 14", "库存数量": "350", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH001", "产品ID": "P30003", "产品名称": "AirPods Pro", "库存数量": "500", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH002", "产品ID": "P30004", "产品名称": "iPad Air", "库存数量": "230", "更新日期": "2023-07-01" },
-      { "仓库编号": "WH002", "产品ID": "P30005", "产品名称": "Apple Watch", "库存数量": "180", "更新日期": "2023-07-01" }
-    ]
-  } else {
-    // 通用数据
-    return [
-      { "姓名": `${idNum}-张三`, "rowNumber": "1", "性别": "男", "对象ID": objectId },
-      { "姓名": `${idNum}-李四`, "rowNumber": "2", "性别": "男", "对象ID": objectId },
-      { "姓名": `${idNum}-王五`, "rowNumber": "3", "性别": "女", "对象ID": objectId },
-      { "姓名": `${idNum}-赵六`, "rowNumber": "4", "性别": "男", "对象ID": objectId },
-      { "姓名": `${idNum}-钱七`, "rowNumber": "5", "性别": "女", "对象ID": objectId }
-    ]
-  }
-}
 
 // 创建Excel数据
 const createExcelFromDataItems = (dataItems) => {
@@ -1365,12 +1310,10 @@ const fetchLatestDataFromApi = async () => {
       }
       
       if (newData.length > 0) {
-
+        // 更新共享服务中的数据
         dataObjectService.updateDataObjects(newData)
         ElMessage.success(`成功获取最新数据`)
-      } else {
-        ElMessage.warning('API返回的数据为空')
-      }
+      } 
     }
   } catch (error) {
     console.error('获取最新数据失败:', error)

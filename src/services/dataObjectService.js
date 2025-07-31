@@ -702,11 +702,11 @@ const transformToBackendFormat = (frontendData) => {
   const constraintSet = {
     constraints: [
       {
-        formatConstraint: frontendData.formatConstraint || "xlsx",
-        accessConstraint: frontendData.accessConstraint || "全部允许",
-        pathConstraint: frontendData.pathConstraint || "点对点",
-        regionConstraint: frontendData.regionConstraint || "内网",
-        shareConstraint: frontendData.shareConstraint || "允许共享"
+        formatConstraint: frontendData.formatConstraint !== undefined ? frontendData.formatConstraint : "xlsx",
+        accessConstraint: frontendData.accessConstraint !== undefined ? frontendData.accessConstraint : "全部允许",
+        pathConstraint: frontendData.pathConstraint !== undefined ? frontendData.pathConstraint : "点对点",
+        regionConstraint: frontendData.regionConstraint !== undefined ? frontendData.regionConstraint : "内网",
+        shareConstraint: frontendData.shareConstraint !== undefined ? frontendData.shareConstraint : "允许共享"
       }
     ]
   };
@@ -1583,7 +1583,29 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
       }
     }
 
+    // 添加调试输出
+    console.log('=== 8081端口状态更新调试信息 ===');
+    console.log('原始对象数据:', currentObject);
+    console.log('原始约束条件字段:', {
+      formatConstraint: currentObject.formatConstraint,
+      accessConstraint: currentObject.accessConstraint,
+      pathConstraint: currentObject.pathConstraint,
+      regionConstraint: currentObject.regionConstraint,
+      shareConstraint: currentObject.shareConstraint
+    });
+    
     const updatedObject = JSON.parse(JSON.stringify(currentObject));
+    
+    // 从constraintSet中提取约束条件字段
+    if (currentObject.constraintSet && currentObject.constraintSet.constraints && currentObject.constraintSet.constraints.length > 0) {
+      const constraint = currentObject.constraintSet.constraints[0];
+      updatedObject.formatConstraint = constraint.formatConstraint;
+      updatedObject.accessConstraint = constraint.accessConstraint;
+      updatedObject.pathConstraint = constraint.pathConstraint;
+      updatedObject.regionConstraint = constraint.regionConstraint;
+      updatedObject.shareConstraint = constraint.shareConstraint;
+    }
+    
     if (updatedObject.dataEntity) {
       updatedObject.entity = updatedObject.dataEntity.entity;
       updatedObject.status = updatedObject.dataEntity.status;
@@ -1600,8 +1622,20 @@ const updateObjectStatusViaApi = async (id, status, feedback = '', localModeOnly
     }
     updatedObject.status = status;
     updatedObject.feedback = feedback;
+    
+    console.log('更新后的对象数据:', updatedObject);
+    console.log('更新后的约束条件字段:', {
+      formatConstraint: updatedObject.formatConstraint,
+      accessConstraint: updatedObject.accessConstraint,
+      pathConstraint: updatedObject.pathConstraint,
+      regionConstraint: updatedObject.regionConstraint,
+      shareConstraint: updatedObject.shareConstraint
+    });
 
     const backendData = transformToBackendFormat(updatedObject);
+    
+    console.log('转换为后端格式后的数据:', backendData);
+    console.log('后端数据中的约束条件:', backendData.constraintSet);
 
     try {
       const response = await axios.put(
@@ -1745,5 +1779,5 @@ export default {
   compareIds,
   cookieService  
   // 已经在前面导出的方法不需要重复导出
-} 
+}
 
