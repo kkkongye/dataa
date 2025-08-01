@@ -155,7 +155,7 @@ const formattedReportContent = computed(() => {
   // 替换分隔符
   formatted = formatted
     .replace(/-{3,}/g, '<hr class="separator">')
-    .replace(/={3,}/g, '<div class="strong-separator"></div>')
+    .replace(/={3,}/g, '<div class="strong-separator">========</div>')
   
   // 格式化标题和子标题
   formatted = formatted
@@ -368,10 +368,14 @@ onMounted(() => {
 }
 
 .strong-separator {
-  height: 2px;
-  background-color: #409eff;
+  text-align: center;
+  font-weight: bold;
+  color: #409eff;
   margin: 15px 0;
-  border-radius: 2px;
+  padding: 8px 0;
+  border-top: 1px solid #409eff;
+  border-bottom: 1px solid #409eff;
+  background-color: #f0f8ff;
 }
 
 @media (max-width: 768px) {

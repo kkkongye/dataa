@@ -6,23 +6,7 @@ import Cookies from 'js-cookie'
 
 let csrfToken = null;
 
-const sharedTableData = reactive([
-  { id: 1, entity: '表01', locationInfo: '(表01, -, -)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可修改'], propagationControl: { canRead: false, canModify: true, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '已合格', feedback: '', excelData: null },
-  { id: 2, entity: '表02', locationInfo: '(表02, 1-2, 3-6)', constraint: ['格式约束:jpg', '访问权限:只允许管理方获取', '传输路径约束:面对面', '地域性约束:外网', '共享约束:不允许共享'], formatConstraint: 'jpg', accessConstraint: '只允许管理方获取', pathConstraint: '面对面', regionConstraint: '外网', shareConstraint: '不允许共享', transferControl: ['可修改'], propagationControl: { canRead: false, canModify: true, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '不合格', feedback: '缺少约束条件', excelData: null },
-  { id: 3, entity: '表03', locationInfo: '(表03, 1-6, 12-50)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读'], propagationControl: { canRead: true, canModify: false, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '已合格', feedback: '', excelData: null },
-  { id: 4, entity: '表04', locationInfo: '(表04, 3-7, 1-10)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读', '可修改', '可销毁'], propagationControl: { canRead: true, canModify: true, canDestroy: true, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '待检验', feedback: '', excelData: null },
-  { id: 5, entity: '表05', locationInfo: '(表05, 5-10, 8-15)', constraint: ['格式约束:jpg', '访问权限:只允许管理方获取', '传输路径约束:面对面', '地域性约束:外网', '共享约束:不允许共享'], formatConstraint: 'jpg', accessConstraint: '只允许管理方获取', pathConstraint: '面对面', regionConstraint: '外网', shareConstraint: '不允许共享', transferControl: ['可读', '可修改'], propagationControl: { canRead: true, canModify: true, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '不合格', feedback: '违反传输路径约束', excelData: null },
-  { id: 6, entity: '表06', locationInfo: '(表06, 2-8, 3-10)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读', '可销毁'], propagationControl: { canRead: true, canModify: false, canDestroy: true, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '已合格', feedback: '', excelData: null },
-  { id: 7, entity: '表07', locationInfo: '(表07, 1-5, 1-7)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读'], propagationControl: { canRead: true, canModify: false, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '待检验', feedback: '', excelData: null },
-  { id: 8, entity: '表08', locationInfo: '(表08, 0-0, 0-0)', constraint: ['格式约束:jpg', '访问权限:只允许管理方获取', '传输路径约束:面对面', '地域性约束:外网', '共享约束:不允许共享'], formatConstraint: 'jpg', accessConstraint: '只允许管理方获取', pathConstraint: '面对面', regionConstraint: '外网', shareConstraint: '不允许共享', transferControl: ['可修改', '可销毁'], propagationControl: { canRead: false, canModify: true, canDestroy: true, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '不合格', feedback: '访问权限不符合要求', excelData: null },
-  { id: 9, entity: '表09', locationInfo: '(表09, 4-15, 2-12)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读', '可修改'], propagationControl: { canRead: true, canModify: true, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '已合格', feedback: '', excelData: null },
-  { id: 10, entity: '表10', locationInfo: '(表10, 7-10, 5-9)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读', '可销毁'], propagationControl: { canRead: true, canModify: false, canDestroy: true, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '待检验', feedback: '', excelData: null },
-  { id: 11, entity: '表11', locationInfo: '(表11, 0-1, 0-1)', constraint: ['格式约束:jpg', '访问权限:只允许管理方获取', '传输路径约束:面对面', '地域性约束:外网', '共享约束:不允许共享'], formatConstraint: 'jpg', accessConstraint: '只允许管理方获取', pathConstraint: '面对面', regionConstraint: '外网', shareConstraint: '不允许共享', transferControl: ['可修改'], propagationControl: { canRead: false, canModify: true, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '不合格', feedback: '格式约束不符', excelData: null },
-  { id: 12, entity: '表12', locationInfo: '(表12, 3-12, 4-8)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读', '可修改', '可销毁'], propagationControl: { canRead: true, canModify: true, canDestroy: true, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '已合格', feedback: '', excelData: null },
-  { id: 13, entity: '表13', locationInfo: '(表13, 5-15, 3-10)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读'], propagationControl: { canRead: true, canModify: false, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '待检验', feedback: '', excelData: null },
-  { id: 14, entity: '表14', locationInfo: '(表14, 2-5, 6-10)', constraint: ['格式约束:jpg', '访问权限:只允许管理方获取', '传输路径约束:面对面', '地域性约束:外网', '共享约束:不允许共享'], formatConstraint: 'jpg', accessConstraint: '只允许管理方获取', pathConstraint: '面对面', regionConstraint: '外网', shareConstraint: '不允许共享', transferControl: ['可修改', '可销毁'], propagationControl: { canRead: false, canModify: true, canDestroy: true, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '不合格', feedback: '共享约束违规', excelData: null },
-  { id: 15, entity: '表15', locationInfo: '(表15, 1-10, 1-20)', constraint: ['格式约束:xlsx', '访问权限:全部允许', '传输路径约束:点对点', '地域性约束:内网', '共享约束:允许共享'], formatConstraint: 'xlsx', accessConstraint: '全部允许', pathConstraint: '点对点', regionConstraint: '内网', shareConstraint: '允许共享', transferControl: ['可读', '可修改'], propagationControl: { canRead: true, canModify: true, canDestroy: false, canShare: false, canDelegate: false }, auditInfo: '查看日志', status: '已合格', feedback: '', excelData: null },
-])
+const sharedTableData = reactive([])
 
 const changeListeners = []
 
@@ -131,14 +115,23 @@ const fetchDataObjectsFromBackend = async () => {
         notifyListeners()
         return sharedTableData
       } else {
-        return sharedTableData
+        // 没有数据时清空表格，显示NoData
+        sharedTableData.splice(0, sharedTableData.length)
+        notifyListeners()
+        return []
       }
     } else {
-      return sharedTableData
+      // 响应无效时清空表格，显示NoData
+      sharedTableData.splice(0, sharedTableData.length)
+      notifyListeners()
+      return []
     }
   } catch (error) {
     console.error('API请求错误:', error.message || '未知错误')
-    return sharedTableData
+    // API请求失败时清空表格，显示NoData，不使用模拟数据
+    sharedTableData.splice(0, sharedTableData.length)
+    notifyListeners()
+    return []
   }
 }
 

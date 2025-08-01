@@ -1655,14 +1655,12 @@ const loadDataFromBackend = async () => {
       ElMessage.error('跨域请求失败，请确保后端已开启CORS支持')
       apiErrorVisible.value = true
     } else {
-      ElMessage.warning('从后端加载数据失败，已切换到本地模拟数据')
+      ElMessage.error('从后端加载数据失败，无法获取数据')
       apiErrorVisible.value = true
     }
     
-    // 如果当前没有数据，则使用模拟数据
-    if (tableData.value.length === 0) {
-      console.log('使用本地模拟数据')
-    }
+    // API失败时不使用模拟数据，显示NoData状态
+    console.log('API失败，显示NoData状态')
   }
 }
 

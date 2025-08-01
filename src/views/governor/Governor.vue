@@ -25,7 +25,7 @@
           <div class="action-buttons">
             <el-button type="success" plain @click="refreshTableData"><el-icon><Refresh /></el-icon>刷新数据</el-button>
             <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button> -->
-            <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
+            <!-- <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button> -->
             <el-button type="info" plain @click="applicationListVisible = true">申请列表</el-button>
           </div>
         </div>
@@ -624,9 +624,9 @@ const handleReview = async (row) => {
       type: 'info',
     });
     try {
-      await axios.get('http://localhost:8081/api/baogao1');
+      await axios.get('http://localhost:8082/api/baogao1');
     } catch (e) {
-      ElMessage.error('8081接口调用失败: ' + (e.message || '未知错误'));
+      ElMessage.error('8082接口调用失败: ' + (e.message || '未知错误'));
       return;
     }
     const loading2 = ElLoading.service({

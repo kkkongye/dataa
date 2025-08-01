@@ -539,6 +539,8 @@ const handleVerifySC = async () => {
       ElMessage.error('验证失败：尚未接收到共享证书，请联系治理方发送共享证书');
     } else if (response.data && response.data.code === 1) {
       ElMessage.success('组织机构凭证验证成功！');
+      // 验证成功后自动刷新数据表格
+      await loadData();
     } else {
       ElMessage.error(`组织机构凭证验证失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
     }
