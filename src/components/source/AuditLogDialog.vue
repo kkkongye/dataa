@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="visible"
-    title="审计日志"
+    :title="`审计日志-${entityName || objectId || '未知实体'}`"
     width="900px"
     :close-on-click-modal="false"
     :show-close="true"
@@ -71,6 +71,10 @@ const props = defineProps({
   objectId: {
     type: String,
     required: true
+  },
+  entityName: {
+    type: String,
+    default: ''
   }
 })
 const emit = defineEmits(['close'])

@@ -369,3 +369,32 @@ function getStatusTagType(status) {
   return 'info'
 }
 </script>
+
+<style scoped>
+/* 表头样式 - 比内容行背景颜色稍微深一些 */
+:deep(.el-table__header th.el-table__cell) {
+  background-color: #f5f7fa !important;
+  color: #606266 !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  padding: 12px 8px !important;
+}
+
+/* 内容行样式 */
+:deep(.el-table__body tr.el-table__row) {
+  background-color: #ffffff;
+}
+
+:deep(.el-table__body tr.el-table__row:nth-child(even)) {
+  background-color: #fafbfc;
+}
+
+/* 分页区域样式 */
+.pagination-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+</style>

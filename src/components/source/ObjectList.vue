@@ -307,6 +307,7 @@
     <AuditLogDialog 
       :visible="auditLogVisible" 
       :object-id="currentRow?.id"
+      :entity-name="currentRow?.entity || ''"
       @close="auditLogVisible = false" 
     />
   </div>
