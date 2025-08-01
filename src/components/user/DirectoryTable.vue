@@ -30,17 +30,17 @@
           :row-key="row => row.id"
           :span-method="spanMethod"
         >
-          <el-table-column prop="id" label="ID" width="300" show-overflow-tooltip>
+          <el-table-column prop="id" label="ID" width="320" show-overflow-tooltip>
             <template #default="scope">
               <div class="id-cell">{{ scope.row.id }}</div>
             </template>
           </el-table-column>
-          <el-table-column prop="entity" label="实体" width="150">
+          <el-table-column prop="entity" label="实体" width="180">
             <template #default="scope">
               <span class="entity-text">{{ scope.row.entity }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="constraint" label="约束条件" width="450" align="center">
+          <el-table-column prop="constraint" label="约束条件" width="400" align="center">
             <template #default="scope">
               <div class="constraint-container">
                 <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -259,9 +259,11 @@ const fetchObjectDetails = async (objectIds) => {
     
     if (response.data && response.data.code === 1 && response.data.data) {
       const allObjects = response.data.data
-      // 根据objectIds筛选对象
-      const filteredObjects = allObjects.filter(obj => objectIds.includes(obj.id))
-      return filteredObjects
+      // 根据objectIds的顺序筛选对象，保持原有顺序
+      const orderedObjects = objectIds.map(id => {
+        return allObjects.find(obj => obj.id === id)
+      }).filter(obj => obj !== undefined) // 过滤掉未找到的对象
+      return orderedObjects
     } else {
       console.warn('获取对象详情失败:', response.data?.msg || '未知错误')
       return []

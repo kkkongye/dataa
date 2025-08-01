@@ -25,7 +25,7 @@
           <div class="action-buttons">
             <el-button type="success" plain @click="refreshTableData"><el-icon><Refresh /></el-icon>刷新数据</el-button>
             <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button> -->
-            <!-- <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button> -->
+            <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
             <el-button type="info" plain @click="applicationListVisible = true">申请列表</el-button>
           </div>
         </div>
@@ -324,7 +324,7 @@ const pollingTimer = ref(null)
 const requestNotificationVisible = ref(false)
 const pendingRequest = ref(null)
 const pollingInterval = ref(5000) // 轮询间隔，默认5秒
-const processedRequestId = ref(null) // 已处理的请求ID，防止重复弹窗
+const processedRequestIds = ref(new Set()) 
 
 // 适配后端数据到前端格式（增强版）
 function adaptBackendData(backendItem) {
@@ -1869,16 +1869,19 @@ const startPollingForRequests = () => {
       const response = await axios.get('http://localhost:8082/api/last-capsule-request')
       
       if (response.data && response.data.code === 1 && response.data.data) {
-        // 检查是否已经处理过该请求，防止重复弹窗
-        const currentRequestId = response.data.data.id || response.data.data.requestId || JSON.stringify(response.data.data)
-        if (processedRequestId.value === currentRequestId) {
-          return // 已经处理过该请求，跳过
+        // 使用ids字段作为唯一标识符
+        const currentRequestIds = response.data.data.ids
+        
+        // 检查是否已经处理过该ID组合，防止重复弹窗
+        if (processedRequestIds.value.has(currentRequestIds)) {
+          return // 已经处理过该ID组合，跳过弹窗但继续轮询
         }
         
-        stopPollingForRequests()
+        // 不停止轮询，继续监听新的请求
+        // stopPollingForRequests() // 注释掉这行，保持轮询继续
         
-        // 记录当前请求ID
-        processedRequestId.value = currentRequestId
+        // 记录当前请求ID组合
+        processedRequestIds.value.add(currentRequestIds)
         
         // 获取实体名
         try {
@@ -1954,10 +1957,9 @@ const startPollingForRequests = () => {
         requestNotificationVisible.value = true
       }
     } catch (error) {
-      // 静默处理错误，避免频繁弹出错误信息
       console.log('轮询请求失败:', error.message)
     }
-  }, pollingInterval.value) // 使用动态轮询间隔
+  }, pollingInterval.value) 
 }
 
 const stopPollingForRequests = () => {
@@ -1965,8 +1967,6 @@ const stopPollingForRequests = () => {
     clearInterval(pollingTimer.value)
     pollingTimer.value = null
   }
-  // 重置已处理的请求ID
-  processedRequestId.value = null
 }
 
 const handleRequestNotification = async (action) => {
@@ -1975,18 +1975,17 @@ const handleRequestNotification = async (action) => {
   if (action === 'generate') {
     // 自动触发生成并发送数据胶囊的逻辑
     await handleGenerateAndSendCapsule()
-    // 生成后不再轮询，任务完成
-    console.log('数据胶囊生成完成，停止轮询')
-    // 重置已处理的请求ID
-    processedRequestId.value = null
+    // 生成后继续轮询，监听新的请求
+    console.log('数据胶囊生成完成，继续轮询监听新请求')
+    // 保持已处理的请求ID集合，不重置
   } else if (action === 'later') {
-    // 稍后处理，延长轮询间隔到30秒并重新开始轮询
-    pollingInterval.value = 5000
-    // 重置已处理的请求ID，允许稍后重新提醒
-    processedRequestId.value = null
-    setTimeout(() => {
-      startPollingForRequests()
-    }, 1000)
+    // 稍后处理，从已处理集合中移除该ID，允许稍后重新提醒
+    const currentIds = pendingRequest.value?.ids
+    if (currentIds) {
+      processedRequestIds.value.delete(currentIds)
+    }
+    // 继续轮询
+    console.log('选择稍后处理，继续轮询')
   }
 }
 

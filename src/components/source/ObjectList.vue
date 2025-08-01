@@ -260,7 +260,7 @@
               {{ extractFeedback(scope.row.dataContent) }}
             </span>
               <span v-else style="margin-bottom: 10px;"></span>
-              <el-button  link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button>
+              <el-button v-if="hasReportContent(scope.row)" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button>
               <!-- <el-button v-if="scope.row.auditReport && scope.row.status !== '已合格'" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button> -->
             </div>
           </template>
@@ -388,6 +388,22 @@ const classificationLevelData = ref({
 const auditLogVisible = ref(false)
 const reportViewerVisible = ref(false)
 const currentReportObjectId = ref('')
+
+// 判断审查报告内容是否为空
+const hasReportContent = (row) => {
+  // 检查auditReport字段是否存在且不为空
+  if (row.auditReport && row.auditReport.trim() !== '') {
+    return true
+  }
+  
+  // 检查其他可能存储报告的字段
+  if (row.reviewReport && row.reviewReport.trim() !== '') {
+    return true
+  }
+  
+  // 如果都没有内容，返回false
+  return false
+}
 
 // 处理查看审查报告
 const handleViewReport = (row) => {
