@@ -21,7 +21,15 @@
       <el-table-column prop="applyTime" label="申请时间" min-width="160" align="center" />
       <el-table-column label="操作" width="160" align="center">
         <template #default="scope">
-          <el-button type="primary" plain @click="handleGenerateDV" size="small">生成数据凭证</el-button>
+          <el-button 
+            type="primary" 
+            plain 
+            @click="handleGenerateDV" 
+            size="small"
+            :disabled="scope.row.dataCredentialStatus === true"
+          >
+            生成数据凭证
+          </el-button>
         </template>
       </el-table-column>
       <el-table-column label="申请状态" min-width="160" align="center">

@@ -176,7 +176,7 @@ const processBackendData = async () => {
         // const statusColor = statusColors[status] || statusColors['待校验'];
         const statusColor = '#91cc75'; // 默认绿色
         
-        const dataSize = pointSize.value;
+        const dataSize = pointSize.value; // 恢复原始大小用于视觉显示
         const completeness = 0.8;
         
         let entityName = `数据${index+1}`;
@@ -241,7 +241,7 @@ const processBackendData = async () => {
           // statusColor: statusColors['待校验'],
           statusColor: '#91cc75', // 默认绿色
           completeness: 0.8,
-          symbolSize: pointSize.value,
+          symbolSize: pointSize.value, // 保持与正常数据一致的视觉大小
           itemStyle: {
             // color: statusColors['待校验'],
             color: '#91cc75', // 默认绿色
@@ -533,7 +533,7 @@ const forceRender = async () => {
             }
           },
           min: 0,
-          max: 40,
+          max: 30,
           splitNumber: 5,
           axisLabel: {
             formatter: '{value}',
@@ -620,31 +620,57 @@ const forceRender = async () => {
             enable: true
           }
         },
-        series: [{
-          type: 'scatter3D',
-          data: chartData.map(item => ({
-            name: item.name,
-            value: item.value,
-            industry: item.industry,
-            status: item.status,
-            statusColor: item.statusColor,
-            completeness: item.completeness,
-            symbolSize: item.symbolSize,
-            itemStyle: item.itemStyle,
-            entity: item.entity,
-            statusInfo: item.statusInfo,
-            metadata: item.metadata,
-            gradeValue: item.gradeValue,
-            id: item.id // 确保ID字段被传递
-          })),
-          emphasis: {
-            itemStyle: {
-              borderWidth: 1,
-              borderColor: '#fff'
-
+        series: [
+          {
+            type: 'scatter3D',
+            name: '数据点',
+            data: chartData.map(item => ({
+              name: item.name,
+              value: item.value,
+              industry: item.industry,
+              status: item.status,
+              statusColor: item.statusColor,
+              completeness: item.completeness,
+              symbolSize: item.symbolSize,
+              itemStyle: item.itemStyle,
+              entity: item.entity,
+              statusInfo: item.statusInfo,
+              metadata: item.metadata,
+              gradeValue: item.gradeValue,
+              id: item.id
+            })),
+            emphasis: {
+              itemStyle: {
+                borderWidth: 2,
+                borderColor: '#fff'
+              }
             }
+          },
+          {
+            type: 'scatter3D',
+            name: '触发区域',
+            symbolSize: 20, // 更大的触发范围
+            data: chartData.map(item => ({
+              name: item.name,
+              value: item.value,
+              industry: item.industry,
+              status: item.status,
+              statusColor: item.statusColor,
+              completeness: item.completeness,
+              symbolSize: 20,
+              itemStyle: {
+                color: 'transparent', // 完全透明
+                opacity: 0
+              },
+              entity: item.entity,
+              statusInfo: item.statusInfo,
+              metadata: item.metadata,
+              gradeValue: item.gradeValue,
+              id: item.id
+            })),
+            silent: false // 确保可以接收事件
           }
-        }]
+        ]
       };
       
       // 应用选项
@@ -653,8 +679,7 @@ const forceRender = async () => {
       // 添加数据点点击事件监听器
       chart.on('click', (params) => {
         if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
-          console.log('数据点被点击:', params.data);
-          // 发送点击事件到父组件
+          // 处理两个系列的点击事件（可见数据点和透明触发区域）
           emit('data-point-click', {
             id: params.data.id || params.data.entity || params.data.name,
             name: params.data.name,
@@ -909,7 +934,7 @@ const initChart = async () => {
           }
         },
         min: 0,
-        max: 40,
+        max: 30,
         splitNumber: 5,
         axisLabel: {
           formatter: '{value}',
@@ -996,31 +1021,57 @@ const initChart = async () => {
           enable: true
         }
       },
-      series: [{
-        type: 'scatter3D',
-        data: chartData.map(item => ({
-          name: item.name,
-          value: item.value,
-          industry: item.industry,
-          status: item.status,
-          statusColor: item.statusColor,
-          completeness: item.completeness,
-          symbolSize: item.symbolSize,
-          itemStyle: item.itemStyle,
-          entity: item.entity,
-          statusInfo: item.statusInfo,
-          metadata: item.metadata,
-          gradeValue: item.gradeValue,
-          id: item.id // 确保ID字段被传递
-        })),
-        emphasis: {
-          itemStyle: {
-            borderWidth: 1,
-            borderColor: '#fff'
-
+      series: [
+        {
+          type: 'scatter3D',
+          name: '数据点',
+          data: chartData.map(item => ({
+            name: item.name,
+            value: item.value,
+            industry: item.industry,
+            status: item.status,
+            statusColor: item.statusColor,
+            completeness: item.completeness,
+            symbolSize: item.symbolSize,
+            itemStyle: item.itemStyle,
+            entity: item.entity,
+            statusInfo: item.statusInfo,
+            metadata: item.metadata,
+            gradeValue: item.gradeValue,
+            id: item.id
+          })),
+          emphasis: {
+            itemStyle: {
+              borderWidth: 2,
+              borderColor: '#fff'
+            }
           }
+        },
+        {
+          type: 'scatter3D',
+          name: '触发区域',
+          symbolSize: 20, // 更大的触发范围
+          data: chartData.map(item => ({
+            name: item.name,
+            value: item.value,
+            industry: item.industry,
+            status: item.status,
+            statusColor: item.statusColor,
+            completeness: item.completeness,
+            symbolSize: 20,
+            itemStyle: {
+              color: 'transparent', // 完全透明
+              opacity: 0
+            },
+            entity: item.entity,
+            statusInfo: item.statusInfo,
+            metadata: item.metadata,
+            gradeValue: item.gradeValue,
+            id: item.id
+          })),
+          silent: false // 确保可以接收事件
         }
-      }]
+      ]
     };
 
     chart.setOption(option);
@@ -1028,8 +1079,7 @@ const initChart = async () => {
     // 添加数据点点击事件监听器
     chart.on('click', (params) => {
       if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
-        console.log('数据点被点击:', params.data);
-        // 发送点击事件到父组件
+        // 处理两个系列的点击事件（可见数据点和透明触发区域）
         emit('data-point-click', {
           id: params.data.id || params.data.entity || params.data.name,
           name: params.data.name,
@@ -1124,10 +1174,8 @@ const updatePointSize = async () => {
   const seriesData = option.series[0].data;
   
   const updatedData = seriesData.map(item => {
-    item.symbolSize = pointSize.value;
+    item.symbolSize = pointSize.value; // 保持视觉大小较小
     return item;
-
-
   });
   
   chart.setOption({

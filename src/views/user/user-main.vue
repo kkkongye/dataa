@@ -134,7 +134,7 @@
                               size="medium"
                               style="margin-left: 20px;"
                             >
-                              验证组织机构凭证
+                              接受并验证共享证书
                             </el-button>
                           </div>
                         </el-timeline-item>

@@ -26,7 +26,13 @@
             <el-button type="success" plain @click="refreshTableData"><el-icon><Refresh /></el-icon>刷新数据</el-button>
             <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button> -->
             <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
-            <el-button type="info" plain @click="applicationListVisible = true">申请列表</el-button>
+            <el-button 
+              :type="hasGovernanceApplications ? 'warning' : 'info'" 
+              plain 
+              @click="applicationListVisible = true"
+            >
+              {{ hasGovernanceApplications ? '申请列表（有新的申请）' : '申请列表' }}
+            </el-button>
           </div>
         </div>
         
@@ -48,7 +54,7 @@
             </el-table-column>
             <el-table-column prop="entity" label="实体" width="120" align="center">
               <template #default="scope">
-                <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
+                <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
             </el-table-column><el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center">
               <template #default="scope">
@@ -135,7 +141,7 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="150" align="center">
+            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="170" align="center">
               <template #default="scope">
                 <div style="display: flex; flex-direction: column; align-items: center;">
                   <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
@@ -149,7 +155,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="250" align="center">
+            <el-table-column label="操作" width="230" align="center">
               <template #default="scope">
                 <div class="status-buttons">
                   <el-button type="primary" size="small" plain @click="handleReview(scope.row)">自动化审查</el-button>
@@ -319,12 +325,71 @@ const editingIndex = ref(-1)
 // 表格数据 - 从共享服务获取
 const tableData = ref([])
 
+// 添加申请记录状态检查
+const applicationStatus = ref({})
+
+// 检查申请记录状态
+const checkApplicationStatus = async () => {
+  try {
+    const response = await axios.get('http://localhost:8083/api/application-records')
+    if (response.data && response.data.code === 1 && Array.isArray(response.data.data)) {
+      const applications = response.data.data
+      const statusMap = {}
+      applications.forEach(app => {
+        // 处理objectIds字段，可能包含多个ID用逗号分隔
+        if (app.objectIds) {
+          const objectIds = app.objectIds.split(',')
+          objectIds.forEach(objectId => {
+            statusMap[objectId.trim()] = {
+              sourceAgreed: app.sourceAgreed,
+              governanceAgreed1: app.governanceAgreed1,
+              governanceAgreed2: app.governanceAgreed2
+            }
+          })
+        }
+      })
+      applicationStatus.value = statusMap
+      console.log('治理方申请记录状态:', statusMap)
+    }
+  } catch (error) {
+    console.error('检查申请记录状态失败:', error)
+  }
+}
+
+// 计算是否有需要治理方处理的申请
+const hasGovernanceApplications = computed(() => {
+  return Object.values(applicationStatus.value).some(status => 
+    status.sourceAgreed === true && status.governanceAgreed1 === false
+  )
+})
+
 // 轮询相关变量
 const pollingTimer = ref(null)
 const requestNotificationVisible = ref(false)
 const pendingRequest = ref(null)
 const pollingInterval = ref(5000) // 轮询间隔，默认5秒
-const processedRequestIds = ref(new Set()) 
+
+// 从localStorage初始化已处理的请求ID集合
+const initProcessedRequestIds = () => {
+  try {
+    const stored = localStorage.getItem('processedRequestIds')
+    return stored ? new Set(JSON.parse(stored)) : new Set()
+  } catch (error) {
+    console.warn('读取localStorage中的processedRequestIds失败:', error)
+    return new Set()
+  }
+}
+
+const processedRequestIds = ref(initProcessedRequestIds()) // 已处理的请求ID集合，防止重复弹窗
+
+// 保存已处理ID集合到localStorage
+const saveProcessedRequestIds = () => {
+  try {
+    localStorage.setItem('processedRequestIds', JSON.stringify([...processedRequestIds.value]))
+  } catch (error) {
+    console.warn('保存processedRequestIds到localStorage失败:', error)
+  }
+} 
 
 // 适配后端数据到前端格式（增强版）
 function adaptBackendData(backendItem) {
@@ -549,6 +614,8 @@ onMounted(() => {
   } else {
     loadDataFromBackend();
   }
+  // 检查申请记录状态
+  checkApplicationStatus()
 })
 onBeforeUnmount(() => {
   removeWatermark()
@@ -623,8 +690,12 @@ const handleReview = async (row) => {
       cancelButtonText: '取消',
       type: 'info',
     });
+    const isBasicRegistrationData = row.entity === '基本登记信息模拟数据';
+    const reportApi = isBasicRegistrationData ? 'baogao1' : 'baogao2';
+    const fillReportApi = isBasicRegistrationData ? 'fill-audit-report1' : 'fill-audit-report2';
+    
     try {
-      await axios.get('http://localhost:8082/api/baogao1');
+      await axios.get(`http://localhost:8082/api/${reportApi}`);
     } catch (e) {
       ElMessage.error('8082接口调用失败: ' + (e.message || '未知错误'));
       return;
@@ -636,7 +707,7 @@ const handleReview = async (row) => {
     });
     let updateResponse;
     try {
-      updateResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/fill-audit-report1`);
+      updateResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/${fillReportApi}`);
     } catch (error) {
       console.error('审查接口调用失败:', error);
       ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
@@ -677,7 +748,7 @@ const handleJudge = async (result) => {
     }).then(async ({ value }) => {
       try {
         // 以待校验状态和合格小结上传到后端
-        const result = await updateStatusViaBothPorts(currentRow.id, '待校验', `合格小结：${value}`);
+        const result = await updateStatusViaBothPorts(currentRow.id, '待校验', `自动化审查合格小结：${value}`);
         if (result) {
           // 弹出确认对话框而不是使用ElMessage
           await ElMessageBox.alert('自动化审查已合格，请继续手工审查', '提示', {
@@ -1882,6 +1953,7 @@ const startPollingForRequests = () => {
         
         // 记录当前请求ID组合
         processedRequestIds.value.add(currentRequestIds)
+        saveProcessedRequestIds() // 同步保存到localStorage
         
         // 获取实体名
         try {
@@ -1983,6 +2055,7 @@ const handleRequestNotification = async (action) => {
     const currentIds = pendingRequest.value?.ids
     if (currentIds) {
       processedRequestIds.value.delete(currentIds)
+      saveProcessedRequestIds() // 同步保存到localStorage
     }
     // 继续轮询
     console.log('选择稍后处理，继续轮询')
@@ -2712,5 +2785,15 @@ onBeforeUnmount(() => {
 
 .centered-dialog :deep(.el-dialog__title) {
   text-align: left;
+}
+
+/* 实体列换行样式 */
+.entity-link {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.4;
+  display: inline-block;
+  max-width: 100%;
 }
 </style>

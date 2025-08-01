@@ -152,15 +152,20 @@ const formattedReportContent = computed(() => {
     .replace(/通过/g, '<span class="highlight-success">通过</span>')
     .replace(/合格/g, '<span class="highlight-success">合格</span>')
   
-  // 替换分隔符
+  // 处理标题格式 ======== 标题 ========
   formatted = formatted
-    .replace(/-{3,}/g, '<hr class="separator">')
-    .replace(/={3,}/g, '<div class="strong-separator">========</div>')
+    .replace(/={8,}\s*([^=<>\n\r]+?)\s*={8,}/g, '<div class="section-title">$1</div>')
   
-  // 格式化标题和子标题
+  // 处理剩余的等号分隔符（不是标题的）
   formatted = formatted
-    .replace(/^(.+?)(?=<br>)/g, '<h3 class="report-title">$1</h3>')
-    .replace(/<br>(.+?)(?=<br>)/g, '<br><h4 class="report-subtitle">$1</h4>')
+    .replace(/={8,}/g, '<div class="strong-separator">========</div>')
+    .replace(/-{3,}/g, '<hr class="separator">')
+  
+  // 格式化行号和字段名
+  formatted = formatted
+    .replace(/第 (\d+) 行/g, '<span class="line-number">第 $1 行</span>')
+    .replace(/字段 \[([^\]]+)\]/g, '<span class="field-name">字段 [$1]</span>')
+    .replace(/原因：([^，。\n<]+)/g, '<span class="reason">原因：$1</span>')
   
   return formatted
 })
@@ -312,12 +317,14 @@ onMounted(() => {
 }
 
 .txt-content {
-  padding: 16px;
+  padding: 16px 16px 16px 40px;
   white-space: pre-wrap;
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   line-height: 1.8;
   color: #303133;
+  text-align: left;
+  font-weight: bold;
 }
 
 .highlight-error {
@@ -376,6 +383,34 @@ onMounted(() => {
   border-top: 1px solid #409eff;
   border-bottom: 1px solid #409eff;
   background-color: #f0f8ff;
+  font-size: 16px;
+}
+
+.section-title {
+  text-align: center;
+  font-weight: 900;
+  color: #303133;
+  margin: 20px 0;
+  padding: 12px 0;
+  font-size: 18px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.line-number {
+  color: #409eff;
+  font-weight: bold;
+}
+
+.field-name {
+  color: #67c23a;
+  font-weight: bold;
+}
+
+.reason {
+  color: #e6a23c;
+  font-style: italic;
 }
 
 @media (max-width: 768px) {

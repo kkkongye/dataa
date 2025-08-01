@@ -499,8 +499,11 @@ const showDecryptDialog = (data) => {
     decryptForm.objectId = data.ids.join(', ')
     decryptedObjectIds.value = data.ids
     
-    // 处理解密后的数据并更新表格
-    handleDecryptedData(data.decryptedData)
+    // 关闭目录对话框
+    directoryDialogVisible.value = false
+    
+    // 刷新页面数据而不是展示解密数据
+    loadTableData()
   } else {
     // 兼容旧格式：只有ids数组
     const ids = Array.isArray(data) ? data : [data]

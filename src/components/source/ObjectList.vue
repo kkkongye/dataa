@@ -46,7 +46,14 @@
         <el-button type="primary" plain @click="$emit('create')">新建数据对象</el-button>
         <el-button type="primary" plain @click="handlePushToGovernance">发送数字对象至治理方</el-button>
         <!-- <el-button type="primary" plain @click="handleGenerateDV">生成数据凭证</el-button> -->
-        <el-button type="info" plain  @click="$emit('show-application-list')" style="margin-left: 8px;">申请列表</el-button>
+        <el-button 
+          :type="hasUnagreedApplications ? 'warning' : 'info'" 
+          plain  
+          @click="$emit('show-application-list')" 
+          style="margin-left: 8px;"
+        >
+          {{ hasUnagreedApplications ? '申请列表（有新的申请）' : '申请列表' }}
+        </el-button>
 
       </div>
     </div>
@@ -68,7 +75,7 @@
         <el-table-column 
           prop="id" 
           label="ID" 
-          width="240" 
+          width="220" 
           align="center"
           sortable
         >
@@ -78,7 +85,7 @@
         </el-table-column>
         <el-table-column prop="entity" label="实体" width="120" align="center">
           <template #default="scope">
-            <el-link type="primary" @click="handlePreview(scope.row)">{{ scope.row.entity }}</el-link>
+            <el-link type="primary" @click="handlePreview(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
           </template>
         </el-table-column>
         <el-table-column prop="locationInfo" label="定位信息" min-width="140" align="center">
@@ -250,7 +257,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="feedback" label="反馈意见" min-width="150" align="center">
+        <el-table-column prop="feedback" label="反馈意见" min-width="160" align="center">
           <template #default="scope">
             <div style="display: flex; flex-direction: column; align-items: center;">
               <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
@@ -313,6 +320,45 @@ import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import ClassificationLevelDialog from './ClassificationLevelDialog.vue'
 import AuditLogDialog from './AuditLogDialog.vue'
 import axios from 'axios'
+
+// 添加申请记录状态检查
+const applicationStatus = ref({})
+
+// 检查申请记录状态
+const checkApplicationStatus = async () => {
+  try {
+    const response = await axios.get('http://localhost:8083/api/application-records')
+    if (response.data && response.data.code === 1 && Array.isArray(response.data.data)) {
+      const applications = response.data.data
+      const statusMap = {}
+      applications.forEach(app => {
+        // 处理objectIds字段，可能包含多个ID用逗号分隔
+        if (app.objectIds) {
+          const objectIds = app.objectIds.split(',')
+          objectIds.forEach(objectId => {
+            statusMap[objectId.trim()] = app.sourceAgreed
+          })
+        }
+      })
+      applicationStatus.value = statusMap
+      console.log('申请记录状态:', statusMap)
+    }
+  } catch (error) {
+    console.error('检查申请记录状态失败:', error)
+  }
+}
+
+// 计算是否有未同意的申请
+const hasUnagreedApplications = computed(() => {
+  return Object.values(applicationStatus.value).some(agreed => agreed === false)
+})
+
+
+
+// 组件挂载时检查状态
+onMounted(() => {
+  checkApplicationStatus()
+})
 
 const props = defineProps({
   // 表格数据
@@ -1327,5 +1373,15 @@ const handleGenerateDV = async () => {
 
 .select-fields-link {
   text-decoration: underline;
+}
+
+/* 实体列换行样式 */
+.entity-link {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.4;
+  display: inline-block;
+  max-width: 100%;
 }
 </style>

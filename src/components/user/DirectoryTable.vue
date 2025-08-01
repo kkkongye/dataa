@@ -114,7 +114,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -487,9 +487,15 @@ function handleDecryptForGroup() {
       
       // 检查新的响应格式
       if (res.data && res.data.code === 1 && res.data.data) {
-        ElMessage.success('解密成功')
-        // 传递解密后的完整数据给父组件
-        emit('show-decrypt', { ids, decryptedData: res.data.data })
+        // 显示解密成功弹框
+        ElMessageBox.alert('已成功解密，请点击实体名查看数据对象具体信息', '解密成功', {
+          confirmButtonText: '好的',
+          type: 'success',
+          callback: () => {
+            // 传递解密后的完整数据给父组件
+            emit('show-decrypt', { ids, decryptedData: res.data.data })
+          }
+        })
       } else {
         ElMessage.error(`解密失败,请等待治理方生成发送数据胶囊`)
       }
