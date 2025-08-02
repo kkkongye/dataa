@@ -2,10 +2,12 @@
   <div class="login-container">
     <div class="login-box">
       <div class="login-title">
-        <span class="system-icon">🔄</span>
+        <img src="/logo.jpg" alt="系统图标" class="system-icon" />
         政务可信数据空间
       </div>
+      <div class="login-subtitle">账号登录</div>
       <el-form :model="loginForm" class="login-form" ref="loginFormRef">
+      
         <el-form-item>
           <div class="username-selector">
             <el-icon class="input-icon"><User /></el-icon>
@@ -262,8 +264,10 @@ const goToRegister = () => {
 }
 
 .system-icon {
-  font-size: 32px;
-  margin-right: 10px;
+  width: 40px;
+  height: 40px;
+  margin-right: 8px;
+  object-fit: contain;
 }
 
 .login-title::after {
@@ -276,6 +280,15 @@ const goToRegister = () => {
   width: 80px;
   background: linear-gradient(90deg, #409EFF, #53a8ff);
   border-radius: 3px;
+}
+
+.login-subtitle {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #606266;
+  margin-bottom: 20px;
+  margin-top: 10px;
 }
 
 .username-selector {

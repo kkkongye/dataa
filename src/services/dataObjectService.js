@@ -72,7 +72,7 @@ const fetchDataObjectById = async (id) => {
 
 const fetchDataObjectsFromBackend = async () => {
   try {
-    const response = await axiosInstance.get(`/objects/list`)
+    const response = await axiosInstance.get(`/objects/list1`)
     
  
     lastReceivedApiData = response.data
@@ -102,6 +102,15 @@ const fetchDataObjectsFromBackend = async () => {
         }
       }
       
+      // 获取当前登录用户名，进行数据过滤
+      const currentUsername = localStorage.getItem('username')
+      if (currentUsername && dataArray.length > 0) {
+        // 根据creatorName字段过滤数据，只显示当前用户创建的数据
+        dataArray = dataArray.filter(item => {
+          return item.creatorName === currentUsername
+        })
+        console.log(`数据过滤完成，当前用户: ${currentUsername}，过滤后数据数量: ${dataArray.length}`)
+      }
 
       if (dataArray.length > 0) {
         sharedTableData.splice(0, sharedTableData.length)
@@ -770,7 +779,10 @@ const transformToBackendFormat = (frontendData) => {
     rowGrades: frontendData.rowGrades,
     columnGrades: frontendData.columnGrades,
 
-    dataItems: frontendData.dataItems || []
+    dataItems: frontendData.dataItems || [],
+    
+    // 添加creatorName字段
+    creatorName: frontendData.creatorName
   }
 
   return result;
@@ -866,6 +878,13 @@ const addDataObjectViaApi = async (dataObject, extraParams = {}) => {
   try {
 
     const token = await prepareCsrfToken();
+
+    // 添加creatorName字段，设置为当前登录用户
+    const currentUsername = localStorage.getItem('username')
+    if (currentUsername && !dataObject.creatorName) {
+      dataObject.creatorName = currentUsername
+      console.log(`为新建数据对象设置创建者: ${currentUsername}`)
+    }
 
     if (!dataObject.originalMetadata && dataObject.metadata) {
       dataObject.originalMetadata = { ...dataObject.metadata };

@@ -2,9 +2,10 @@
   <div class="register-container">
     <div class="register-box">
       <div class="register-title">
-        <span class="system-icon">🔄</span>
-        账号注册
+        <img src="/logo.jpg" alt="系统图标" class="system-icon" />
+        政务可信数据空间
       </div>
+      <div class="register-subtitle">账号注册</div>
       <el-form :model="registerForm" class="register-form" ref="registerFormRef">
         <el-form-item>
           <div class="username-selector">
@@ -325,8 +326,10 @@ const goToLogin = () => {
 }
 
 .system-icon {
-  font-size: 32px;
-  margin-right: 10px;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  object-fit: contain;
 }
 
 .register-title::after {
@@ -335,10 +338,19 @@ const goToLogin = () => {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  height: px;
+  height: 3px;
   width: 80px;
   background: linear-gradient(90deg, #3d8cdd, #6aa9ef);
   border-radius: 3px;
+}
+
+.register-subtitle {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #606266;
+  margin-bottom: 20px;
+  margin-top: 10px;
 }
 
 .register-form {

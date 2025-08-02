@@ -39,6 +39,7 @@
         </el-input>
       </div>
       <div class="action-buttons">
+        <el-button type="success" plain @click="$emit('refresh')"><el-icon><Refresh /></el-icon>刷新数据</el-button>
         <!-- <el-button type="primary" plain @click="$emit('visualization')" class="visualization-btn">
           <el-icon><DataAnalysis /></el-icon>
           三维数据可视化
@@ -315,7 +316,7 @@
 
 <script setup>
 import { ref, computed, watch, defineEmits, defineProps, onMounted } from 'vue'
-import { Search, InfoFilled, DataAnalysis } from '@element-plus/icons-vue'
+import { Search, DataAnalysis, Refresh } from '@element-plus/icons-vue'
 import CommonPagination from '@/components/CommonPagination.vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import ClassificationLevelDialog from './ClassificationLevelDialog.vue'

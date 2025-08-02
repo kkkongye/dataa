@@ -41,6 +41,7 @@
         <!-- 元数据信息显示 -->
         <div v-if="object.metadata" class="metadata-section">
           <span class="info-item"><strong>状态：</strong>{{ object.status }}</span>
+          <div class="info-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
           <div class="metadata-items">
             <div class="metadata-item">数据名称: <strong>{{ object.metadata.dataName || object.entity }}</strong></div>
             <div class="metadata-item">来源单位: <strong>{{ object.metadata.sourceUnit || '数据部' }}</strong></div>
@@ -48,7 +49,6 @@
             <div class="metadata-item">联系电话: <strong>{{ object.metadata.contactPhone || '未提供' }}</strong></div>
             <div class="metadata-item">资源摘要: <strong>{{ object.metadata.resourceSummary|| '无' }}</strong></div>
             <div class="metadata-item">领域分类: <strong>{{ object.metadata.fieldClassification || '未分类' }}</strong></div>
-            <div class="metadata-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
           </div>
         </div>
       </div>
@@ -274,8 +274,8 @@ function handleExportExcel() {
   padding: 8px 10px;
   background-color: #f9f9f9;
   border-radius: 4px;
-  width: 98%;
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1800px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   border: 1px solid #eaeaea;
 }
@@ -339,7 +339,7 @@ function handleExportExcel() {
   margin: 0;
 }
 .constraint-info {
-  max-width: 500px;
+  max-width: 800px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

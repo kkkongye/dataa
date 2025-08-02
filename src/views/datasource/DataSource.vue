@@ -26,6 +26,7 @@
           @visualization="showVisualization"
           @show-application-list="applicationListVisible = true"
           @view-report="handleViewReport"
+          @refresh="handleRefreshData"
         />
       </div>
     </div>
@@ -567,7 +568,7 @@ const handleEdit = async (row) => {
   }
   
   try {
-    const apiUrl = 'http://localhost:8081/api/objects/list';
+    const apiUrl = 'http://localhost:8081/api/objects/list1';
     const response = await axios.get(apiUrl);
     
     let targetObject = null;
@@ -660,7 +661,7 @@ const saveEditObject = async (updatedObject) => {
   try {
     if (!updatedObject.dataItems || updatedObject.dataItems.length === 0) {
       try {
-        const apiUrl = 'http://localhost:8081/api/objects/list';
+        const apiUrl = 'http://localhost:8081/api/objects/list1';
         const response = await axios.get(apiUrl);
         
         let targetObject = null;
@@ -1204,7 +1205,7 @@ const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
   
   isExcelLoading.value = true
 
-  const apiUrl = 'http://localhost:8081/api/objects/list'
+  const apiUrl = 'http://localhost:8081/api/objects/list1'
   
   try {
     const response = await axios.get(apiUrl)
@@ -2607,6 +2608,17 @@ const handleDataUpdate = (newData) => {
 
     ElMessage.warning('数据更新处理失败，尝试刷新页面');
     refreshData();
+  }
+}
+
+// 处理刷新数据按钮点击
+const handleRefreshData = async () => {
+  try {
+    console.log('用户点击刷新数据按钮');
+    await refreshData();
+  } catch (error) {
+    console.error('刷新数据失败:', error);
+    ElMessage.error('刷新数据失败: ' + (error.message || '未知错误'));
   }
 }
 
