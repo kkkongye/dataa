@@ -6,6 +6,8 @@ CREATE DATABASE IF NOT EXISTS login_database
 USE login_database;
 
 DROP TABLE users;
+
+
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
@@ -15,7 +17,7 @@ CREATE TABLE users (
 
 ALTER TABLE users
 ADD COLUMN ROLE VARCHAR(255);
-
+ALTER TABLE users ADD COLUMN superior VARCHAR(255);
 
 
 
@@ -165,7 +167,7 @@ ALTER TABLE data_objects ADD COLUMN data_content TEXT;
 DROP DATABASE IF EXISTS consumer_database;
 CREATE DATABASE consumer_database CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE consumer_database;
-DROP TABLE IF EXISTS consumer_objects;
+DROP TABLE IF EXISTS data_objects;
 
 CREATE TABLE consumer_objects (
     id VARCHAR(255) PRIMARY KEY COMMENT '对象唯一标识',
@@ -197,3 +199,32 @@ CREATE TABLE data_objects (
     created_at DATETIME,
     updated_at DATETIME
 );
+
+
+USE application_database;
+DROP TABLE IF EXISTS application_record;
+
+CREATE TABLE application_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '申请记录ID',
+    object_ids TEXT NOT NULL COMMENT '申请的数据对象ID列表(逗号分隔)',
+    applicant VARCHAR(255) NOT NULL COMMENT '使用方申请人username',
+    source_agreed BOOLEAN DEFAULT NULL COMMENT '数源方同意状态',
+    source_operator VARCHAR(255) DEFAULT NULL COMMENT '数源方审批操作人',
+    governance_agreed1 BOOLEAN DEFAULT NULL COMMENT '治理方同意状态1',
+    governance_agreed2 BOOLEAN DEFAULT NULL COMMENT '治理方同意状态2',
+    governance_operator VARCHAR(255) DEFAULT NULL COMMENT '治理方审批操作人',
+    apply_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    INDEX idx_applicant (applicant),
+    INDEX idx_apply_time (apply_time)
+) COMMENT '数据对象申请记录表';
+
+
+ALTER TABLE application_record
+MODIFY COLUMN source_agreed BOOLEAN DEFAULT FALSE,
+MODIFY COLUMN source_operator VARCHAR(255),
+MODIFY COLUMN governance_agreed1 BOOLEAN DEFAULT FALSE,
+MODIFY COLUMN governance_operator VARCHAR(255),
+MODIFY COLUMN governance_agreed2 BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE application_record 
+MODIFY COLUMN apply_time TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);

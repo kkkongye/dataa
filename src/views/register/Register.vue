@@ -205,7 +205,11 @@ const goToLogin = () => {
   align-items: center;
   height: 100vh;
   width: 100vw;
-  background: linear-gradient(135deg, #f0f7ff 0%, #b5d0e7 100%);
+  background-image: url('/loginbg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   position: fixed;
   top: 0;
   left: 0;

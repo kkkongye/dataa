@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="visible"
     :title="`审计日志-${entityName || objectId || '未知实体'}`"
-    width="900px"
+    width="1200px"
     :close-on-click-modal="false"
     :show-close="true"
     @close="emit('close')"
@@ -36,6 +36,8 @@
           <el-table-column prop="user" label="操作用户" align="center" />
           <el-table-column prop="time" label="操作时间" align="center" />
           <el-table-column prop="type" label="操作类型" align="center" />
+          <el-table-column prop="blockNumber" label="区块号" align="center" />
+          <el-table-column prop="transactionHash" label="交易哈希" align="center" width="300" :show-overflow-tooltip="false" />
         </el-table>
         <div class="pagination-area">
           <el-pagination
@@ -105,6 +107,23 @@ const getStatusType = (status) => {
   }
 }
 
+const fetchTransactionHash = async (blockNumber) => {
+  try {
+    const response = await fetch(`http://localhost:8081/api/transaction-hash/${blockNumber}`)
+    if (!response.ok) {
+      throw new Error(`请求失败: ${response.status} ${response.statusText}`)
+    }
+    const result = await response.json()
+    if (result.code === 1 && result.data) {
+      return result.data
+    }
+    return '获取失败'
+  } catch (error) {
+    console.error('获取交易哈希失败:', error)
+    return '获取失败'
+  }
+}
+
 const fetchAuditLogs = async () => {
   console.log('开始获取审计日志，objectId:', props.objectId)
   if (!props.objectId) {
@@ -129,15 +148,22 @@ const fetchAuditLogs = async () => {
     
     if (result.code === 1 && result.data) {
       console.log('数据处理前:', result.data)
-      allData.value = result.data.map((record) => {
-        const mappedData = {
-          user: record.username,
-          time: record.formattedTimestamp,
-          type: getStatusType(record.statusCode)
-        }
-        console.log('映射数据:', record, ' -> ', mappedData)
-        return mappedData
-      })
+      // 并行获取所有交易哈希
+      const recordsWithHash = await Promise.all(
+        result.data.map(async (record) => {
+          const transactionHash = await fetchTransactionHash(record.blocknumber)
+          const mappedData = {
+            user: record.username,
+            time: record.readableTimestamp,
+            type: getStatusType(record.statusCode),
+            blockNumber: record.blocknumber,
+            transactionHash: transactionHash
+          }
+          console.log('映射数据:', record, ' -> ', mappedData)
+          return mappedData
+        })
+      )
+      allData.value = recordsWithHash
       console.log('最终数据:', allData.value)
     } else {
       console.error('API返回错误:', result.msg)
@@ -217,7 +243,7 @@ function handleViewAuditLog() {
 .audit-log-content {
   display: flex;
   flex-direction: row;
-  min-height: 400px;
+  min-height: 500px;
 }
 .log-directory {
   width: 150px;
@@ -226,7 +252,7 @@ function handleViewAuditLog() {
 .log-menu {
   border-radius: 8px;
   border: 1px solid #e4e7ed;
-  min-height: 320px;
+  min-height: 420px;
 }
 .log-table-area {
   flex: 1;
@@ -239,6 +265,11 @@ function handleViewAuditLog() {
 .el-table {
   width: 100% !important;
   margin: 0;
+}
+
+.el-table .el-table__cell {
+  word-break: break-all;
+  white-space: normal;
 }
 .pagination-area {
   margin-top: 16px;

@@ -22,6 +22,7 @@
             </el-input>
           </div>
           <div class="action-buttons">
+            <el-button type="danger" plain @click="clearDatabase">清空使用方数据库</el-button>
             <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
@@ -1357,46 +1358,61 @@ const goToUserMain = () => {
   router.push('/user-main')
 }
 
-
-
-// 处理验证组织机构凭证
-const handleVerifySC = async () => {
+// 清空使用方数据库
+const clearDatabase = async () => {
   try {
+    // 显示确认对话框
+    await ElMessageBox.confirm(
+      '此操作将清空所有数据对象，是否继续？',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
     const loadingInstance = ElLoading.service({
       fullscreen: true,
-      text: '正在验证组织机构凭证...',
+      text: '正在清空数据库...',
       background: 'rgba(0, 0, 0, 0.7)'
-    });
-
-    const response = await axios.post('http://localhost:8083/api/verify-sc');
-
-    loadingInstance.close();
-
-    if (response.data && response.data.code === 0 && response.data.msg === '尚未接收到共享证书') {
-      ElMessage.error('验证失败：尚未接收到共享证书，请联系治理方发送共享证书');
-    } else if (response.data && response.data.code === 1) {
-      ElMessage.success('组织机构凭证验证成功！');
+    })
+    
+    const response = await axios.delete('http://localhost:8083/api/objects')
+    
+    loadingInstance.close()
+    
+    if (response.data && response.data.code === 1) {
+      ElMessage.success(response.data.data || '所有数据对象已清空')
+      // 清空后重新加载数据
+      await loadTableData()
     } else {
-      ElMessage.error(`组织机构凭证验证失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
+      ElMessage.error(`清空失败: ${response.data?.message || '未知错误'}`)
     }
   } catch (error) {
-    console.error('组织机构凭证验证失败:', error);
+    if (error === 'cancel') {
+      ElMessage.info('已取消清空操作')
+      return
+    }
+    
+    console.error('清空数据库失败:', error)
     
     if (error.response) {
       if (error.response.status === 404) {
-        ElMessage.error('使用方服务未启动或接口不存在');
+        ElMessage.error('后端服务未启动或接口不存在')
       } else if (error.response.status === 500) {
-        ElMessage.error(`使用方服务错误: ${error.response.data?.message || '内部服务器错误'}`);
+        ElMessage.error(`服务器错误: ${error.response.data?.message || '内部服务器错误'}`)
       } else {
-        ElMessage.error(`验证失败 (${error.response.status}): ${error.response.data?.message || error.message}`);
+        ElMessage.error(`清空失败 (${error.response.status}): ${error.response.data?.message || error.message}`)
       }
     } else if (error.request) {
-      ElMessage.error('无法连接到使用方服务，请确保服务已启动');
+      ElMessage.error('无法连接到后端服务，请确保服务已启动')
     } else {
-      ElMessage.error(`组织机构凭证验证失败: ${error.message || '未知错误'}`);
+      ElMessage.error(`清空数据库失败: ${error.message || '未知错误'}`)
     }
   }
-};
+}
+
 
 
 const headerCellStyle = ({ column }) => {
@@ -1532,7 +1548,11 @@ onBeforeUnmount(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   overflow: hidden;
   position: absolute;
   top: 0;
@@ -1545,13 +1565,13 @@ onBeforeUnmount(() => {
 .main-content {
   flex: 1;
   padding: 16px;
-  background-color: #ffffff;
+  background-color: transparent;
   overflow: auto;
   box-sizing: border-box;
 }
 
 .content-card {
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);

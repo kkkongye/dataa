@@ -2993,7 +2993,11 @@ function removeWatermark() {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   overflow: hidden;
   position: absolute;
   top: 0;
@@ -3006,13 +3010,13 @@ function removeWatermark() {
 .main-content {
   flex: 1;
   padding: 16px;
-  background-color: #ffffff;
+  background-color: transparent;
   overflow: auto;
   box-sizing: border-box;
 }
 
 .content-card {
-  background-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
