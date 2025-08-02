@@ -54,7 +54,7 @@
         <div class="classification-result">
           <div class="formula">计算公式：行业领域分类值 + 处理时效分类值 + 数据来源分类值</div>
           <div class="calculation">{{ getIndustryCategoryValue() || 0 }} + {{ getTimelinessValue() || 0 }} + {{ getSourceValue() || 0 }}</div>
-          <div class="result-value">文件分类值计算得：{{ totalClassificationValue }}</div>
+          <div class="result-value">该数据对象分类值计算得：{{ totalClassificationValue }}</div>
         </div>
       </el-tab-pane>
 
@@ -65,22 +65,22 @@
           
           <div class="level-item">
             <span class="label">列分级值：</span>
-            <span class="value">{{ columnGradeValue }}</span>
+            <span class="value">{{ columnGradeValue*0.001.toFixed(4) }}</span>
 
             <el-link type="primary" class="help-link" @click="showColumnDetailDialog">查看详情</el-link>
           </div>
           
-          <div class="grading-rule-card">① 根据字段的敏感程度来确定数据的级别;</div>
+          <div class="grading-rule-card">①根据字段的敏感程度来确定数据的级别;</div>
 
 
           <div class="level-item">
             <span class="label">行分级值：</span>
-            <span class="value">{{ rowGradeValue }}</span>
+            <span class="value">{{ (rowGradeValue*0.001).toFixed(4) }}</span>
             <el-link type="primary" class="help-link" @click="showRowDetailDialog">查看详情</el-link>
             <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link>
           </div>
           
-          <div class="grading-rule-card">② 数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</div>
+          <div class="grading-rule-card">②数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</div>
           
           <!-- 权重修改表单 -->
           <div v-if="showWeightForm" class="weight-form">
@@ -103,15 +103,23 @@
           
           <div class="level-item">
             <span class="label">表分级值：</span>
-            <span class="value">{{ totalGradeValue }}</span>
+            <span class="value">{{ (tableGradeValue*0.001).toFixed(4) }}</span>
           </div>
           
-          <div class="grading-rule-card">③ 由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</div>
+          <div class="grading-rule-card">③由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</div>
           
+
+          <div class="level-item">
+              <span class="label">库分级值：</span>
+              <span class="value">{{ ((dbGrade+tableGradeValue)*0.001).toFixed(4) }}</span>
+          </div>
+
+          <div class="grading-rule-card">④根据数据库的数据量、表分级值确定;</div>
         </div>
 
+
         <div class="level-result">
-          <div class="result-value">最终该<b>表分级值</b>计算得：{{ totalGradeValue }}</div>
+          <div class="result-value">该数据对象分级值计算得：{{ (totalGradeValue).toFixed(4) }}</div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -231,7 +239,6 @@
 import { ref, reactive, computed, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
-import { API_URL } from '@/services/apiConfig'
 
 const props = defineProps({
   visible: {
@@ -347,6 +354,15 @@ const columnGradeValue = computed(() => {
 })
 
 
+const tableGradeValue = computed(() => {
+  try {
+    const tableValue = parseFloat(tableGrade.value) || 0;
+    return tableValue;
+  } catch (error) {
+    return 0;
+  }
+})
+
 const totalGradeValue = computed(() => {
   try {
     const dbValue = parseFloat(dbGrade.value) || 0;
@@ -356,8 +372,8 @@ const totalGradeValue = computed(() => {
     
     // 表分级值 = 原始表分级值 + 列权重平均值
     // const adjustedTableValue = tableValue + columnAverageValue.value;
-    const adjustedTableValue = tableValue ;
-    const result = parseFloat(adjustedTableValue.toFixed(3));
+    const adjustedTableValue = (tableValue+dbValue)*0.001 ;
+    const result = parseFloat(adjustedTableValue.toFixed(4));
     
     return result;
   } catch (error) {
@@ -420,27 +436,27 @@ watch(() => props.modelValue, (newVal) => {
 
 // 分类值映射
 const industryCategoryMap = reactive({
-  '交通运输': 90,
-  '金融': 90,
-  '卫生社会工作': 90,
-  '教育': 60,
-  '制造业': 60,
-  '建筑业': 60,
-  '餐饮': 30,
-  '居民服务': 30,
-  '个人组织': 30
+  '交通运输': 900,
+  '金融': 900,
+  '卫生社会工作': 900,
+  '教育': 600,
+  '制造业': 600,
+  '建筑业': 600,
+  '餐饮': 300,
+  '居民服务': 300,
+  '个人组织': 300
 })
 
 const timelinessMap = reactive({
-  '实时': 9,
-  '近实时': 6,
-  '历史': 3
+  '实时': 90,
+  '近实时': 60,
+  '历史': 30
 })
 
 const sourceMap = reactive({
-  '政府': 0.9,
-  '企业': 0.6,
-  '个人': 0.3
+  '政府': 9,
+  '企业': 6,
+  '个人': 3
 })
 
 
@@ -1038,8 +1054,7 @@ const fetchExcelData = async (type = 'row') => {
             gradeRow['_isGradeRow'] = true;
             columnExcelData.value.push(gradeRow);
           }
-          
-          console.log(`[分类分级详情] 列分级值数据处理完成，数量: ${columnExcelData.value.length}`);
+        
         }
         
         return true;
@@ -1048,12 +1063,9 @@ const fetchExcelData = async (type = 'row') => {
       }
     }
     
-    // 如果上面的方法都失败了，说明API返回格式异常
-    console.error('[分类分级详情] 无法从API响应中提取有效数据');
     throw new Error('API返回数据格式不正确');
     
   } catch (error) {
-    console.error('[分类分级详情] 获取数据失败:', error.message);
     
     // 不使用模拟数据，直接设置为空
     if (type === 'row') {

@@ -1382,80 +1382,7 @@ const cookieService = {
   }
 }
 
-// 添加新方法：获取会话中的临时数据对象
-const fetchTempDataObject = async (uploadData = null, retryCount = 3, retryDelay = 500) => {
-  try {
-
-    const attempts = [];
-    
-    for (let attempt = 0; attempt < retryCount; attempt++) {
-      try {
-
-        if (attempt > 0) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
-
-        let url = `${API_URL}/objects/temp`;
-        const config = {};
-        
-        if (uploadData) {
-          if (typeof uploadData === 'string') {
-            url += `?id=${encodeURIComponent(uploadData)}`;
-          } else if (typeof uploadData === 'object') {
-            if (uploadData.id) {
-              url += `?id=${encodeURIComponent(uploadData.id)}`;
-            }
-
-            if (uploadData.timestamp) {
-              url += (url.includes('?') ? '&' : '?') + `timestamp=${uploadData.timestamp}`;
-            }
-          }
-
-          config.withCredentials = true;
-        }
-
-        const response = await axiosInstance.get(url, config);
-        
-
-        attempts.push({
-          attempt: attempt + 1,
-          status: response.status,
-          hasData: !!response.data
-        });
-        
-        // 检查响应
-        if (response.data && response.status === 200) {
-          return {
-            success: true,
-            data: response.data,
-            attempts
-          };
-        }
-      } catch (attemptError) {
-        console.warn(`第 ${attempt + 1} 次获取临时对象失败:`, attemptError.message);
-        attempts.push({
-          attempt: attempt + 1,
-          error: attemptError.message
-        });
-      }
-    }
-    
-    // 所有尝试都失败
-    console.warn('获取临时数据对象失败，已尝试多次:', attempts);
-    return {
-      success: false,
-      message: '无法获取临时数据对象，多次尝试后失败',
-      attempts
-    };
-  } catch (error) {
-    console.error('获取临时数据对象时出错:', error);
-    return {
-      success: false,
-      message: error.message || '获取临时数据对象时发生异常',
-      error: error
-    };
-  }
-};
+// 已删除 fetchTempDataObject 方法，不再调用 /api/objects/temp 接口
 
 // 添加上传Excel文件的方法
 const uploadExcelFile = async (file) => {
@@ -1493,45 +1420,21 @@ const uploadExcelFile = async (file) => {
           }
         }
  
-        const tempResult = await fetchTempDataObject(identifierData);
-        
-        if (tempResult.success) {
-
-          const mergedData = {
-            ...tempResult.data,
-            uploadResponse: response.data,
-            timestamp
-          };
-
-          if (!mergedData.excelFileId && tempResult.data.id) {
-            mergedData.excelFileId = tempResult.data.id;
-          }
-          
-          return {
-            success: true,
-            data: mergedData,
-            originalUploadResponse: response.data
-          };
-        } else {
-
-
-          let excelFileId = `upload-${timestamp}`;
-          if (response.data && typeof response.data === 'object' && response.data.id) {
-            excelFileId = response.data.id;
-          }
-          
-          return {
-            success: true,
-            message: '上传成功但无法获取临时对象，请检查会话状态',
-            data: {
-              excelFileId,
-              originalResponse: response.data,
-              timestamp,
-              attempts: tempResult.attempts
-            },
-            originalUploadResponse: response.data
-          };
+        // 直接返回上传结果，不再调用临时对象接口
+        let excelFileId = `upload-${timestamp}`;
+        if (response.data && typeof response.data === 'object' && response.data.id) {
+          excelFileId = response.data.id;
         }
+        
+        return {
+          success: true,
+          data: {
+            excelFileId,
+            originalResponse: response.data,
+            timestamp
+          },
+          originalUploadResponse: response.data
+        };
       } catch (tempError) {
         console.error('获取临时对象时出错:', tempError);
 
@@ -1778,7 +1681,6 @@ export default {
   updateObjectStatus,
   addChangeListener,
   removeChangeListener,
-  fetchTempDataObject,
   uploadExcelFile,
   updateObjectStatusViaApi,
   syncDataObjects,
@@ -1790,6 +1692,5 @@ export default {
   deleteDataObjectViaApi,
   compareIds,
   cookieService  
-  // 已经在前面导出的方法不需要重复导出
 }
 

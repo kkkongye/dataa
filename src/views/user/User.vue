@@ -149,13 +149,17 @@
               <template #default="scope">
                 <div class="classification-level-container">
                   <div class="classification-level-item">
-                    <span class="label">分类值：</span>
-                    <span class="value">{{ scope.row.totalCategoryValue || scope.row.classificationValue || '未分类' }}</span>
+                    <span class="value">{{ 
+                      (() => {
+                        const sum = (parseFloat(scope.row.totalCategoryValue) || 0) + (parseFloat(scope.row.totalGradeValue) || 0);
+                        return sum === 0 ? '未生成分类分级值' : sum.toFixed(4);
+                      })()
+                    }}</span>
                   </div>
-                  <div class="classification-level-item">
+                  <!-- <div class="classification-level-item">
                     <span class="label">分级值：</span>
                     <span class="value">{{ scope.row.totalGradeValue || scope.row.levelValue || '未分级' }}</span>
-                  </div>
+                  </div> -->
                 </div>
               </template>
             </el-table-column>
