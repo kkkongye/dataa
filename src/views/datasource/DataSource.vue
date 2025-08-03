@@ -322,13 +322,14 @@ const filteredTableData = computed(() => {
       return false
     })
   }
-  if (sortState.prop === 'id') {
-    if (sortState.order === 'ascending') {
-      result = [...result].sort((a, b) => a.id - b.id)
-    } else if (sortState.order === 'descending') {
-      result = [...result].sort((a, b) => b.id - a.id)
-    }
-  }
+  // 移除ID排序逻辑，保持API返回的原始顺序
+  // if (sortState.prop === 'id') {
+  //   if (sortState.order === 'ascending') {
+  //     result = [...result].sort((a, b) => a.id - b.id)
+  //   } else if (sortState.order === 'descending') {
+  //     result = [...result].sort((a, b) => b.id - a.id)
+  //   }
+  // }
 
   totalCount.value = result.length
   return result

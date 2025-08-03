@@ -78,7 +78,6 @@
           label="ID" 
           width="220" 
           align="center"
-          sortable
         >
           <template #default="scope">
             <div class="id-cell highlight-blue">{{ scope.row.id }}</div>

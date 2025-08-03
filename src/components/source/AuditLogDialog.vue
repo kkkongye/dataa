@@ -32,6 +32,7 @@
           stripe
           style="width: 100%"
           v-loading="loading"
+          empty-text="暂无数据"
         >
           <el-table-column prop="user" label="操作用户" align="center" />
           <el-table-column prop="time" label="操作时间" align="center" />
@@ -39,7 +40,12 @@
           <el-table-column prop="blockNumber" label="区块号" align="center" />
           <el-table-column prop="transactionHash" label="交易哈希" align="center" width="300" :show-overflow-tooltip="false" />
         </el-table>
-        <div class="pagination-area">
+      </div>
+    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <!-- 左侧分页栏 -->
+        <div class="footer-left">
           <el-pagination
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
@@ -48,15 +54,15 @@
             :total="filteredData.length"
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
+            small
           />
         </div>
+        <!-- 右侧按钮 -->
+        <div class="footer-right">
+          <el-button @click="emit('close')">关闭</el-button>
+          <el-button type="primary" plain @click="handleViewAuditLog">查看区块链详细日志</el-button>
+        </div>
       </div>
-    </div>
-    <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="emit('close')">关闭</el-button>
-        <el-button type="primary" plain @click="handleViewAuditLog">查看区块链详细日志</el-button>
-      </span>
     </template>
   </el-dialog>
 </template>
@@ -243,7 +249,8 @@ function handleViewAuditLog() {
 .audit-log-content {
   display: flex;
   flex-direction: row;
-  min-height: 500px;
+  height: 500px;
+  align-items: stretch;
 }
 .log-directory {
   width: 150px;
@@ -252,27 +259,68 @@ function handleViewAuditLog() {
 .log-menu {
   border-radius: 8px;
   border: 1px solid #e4e7ed;
-  min-height: 420px;
+  height: 100%;
 }
 .log-table-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 0;
+  height: 100%;
 }
 .el-table {
   width: 100% !important;
   margin: 0;
+  flex: 1;
 }
 
 .el-table .el-table__cell {
   word-break: break-all;
   white-space: normal;
 }
-.pagination-area {
-  margin-top: 16px;
-  text-align: right;
+
+.el-table .el-table__empty-block {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  text-align: center;
+}
+
+.el-table .el-table__empty-text {
+  color: #909399;
+  font-size: 14px;
+  text-align: center;
+}
+
+.log-table-area .el-table {
+  position: relative;
+}
+
+/* 表头样式 - 浅灰色背景 */
+:deep(.el-table__header th.el-table__cell) {
+  background-color: #f5f7fa !important;
+  color: #606266 !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  padding: 12px 8px !important;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.footer-left {
+  flex: 1;
+}
+.footer-right {
+  display: flex;
+  gap: 10px;
 }
 </style>

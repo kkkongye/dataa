@@ -143,8 +143,8 @@
     <div class="excel-data-preview">
       <h3>数据预览</h3>
       
-      <div v-if="rowExcelData.length > 0">
-        <div class="data-info">找到 {{ rowExcelData.length }} 条记录</div>
+      <div v-if="rowTotalCount > 0">
+        <div class="data-info">找到 {{ rowTotalCount }} 条记录，当前显示第 {{ (rowCurrentPage - 1) * rowPageSize + 1 }} - {{ Math.min(rowCurrentPage * rowPageSize, rowTotalCount) }} 条</div>
         <el-table :data="rowExcelData" border style="width: 100%" max-height="600px">
           <!-- 序号列 -->
           <el-table-column 
@@ -152,9 +152,9 @@
             type="index"
             width="70"
             align="center"
-            :index="index => index + 1"
+            :index="index => (rowCurrentPage - 1) * rowPageSize + index + 1"
           />
-          <!-- 其余字段列，排除“rowNumber” -->
+          <!-- 其余字段列，排除"rowNumber" -->
           <el-table-column 
             v-for="(key, index) in getObjectKeys(rowExcelData).filter(k => k !== 'rowNumber')" 
             :key="index"
@@ -169,10 +169,23 @@
             align="center"
           >
             <template #default="scope">
-              <el-tag type="success">{{ calcRowGradeValue(scope.$index) }}</el-tag>
+              <el-tag type="success">{{ calcRowGradeValue((rowCurrentPage - 1) * rowPageSize + scope.$index) }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
+        
+        <!-- 行分级值分页组件 -->
+        <div class="pagination-container">
+          <CommonPagination
+            v-model:current-page="rowCurrentPage"
+            v-model:page-size="rowPageSize"
+            :total-count="rowTotalCount"
+            :page-sizes="[10, 15, 20, 50]"
+            background
+            @size-change="handleRowSizeChange"
+            @current-change="handleRowCurrentChange"
+          />
+        </div>
       </div>
       <div v-else class="no-data-message">
         <el-empty description="暂无数据" />
@@ -192,8 +205,8 @@
     <div class="excel-data-preview">
       <h3>数据预览</h3>
       
-      <div v-if="columnExcelData.length > 0">
-        <div class="data-info">找到 {{ columnExcelData.length - 1 }} 条记录</div>
+      <div v-if="columnTotalCount > 0">
+        <div class="data-info">找到 {{ columnTotalCount }} 条记录，当前显示第 {{ (columnCurrentPage - 1) * columnPageSize + 1 }} - {{ Math.min(columnCurrentPage * columnPageSize, columnTotalCount) }} 条</div>
         <el-table :data="getColumnTableDataWithoutGradeRow()" border style="width: 100%" max-height="600px">
           <!-- 序号列 -->
           <el-table-column 
@@ -201,11 +214,11 @@
             type="index"
             width="70"
             align="center"
-            :index="index => index + 1"
+            :index="index => (columnCurrentPage - 1) * columnPageSize + index + 1"
           />
-          <!-- 其余字段列，排除“重要性”和“rowNumber”，表头右侧显示分级值 -->
+          <!-- 其余字段列，排除"重要性"和"rowNumber"，表头右侧显示分级值 -->
           <el-table-column 
-            v-for="(key, index) in getObjectKeys(columnExcelData).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber')" 
+            v-for="(key, index) in getObjectKeys(columnOriginalData).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber')" 
             :key="index"
             :prop="key"
             :min-width="100"
@@ -218,7 +231,7 @@
                 size="small"
                 style="margin-left:4px;vertical-align:middle;"
               >
-                {{ parseFloat(getGradeValue(key)).toFixed(1) }}
+                {{ (parseFloat(getGradeValue(key)) * 0.001).toFixed(4) }}
               </el-tag>
               </template>
             <template #default="scope">
@@ -226,6 +239,19 @@
             </template>
           </el-table-column>
         </el-table>
+        
+        <!-- 列分级值分页组件 -->
+        <div class="pagination-container">
+          <CommonPagination
+            v-model:current-page="columnCurrentPage"
+            v-model:page-size="columnPageSize"
+            :total-count="columnTotalCount"
+            :page-sizes="[10, 15, 20, 50]"
+            background
+            @size-change="handleColumnSizeChange"
+            @current-change="handleColumnCurrentChange"
+          />
+        </div>
       </div>
       <div v-else class="no-data-message">
         <el-empty description="暂无数据" />
@@ -239,6 +265,7 @@
 import { ref, reactive, computed, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import CommonPagination from '../CommonPagination.vue'
 
 const props = defineProps({
   visible: {
@@ -807,10 +834,22 @@ const confirmWeightChange = () => {
 const rowDetailDialogVisible = ref(false)
 const rowExcelData = ref([])
 
+// 行分级值详情分页相关
+const rowCurrentPage = ref(1)
+const rowPageSize = ref(15)
+const rowTotalCount = ref(0)
+const rowOriginalData = ref([])
+const rowLoadedPages = ref(new Map())
 
 const columnDetailDialogVisible = ref(false)
 const columnExcelData = ref([])
 
+// 列分级值详情分页相关
+const columnCurrentPage = ref(1)
+const columnPageSize = ref(15)
+const columnTotalCount = ref(0)
+const columnOriginalData = ref([])
+const columnLoadedPages = ref(new Map())
 
 const fetchingData = ref(false)
 
@@ -819,6 +858,8 @@ const showRowDetailDialog = async () => {
   try {
     rowExcelData.value = [];
     fetchingData.value = true;
+    rowCurrentPage.value = 1;
+    rowLoadedPages.value.clear();
     
     if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
       console.log('[行分级值] 使用现有数据, rowGrades:', rowGrades.value);
@@ -831,13 +872,20 @@ const showRowDetailDialog = async () => {
         }
       }
       
-      rowExcelData.value = props.modelValue.dataItems.map((item, index) => {
+      const processedData = props.modelValue.dataItems.map((item, index) => {
         const gradeValue = index < rowGrades.value.length ? rowGrades.value[index] : 1;
         return {
           ...item,
           rowGradeValue: gradeValue
         };
       });
+      
+      // 存储原始数据并设置分页
+      rowOriginalData.value = processedData;
+      rowTotalCount.value = processedData.length;
+      rowCurrentPage.value = 1;
+      rowLoadedPages.value.clear();
+      loadRowPageData(1);
       
       rowDetailDialogVisible.value = true;
       fetchingData.value = false;
@@ -858,19 +906,28 @@ const showColumnDetailDialog = async () => {
   try {
     columnExcelData.value = [];
     fetchingData.value = true;
+    columnCurrentPage.value = 1;
+    columnLoadedPages.value.clear();
     
     if (props.modelValue && props.modelValue.dataItems && props.modelValue.dataItems.length > 0) {
-      columnExcelData.value = [...props.modelValue.dataItems];
+      let processedData = [...props.modelValue.dataItems];
       
-      const columnKeys = getObjectKeys(columnExcelData.value);
-      if (columnExcelData.value.length > 0) {
+      const columnKeys = getObjectKeys(processedData);
+      if (processedData.length > 0) {
         const gradeRow = {};
         columnKeys.forEach((key, index) => {
           gradeRow[key] = columnGrades.value[index] || 0.4;
         });
         gradeRow['_isGradeRow'] = true;
-        columnExcelData.value.push(gradeRow);
+        processedData.push(gradeRow);
       }
+      
+      // 存储原始数据并设置分页
+      columnOriginalData.value = processedData;
+      columnTotalCount.value = processedData.length - 1; // 减去分级行
+      columnCurrentPage.value = 1;
+      columnLoadedPages.value.clear();
+      loadColumnPageData(1);
       
       columnDetailDialogVisible.value = true;
       fetchingData.value = false;
@@ -1021,18 +1078,23 @@ const fetchExcelData = async (type = 'row') => {
             rowGrades.value = rowGrades.value.slice(0, dataItems.length);
           }
 
-          rowExcelData.value = dataItems.map((item, index) => {
+          const processedData = dataItems.map((item, index) => {
             return {
               ...item,
               rowGradeValue: rowGrades.value[index]
             };
           });
           
-          console.log(`[行分级值] 数据处理完成，行数:${rowExcelData.value.length}，权重:`, rowGrades.value);
+          // 存储原始数据并设置分页
+          rowOriginalData.value = processedData;
+          rowTotalCount.value = processedData.length;
+          rowCurrentPage.value = 1;
+          rowLoadedPages.value.clear();
+          loadRowPageData(1);
+          
+          console.log(`[行分级值] 数据处理完成，行数:${processedData.length}，权重:`, rowGrades.value);
         } else {
           // 处理列分级值数据
-          columnExcelData.value = dataItems;
-          
           const columnKeys = getObjectKeys(dataItems);
           console.log(`[分类分级详情] 提取到列名: ${columnKeys.join(', ')}`);
           
@@ -1046,14 +1108,22 @@ const fetchExcelData = async (type = 'row') => {
             columnGrades.value = columnGrades.value.slice(0, columnKeys.length);
           }
           
-          if (columnExcelData.value.length > 0) {
+          let processedData = [...dataItems];
+          if (processedData.length > 0) {
             const gradeRow = {};
             columnKeys.forEach((key, index) => {
               gradeRow[key] = columnGrades.value[index] || 0.4;
             });
             gradeRow['_isGradeRow'] = true;
-            columnExcelData.value.push(gradeRow);
+            processedData.push(gradeRow);
           }
+          
+          // 存储原始数据并设置分页
+          columnOriginalData.value = processedData;
+          columnTotalCount.value = processedData.length - 1; // 减去分级行
+          columnCurrentPage.value = 1;
+          columnLoadedPages.value.clear();
+          loadColumnPageData(1);
         
         }
         
@@ -1135,7 +1205,7 @@ const getRowWeightTagType = (value) => {
 function getGradeValue(key) {
   // 优先从columnGrades
   if (Array.isArray(columnGrades.value)) {
-    const keys = getObjectKeys(columnExcelData.value).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber');
+    const keys = getObjectKeys(columnOriginalData.value).filter(k => k !== '_isGradeRow' && k !== '重要性' && k !== 'rowNumber');
     const idx = keys.indexOf(key);
     if (idx > -1 && columnGrades.value[idx] !== undefined) {
       return columnGrades.value[idx];
@@ -1181,8 +1251,85 @@ function getColumnTableDataWithoutGradeRow() {
 function calcRowGradeValue(idx) {
   const rowWeight = Array.isArray(rowGrades.value) && rowGrades.value[idx] !== undefined ? parseFloat(rowGrades.value[idx]) : 0;
   const colAvg = columnAverageValue.value || 0;
-  return (rowWeight).toFixed(3);
+  return (rowWeight * 0.001).toFixed(4);
 }
+
+// 懒加载行分级值页面数据
+const loadRowPageData = (page) => {
+  if (!rowOriginalData.value || rowOriginalData.value.length === 0) {
+    rowExcelData.value = [];
+    return;
+  }
+  
+  // 检查是否已缓存该页数据
+  if (rowLoadedPages.value.has(page)) {
+    rowExcelData.value = rowLoadedPages.value.get(page);
+    return;
+  }
+  
+  // 计算页面数据范围
+  const startIndex = (page - 1) * rowPageSize.value;
+  const endIndex = startIndex + rowPageSize.value;
+  const pageData = rowOriginalData.value.slice(startIndex, endIndex);
+  
+  // 缓存页面数据
+  rowLoadedPages.value.set(page, pageData);
+  rowExcelData.value = pageData;
+};
+
+// 懒加载列分级值页面数据
+const loadColumnPageData = (page) => {
+  if (!columnOriginalData.value || columnOriginalData.value.length === 0) {
+    columnExcelData.value = [];
+    return;
+  }
+  
+  // 检查是否已缓存该页数据
+  if (columnLoadedPages.value.has(page)) {
+    columnExcelData.value = columnLoadedPages.value.get(page);
+    return;
+  }
+  
+  // 获取不包含分级行的数据
+  const dataWithoutGradeRow = columnOriginalData.value.filter(row => !row._isGradeRow);
+  
+  // 计算页面数据范围
+  const startIndex = (page - 1) * columnPageSize.value;
+  const endIndex = startIndex + columnPageSize.value;
+  const pageData = dataWithoutGradeRow.slice(startIndex, endIndex);
+  
+  // 缓存页面数据
+  columnLoadedPages.value.set(page, pageData);
+  columnExcelData.value = pageData;
+};
+
+// 行分级值分页处理函数
+const handleRowCurrentChange = (page) => {
+  rowCurrentPage.value = page;
+  loadRowPageData(page);
+};
+
+const handleRowSizeChange = (size) => {
+  rowPageSize.value = size;
+  rowCurrentPage.value = 1;
+  rowLoadedPages.value.clear();
+  loadRowPageData(1);
+};
+
+// 列分级值分页处理函数
+const handleColumnCurrentChange = (page) => {
+  columnCurrentPage.value = page;
+  loadColumnPageData(page);
+};
+
+const handleColumnSizeChange = (size) => {
+  columnPageSize.value = size;
+  columnCurrentPage.value = 1;
+  columnLoadedPages.value.clear();
+  loadColumnPageData(1);
+};
+
+
 </script>
 
 <style scoped>
@@ -1362,5 +1509,13 @@ function calcRowGradeValue(idx) {
   display: flex;
   align-items: center;
   box-shadow: 0 1px 4px rgba(64,158,255,0.06);
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 15px;
+  padding: 10px 0;
 }
 </style>

@@ -169,14 +169,13 @@
         <!-- 分页 -->
         <div class="pagination-area">
           <CommonPagination
-            v-if="isDecrypted"
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
             :total-count="totalCount"
-            :page-sizes="[5, 10, 20]"
-            :disabled="!isDecrypted"
+            :page-sizes="[5, 10, 20, 30, 50]"
             background
             @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
           />
         </div>
       </div>
@@ -480,6 +479,11 @@ const logout = async () => {
 const handleSizeChange = (val) => {
   pageSize.value = val
   currentPage.value = 1
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val) => {
+  currentPage.value = val
 }
 
 // 解密状态和表单
@@ -2087,6 +2091,18 @@ onBeforeUnmount(() => {
 .classification-level-item .value {
   color: #409EFF;
   font-weight: bold;
+}
+
+/* 分页区域样式 */
+.pagination-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 20px;
+  height: 32px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 表头信息部分样式 */

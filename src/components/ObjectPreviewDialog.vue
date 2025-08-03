@@ -13,6 +13,7 @@
         <!-- 基本信息表格 -->
         <div class="basic-info-table two-rows">
           <div class="info-row">
+            <span class="info-item"><strong>ID：</strong>{{ object.id }}</span>
             <span class="info-item"><strong>实体：</strong>{{ object.entity }}</span>
             <span class="info-item"><strong>定位信息：</strong>
               <template v-if="getLocationInfoObj(object.locationInfo, object.locationInfoJson)">
@@ -30,12 +31,20 @@
               </template>
               <template v-else>-</template>
             </span>
-            <span class="info-item constraint-info" :title="Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint"><strong>约束条件：</strong>{{ Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint }}</span>
+            <!-- <span class="info-item constraint-info" :title="Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint"><strong>约束条件：</strong>{{ Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint }}</span> -->
           </div>
           <div class="info-row">
+            <span class="info-item constraint-info" :title="Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint"><strong>约束条件：</strong>{{ Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint }}</span>
             <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(object.transferControl) ? object.transferControl.join(', ') : object.transferControl }}</span>
-            <span class="info-item"><strong>分类值：</strong>{{ object.totalCategoryValue || object.classificationValue || '未分类' }}</span>
-            <span class="info-item"><strong>分级值：</strong>{{ object.totalGradeValue || object.levelValue || '未分级' }}</span>
+            <!-- <span class="info-item"><strong>分类值：</strong>{{ object.totalCategoryValue || object.classificationValue || '未分类' }}</span>
+            <span class="info-item"><strong>分级值：</strong>{{ object.totalGradeValue || object.levelValue || '未分级' }}</span> -->
+            <!-- <span class="info-item"><strong>分类分级值：</strong>{{ object.totalGradeValue || object.levelValue || '未分级' }}</span> -->
+            <span class="info-item"><strong>分类分级值：</strong>{{ 
+                      (() => {
+                        const sum = (parseFloat(object.totalCategoryValue) || 0) + (parseFloat(object.totalGradeValue) || 0);
+                        return sum === 0 ? '未生成分类分级值' : sum.toFixed(4);
+                      })()
+                    }}</span>
           </div>
         </div>
         <!-- 元数据信息显示 -->
@@ -60,8 +69,8 @@
         <el-icon class="is-loading" :size="30"><Loading /></el-icon>
         <span class="loading-text">正在加载Excel数据...</span>
       </div>
-      <div v-else-if="excelTableData.length > 0" class="excel-table-container">
-        <div class="data-info">找到 {{ excelTableData.length }} 条记录</div>
+      <div v-else-if="totalCount > 0" class="excel-table-container">
+        <div class="data-info">找到 {{ totalCount }} 条记录，当前显示第 {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, totalCount) }} 条</div>
         <el-table :data="excelTableData" border stripe style="width: 100%">
           <!-- 序号列 -->
           <el-table-column 
@@ -69,7 +78,7 @@
             type="index" 
             width="60" 
             align="center"
-            :index="(index) => index + 1"
+            :index="(index) => (currentPage - 1) * pageSize + index + 1"
           />
           <!-- 数据列，过滤掉rowNumber字段 -->
           <el-table-column 
@@ -77,10 +86,23 @@
             :key="index"
             :prop="key"
             :label="key"
-            :align="typeof excelTableData[0][key] === 'number' ? 'center' : 'left'"
+            :align="typeof excelTableData[0] && typeof excelTableData[0][key] === 'number' ? 'center' : 'left'"
             :min-width="100"
           />
         </el-table>
+        
+        <!-- 分页组件 -->
+        <div class="pagination-container">
+          <CommonPagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total-count="totalCount"
+            :page-sizes="[10, 20, 50, 100]"
+            background
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
       </div>
       <div v-else class="no-data-message">
         <el-empty description="暂无数据" />
@@ -89,7 +111,7 @@
     <template v-slot:footer>
       <span class="dialog-footer">
         <slot name="footer"></slot>
-        <el-button type="primary" v-if="excelTableData.length > 0" @click="handleExportExcel">导出Excel</el-button>
+        <el-button type="primary" v-if="totalCount > 0" @click="handleExportExcel">导出Excel</el-button>
         <el-button @click="closeDialog">关闭</el-button>
       </span>
     </template>
@@ -101,6 +123,7 @@ import { ref, watch, defineProps, defineEmits, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
+import CommonPagination from './CommonPagination.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -118,21 +141,66 @@ const dialogVisible = ref(props.visible)
 const excelTableData = ref([])
 const isExcelLoading = ref(false)
 
-// 初始化时和依赖变化时更新表格数据
+// 分页相关变量
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalCount = ref(0)
+
+// 原始数据源（不直接存储所有数据）
+const originalDataSource = ref(null)
+const loadedPages = ref(new Map()) // 缓存已加载的页面数据
+
+// 初始化时和依赖变化时更新数据源
 const updateTableData = () => {
   // 优先使用传入的excelData
   if (props.excelData && props.excelData.length > 0) {
-    excelTableData.value = [...props.excelData]
+    originalDataSource.value = props.excelData
   } 
   // 如果excelData为空但object.dataItems存在，则使用object.dataItems
   else if (props.object && props.object.dataItems && props.object.dataItems.length > 0) {
-    excelTableData.value = [...props.object.dataItems]
+    originalDataSource.value = props.object.dataItems
   } 
   // 如果都为空则清空数据
   else {
-    excelTableData.value = []
+    originalDataSource.value = []
   }
+  
+  // 更新总数和重置页码
+  totalCount.value = originalDataSource.value ? originalDataSource.value.length : 0
+  currentPage.value = 1
+  loadedPages.value.clear() // 清空缓存
+  
+  // 加载第一页数据
+  loadPageData(1)
 }
+
+// 懒加载指定页面的数据
+const loadPageData = (page) => {
+  if (!originalDataSource.value || originalDataSource.value.length === 0) {
+    excelTableData.value = []
+    return
+  }
+  
+  // 检查是否已缓存该页数据
+  if (loadedPages.value.has(page)) {
+    excelTableData.value = loadedPages.value.get(page)
+    return
+  }
+  
+  // 计算页面数据范围
+  const startIndex = (page - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  const pageData = originalDataSource.value.slice(startIndex, endIndex)
+  
+  // 缓存页面数据
+  loadedPages.value.set(page, pageData)
+  excelTableData.value = pageData
+}
+
+// 监听当前页变化，懒加载数据
+watch(currentPage, (newPage) => {
+  loadPageData(newPage)
+}, { immediate: true })
 
 // 监听props变化
 watch(() => props.visible, (val) => {
@@ -149,19 +217,27 @@ watch(dialogVisible, (val) => {
 
 // 监听excelData变化
 watch(() => props.excelData, (val) => {
-  if (val && val.length > 0) {
-    excelTableData.value = val
-  } else {
-    updateTableData()
-  }
+  updateTableData()
 }, { deep: true })
 
 // 监听object.dataItems变化
 watch(() => props.object?.dataItems, (val) => {
-  if ((!props.excelData || props.excelData.length === 0) && val && val.length > 0) {
-  excelTableData.value = val
+  if (!props.excelData || props.excelData.length === 0) {
+    updateTableData()
   }
 }, { deep: true })
+
+// 分页处理函数
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+}
+
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadedPages.value.clear() // 清空缓存，因为页面大小改变了
+  loadPageData(1) // 重新加载第一页
+}
 
 // 组件挂载时初始化
 onMounted(() => {
@@ -210,13 +286,13 @@ function getCurrentDateTime() {
   })
 }
 function handleExportExcel() {
-  if (!excelTableData.value.length) {
+  if (!originalDataSource.value || !originalDataSource.value.length) {
     ElMessage.warning('没有数据可导出')
     return
   }
   try {
     const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(excelTableData.value)
+    const ws = XLSX.utils.json_to_sheet(originalDataSource.value)
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
     const fileName = `${props.object.entity || 'excel_data'}.xlsx`
     XLSX.writeFile(wb, fileName)
@@ -337,6 +413,14 @@ function handleExportExcel() {
 
 .dialog-footer .el-button {
   margin: 0;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 15px;
+  padding: 10px 0;
 }
 .constraint-info {
   max-width: 800px;
