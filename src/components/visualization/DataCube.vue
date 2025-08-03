@@ -52,6 +52,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, defineExpose } from 'vue';
+import { ElMessage } from 'element-plus';
 import * as echarts from 'echarts';
 import 'echarts-gl';
 import axios from 'axios';
@@ -65,11 +66,11 @@ const loading = ref(true);
 const error = ref(false);
 const errorMessage = ref('');
 const autoRotate = ref(false);
-const pointSize = ref(10);
+const pointSize = ref(15);
 let initAttempts = 0;
 const MAX_INIT_ATTEMPTS = 10;
 const RETRY_DELAY = 500;
-const apiUrl = 'http://localhost:8081/api/objects/list';
+const apiUrl = 'http://localhost:8081/api/objects/list1';
 
 // 行业分类映射值
 const industryValues = {
@@ -138,9 +139,14 @@ const processBackendData = async () => {
       try {
         const timeValue = item.updatedAt ? new Date(item.updatedAt).getTime() : new Date().getTime();
         const categoryValue = parseFloat(item.totalCategoryValue || 0);
-        const gradeValue = parseFloat(item.totalGradeValue || 0);
+        const gradeValue = parseFloat(item.totalGradeValue || 0) * 100; // 放大100倍显示
         const industry = item.industryCategory || '未分类';
-        const industryIndex = industries.indexOf(industry);
+        let industryIndex = industries.indexOf(industry);
+        // 确保industryIndex不为-1，如果找不到对应行业，设置为0
+        if (industryIndex === -1) {
+          console.warn(`未找到行业分类: ${industry}，设置为默认值`);
+          industryIndex = 0;
+        }
         
         // 从dataEntity中获取状态
         let status = '待校验';
@@ -193,7 +199,7 @@ const processBackendData = async () => {
           value: [
             timeValue,
             industryIndex,
-            categoryValue
+            gradeValue
           ],
           industry: industry,
           status: status,
@@ -208,6 +214,8 @@ const processBackendData = async () => {
           statusInfo: status,
           metadata: metadata,
           gradeValue: gradeValue,
+          totalCategoryValue: item.totalCategoryValue, // 添加原始分类值
+          totalGradeValue: item.totalGradeValue, // 添加原始分级值
           id: item.id // 添加原始ID字段
         };
       } catch (err) {
@@ -254,11 +262,21 @@ const processBackendData = async () => {
 const tooltipFormatter = (params) => {
   const item = params.data;
   const date = new Date(item.value[0]);
+  // 格式化为完整的日期时间显示，使用UTC时间避免时区转换
+  const formatDateTime = (date) => {
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const hours = date.getUTCHours().toString().padStart(2, '0');
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  };
+  
   return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
-          <div>编辑时间: ${date.toLocaleDateString()}</div>
+          <div>申请时间: ${formatDateTime(date)}</div>
           <div>行业分类: ${item.industry || '未分类'}</div>
-          <div>分类值: ${item.value[2] || 0}</div>
-          <div>分级值: ${item.gradeValue || 0}</div>
+          <div>分类分级值: ${(parseFloat(item.totalCategoryValue || 0) + parseFloat(item.totalGradeValue || 0)).toFixed(4)}</div>
           <div>状态: <span style="color:${item.statusColor}">${item.status || '未知'}</span></div>
           <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
           <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
@@ -429,10 +447,10 @@ const forceRender = async () => {
           axisLabel: {
             formatter: function (value) {
               const date = new Date(value);
-              const month = date.getMonth() + 1;
-              const day = date.getDate();
-              const hours = date.getHours().toString().padStart(2, '0');
-              const minutes = date.getMinutes().toString().padStart(2, '0');
+              const month = date.getUTCMonth() + 1;
+              const day = date.getUTCDate();
+              const hours = date.getUTCHours().toString().padStart(2, '0');
+              const minutes = date.getUTCMinutes().toString().padStart(2, '0');
               return `${month}月${day}日 ${hours}:${minutes}`;
             },
             margin: 8,
@@ -493,7 +511,7 @@ const forceRender = async () => {
         },
         zAxis3D: {
           type: 'value',
-          name: '分级值',
+          name: '分级值（*100)',
           nameGap: 60,
           nameTextStyle: {
             fontSize: 15,
@@ -514,10 +532,12 @@ const forceRender = async () => {
             }
           },
           min: 0,
-          max: 100,
+          max: 40,
           splitNumber: 5,
           axisLabel: {
-            formatter: '{value}',
+            formatter: function(value) {
+              return parseFloat(value).toFixed(2);
+            },
             margin: 10,
             fontSize: 12
           }
@@ -616,6 +636,7 @@ const forceRender = async () => {
             statusInfo: item.statusInfo,
             metadata: item.metadata,
             gradeValue: item.gradeValue,
+            totalCategoryValue: item.totalCategoryValue,
             id: item.id // 确保ID字段被传递
           })),
           emphasis: {
@@ -635,6 +656,18 @@ const forceRender = async () => {
       chart.on('click', (params) => {
         if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
           console.log('数据点被点击:', params.data);
+          
+          // 检查数据状态，只有已合格的数据才能添加到申请列表
+          if (params.data.status !== '已合格') {
+            // 显示提示信息
+            ElMessage({
+              message: '请点击已合格的数据进行申请，当前数据状态为：' + params.data.status,
+              type: 'warning',
+              duration: 3000
+            });
+            return; // 不发送点击事件到父组件
+          }
+          
           // 发送点击事件到父组件
           emit('data-point-click', {
             id: params.data.id || params.data.entity || params.data.name,
@@ -782,7 +815,7 @@ const initChart = async () => {
       },
       xAxis3D: {
         type: 'time',
-        name: '最近编辑时间',
+        name: '申请时间',
         nameGap: 60,
         nameTextStyle: {
           fontSize: 15,
@@ -805,10 +838,10 @@ const initChart = async () => {
         axisLabel: {
           formatter: function (value) {
             const date = new Date(value);
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const month = date.getUTCMonth() + 1;
+            const day = date.getUTCDate();
+            const hours = date.getUTCHours().toString().padStart(2, '0');
+            const minutes = date.getUTCMinutes().toString().padStart(2, '0');
             return `${month}月${day}日 ${hours}:${minutes}`;
           },
           margin: 8,
@@ -869,7 +902,7 @@ const initChart = async () => {
       },
       zAxis3D: {
         type: 'value',
-        name: '分级值',
+        name: '分级值(*100)',
         nameGap: 60,
         nameTextStyle: {
           fontSize: 15,
@@ -890,10 +923,12 @@ const initChart = async () => {
           }
         },
         min: 0,
-        max: 100,
+        max: 40,
         splitNumber: 5,
         axisLabel: {
-          formatter: '{value}',
+          formatter: function(value) {
+            return parseFloat(value).toFixed(2);
+          },
           margin: 10,
           fontSize: 12
         }
@@ -992,6 +1027,8 @@ const initChart = async () => {
           statusInfo: item.statusInfo,
           metadata: item.metadata,
           gradeValue: item.gradeValue,
+          totalCategoryValue: item.totalCategoryValue,
+          totalGradeValue: item.totalGradeValue, // 添加原始分级值
           id: item.id // 确保ID字段被传递
         })),
         emphasis: {
@@ -1010,6 +1047,18 @@ const initChart = async () => {
     chart.on('click', (params) => {
       if (params.componentType === 'series' && params.seriesType === 'scatter3D') {
         console.log('数据点被点击:', params.data);
+        
+        // 检查数据状态，只有已合格的数据才能添加到申请列表
+        if (params.data.status !== '已合格') {
+          // 显示提示信息
+          ElMessage({
+            message: '请点击已合格的数据进行申请，当前数据状态为：' + params.data.status,
+            type: 'warning',
+            duration: 3000
+          });
+          return; // 不发送点击事件到父组件
+        }
+        
         // 发送点击事件到父组件
         emit('data-point-click', {
           id: params.data.id || params.data.entity || params.data.name,

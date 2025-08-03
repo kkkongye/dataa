@@ -52,7 +52,7 @@
         <!-- 元数据信息显示 -->
         <div v-if="displayObject.metadata" class="metadata-section">
           <span class="info-item"><strong>状态：</strong>{{ displayObject.status }}</span>
-          <div class="info-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
+          <div class="info-item">更新时间: <strong>{{ formatUpdatedTime(displayObject.updatedAt) }}</strong></div>
           <div class="metadata-items">
             <div class="metadata-item">数据名称: <strong>{{ displayObject.metadata.dataName || displayObject.entity }}</strong></div>
             <div class="metadata-item">来源单位: <strong>{{ displayObject.metadata.sourceUnit || '数据部' }}</strong></div>
@@ -361,6 +361,38 @@ function getCurrentDateTime() {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   })
+}
+
+function formatUpdatedTime(updatedAt) {
+  if (!updatedAt) {
+    return getCurrentDateTime() // 如果没有updatedAt，回退到当前时间
+  }
+  
+  try {
+    // 解析UTC时间并显示为UTC时间（不进行时区转换）
+    const date = new Date(updatedAt)
+    
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      console.error('无效的日期格式:', updatedAt)
+      return getCurrentDateTime()
+    }
+    
+    // 直接使用UTC时间格式化，不进行时区转换
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit', 
+      hour12: false,
+      timeZone: 'UTC' // 使用UTC时区，显示原始时间
+    })
+  } catch (error) {
+    console.error('格式化更新时间失败:', error, '原始时间:', updatedAt)
+    return getCurrentDateTime() // 格式化失败时回退到当前时间
+  }
 }
 function handleExportExcel() {
   if (!originalDataSource.value || !originalDataSource.value.length) {
