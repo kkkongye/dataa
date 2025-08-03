@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    :title="`预览 - ${object.entity || ''}`"
+    :title="`预览 - ${displayObject.entity || ''}`"
     width="90%"
     :close-on-click-modal="false"
     draggable
@@ -12,52 +12,54 @@
       <div class="preview-info">
         <!-- 基本信息表格 -->
         <div class="basic-info-table two-rows">
-          <div class="info-row">
-            <span class="info-item"><strong>ID：</strong>{{ object.id }}</span>
-            <span class="info-item"><strong>实体：</strong>{{ object.entity }}</span>
-            <span class="info-item"><strong>定位信息：</strong>
-              <template v-if="getLocationInfoObj(object.locationInfo, object.locationInfoJson)">
-                ({{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).databaseName || '-' }},
-                 {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).tableName || '-' }},
-                 <el-popover placement="top" trigger="click">
-                   <template #reference>
-                     <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
-                   </template>
-                   <div style="max-width:400px;word-break:break-all;">
-                     {{ getLocationInfoObj(object.locationInfo, object.locationInfoJson).selectFields }}
-                   </div>
-                 </el-popover>
-                )
-              </template>
-              <template v-else>-</template>
-            </span>
-            <!-- <span class="info-item constraint-info" :title="Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint"><strong>约束条件：</strong>{{ Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint }}</span> -->
+          <div v-if="isLoadingObjectData" class="loading-info">
+            <el-icon class="is-loading" :size="20"><Loading /></el-icon>
+            <span>正在加载对象信息...</span>
           </div>
-          <div class="info-row">
-            <span class="info-item constraint-info" :title="Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint"><strong>约束条件：</strong>{{ Array.isArray(object.constraint) ? object.constraint.join(', ') : object.constraint }}</span>
-            <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(object.transferControl) ? object.transferControl.join(', ') : object.transferControl }}</span>
-            <!-- <span class="info-item"><strong>分类值：</strong>{{ object.totalCategoryValue || object.classificationValue || '未分类' }}</span>
-            <span class="info-item"><strong>分级值：</strong>{{ object.totalGradeValue || object.levelValue || '未分级' }}</span> -->
-            <!-- <span class="info-item"><strong>分类分级值：</strong>{{ object.totalGradeValue || object.levelValue || '未分级' }}</span> -->
-            <span class="info-item"><strong>分类分级值：</strong>{{ 
-                      (() => {
-                        const sum = (parseFloat(object.totalCategoryValue) || 0) + (parseFloat(object.totalGradeValue) || 0);
-                        return sum === 0 ? '未生成分类分级值' : sum.toFixed(4);
-                      })()
-                    }}</span>
-          </div>
+          <template v-else>
+            <div class="info-row">
+              <span class="info-item"><strong>ID：</strong>{{ displayObject.id }}</span>
+              <span class="info-item"><strong>实体：</strong>{{ displayObject.entity }}</span>
+              <span class="info-item"><strong>定位信息：</strong>
+                <template v-if="getLocationInfoObj(displayObject.locationInfo, displayObject.locationInfoJson)">
+                  ({{ getLocationInfoObj(displayObject.locationInfo, displayObject.locationInfoJson).databaseName || '-' }},
+                   {{ getLocationInfoObj(displayObject.locationInfo, displayObject.locationInfoJson).tableName || '-' }},
+                   <el-popover placement="top" trigger="click">
+                     <template #reference>
+                       <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">select字段</span>
+                     </template>
+                     <div style="max-width:400px;word-break:break-all;">
+                       {{ getLocationInfoObj(displayObject.locationInfo, displayObject.locationInfoJson).selectFields }}
+                     </div>
+                   </el-popover>
+                  )
+                </template>
+                <template v-else>-</template>
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-item constraint-info" :title="Array.isArray(displayObject.constraint) ? displayObject.constraint.join(', ') : displayObject.constraint"><strong>约束条件：</strong>{{ Array.isArray(displayObject.constraint) ? displayObject.constraint.join(', ') : displayObject.constraint }}</span>
+              <span class="info-item"><strong>传输控制操作：</strong>{{ Array.isArray(displayObject.transferControl) ? displayObject.transferControl.join(', ') : displayObject.transferControl }}</span>
+              <span class="info-item"><strong>分类分级值：</strong>{{ 
+                        (() => {
+                          const sum = (parseFloat(displayObject.totalCategoryValue) || 0) + (parseFloat(displayObject.totalGradeValue) || 0);
+                          return sum === 0 ? '未生成分类分级值' : sum.toFixed(4);
+                        })()
+                      }}</span>
+            </div>
+          </template>
         </div>
         <!-- 元数据信息显示 -->
-        <div v-if="object.metadata" class="metadata-section">
-          <span class="info-item"><strong>状态：</strong>{{ object.status }}</span>
+        <div v-if="displayObject.metadata" class="metadata-section">
+          <span class="info-item"><strong>状态：</strong>{{ displayObject.status }}</span>
           <div class="info-item">更新时间: <strong>{{ getCurrentDateTime() }}</strong></div>
           <div class="metadata-items">
-            <div class="metadata-item">数据名称: <strong>{{ object.metadata.dataName || object.entity }}</strong></div>
-            <div class="metadata-item">来源单位: <strong>{{ object.metadata.sourceUnit || '数据部' }}</strong></div>
-            <div class="metadata-item">联系人: <strong>{{ object.metadata.contactPerson || '未指定' }}</strong></div>
-            <div class="metadata-item">联系电话: <strong>{{ object.metadata.contactPhone || '未提供' }}</strong></div>
-            <div class="metadata-item">资源摘要: <strong>{{ object.metadata.resourceSummary|| '无' }}</strong></div>
-            <div class="metadata-item">领域分类: <strong>{{ object.metadata.fieldClassification || '未分类' }}</strong></div>
+            <div class="metadata-item">数据名称: <strong>{{ displayObject.metadata.dataName || displayObject.entity }}</strong></div>
+            <div class="metadata-item">来源单位: <strong>{{ displayObject.metadata.sourceUnit || '数据部' }}</strong></div>
+            <div class="metadata-item">联系人: <strong>{{ displayObject.metadata.contactPerson || '未指定' }}</strong></div>
+            <div class="metadata-item">联系电话: <strong>{{ displayObject.metadata.contactPhone || '未提供' }}</strong></div>
+            <div class="metadata-item">资源摘要: <strong>{{ displayObject.metadata.resourceSummary|| '无' }}</strong></div>
+            <div class="metadata-item">领域分类: <strong>{{ displayObject.metadata.fieldClassification || '未分类' }}</strong></div>
           </div>
         </div>
       </div>
@@ -76,7 +78,7 @@
           <el-table-column 
             label="序号" 
             type="index" 
-            width="60" 
+            width="80" 
             align="center"
             :index="(index) => (currentPage - 1) * pageSize + index + 1"
           />
@@ -124,6 +126,7 @@ import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import CommonPagination from './CommonPagination.vue'
+import dataObjectService from '../services/dataObjectService.js'
 
 const props = defineProps({
   visible: Boolean,
@@ -150,12 +153,68 @@ const totalCount = ref(0)
 const originalDataSource = ref(null)
 const loadedPages = ref(new Map()) // 缓存已加载的页面数据
 
+// 完整的对象数据（从API获取）
+const fullObjectData = ref(null)
+const isLoadingObjectData = ref(false)
+
+// 计算属性：决定显示哪个对象的数据
+const displayObject = computed(() => {
+  // 优先使用从API获取的完整数据
+  if (fullObjectData.value) {
+    return fullObjectData.value
+  }
+  // 回退到props传入的对象数据
+  return props.object || {}
+})
+
+// 根据ID从API获取完整的对象数据
+const fetchObjectDataById = async (id) => {
+  if (!id) return null
+  
+  try {
+    isLoadingObjectData.value = true
+    
+    // 使用dataObjectService中的fetchDataObjectById方法
+    const result = await dataObjectService.fetchDataObjectById(id)
+    
+    if (result) {
+      console.log('API返回的数据:', result)
+      return result
+    }
+    
+    return null
+  } catch (error) {
+    console.error('获取对象数据失败:', error)
+    ElMessage.error('获取数据失败，请稍后重试')
+    return null
+  } finally {
+    isLoadingObjectData.value = false
+  }
+}
+
 // 初始化时和依赖变化时更新数据源
-const updateTableData = () => {
+const updateTableData = async () => {
   // 优先使用传入的excelData
   if (props.excelData && props.excelData.length > 0) {
     originalDataSource.value = props.excelData
   } 
+  // 如果excelData为空但有object.id，则从API获取完整数据
+  else if (props.object && props.object.id) {
+    const fetchedData = await fetchObjectDataById(props.object.id)
+    
+    if (fetchedData) {
+      fullObjectData.value = fetchedData
+      // 使用API返回的dataItems数据
+      if (fetchedData.dataItems && fetchedData.dataItems.length > 0) {
+        originalDataSource.value = fetchedData.dataItems
+      } else {
+        originalDataSource.value = []
+      }
+    } else {
+      // API获取失败，回退到使用props.object.dataItems
+      originalDataSource.value = props.object.dataItems || []
+    }
+  }
   // 如果excelData为空但object.dataItems存在，则使用object.dataItems
   else if (props.object && props.object.dataItems && props.object.dataItems.length > 0) {
     originalDataSource.value = props.object.dataItems
@@ -202,11 +261,27 @@ watch(currentPage, (newPage) => {
   loadPageData(newPage)
 }, { immediate: true })
 
-// 监听props变化
+// 添加一个标志来防止重复调用
+const isUpdating = ref(false)
+
+// 优化的updateTableData调用函数
+const safeUpdateTableData = async () => {
+  if (isUpdating.value) {
+    return
+  }
+  isUpdating.value = true
+  try {
+    await updateTableData()
+  } finally {
+    isUpdating.value = false
+  }
+}
+
+// 监听props变化 - 只在弹窗打开时调用一次
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
   if (val) {
-    updateTableData()
+    safeUpdateTableData()
   }
 })
 
@@ -215,15 +290,17 @@ watch(dialogVisible, (val) => {
   emit('update:visible', val)
 })
 
-// 监听excelData变化
-watch(() => props.excelData, (val) => {
-  updateTableData()
+// 监听excelData变化 - 只在弹窗可见且数据真正变化时调用
+watch(() => props.excelData, (newVal, oldVal) => {
+  if (props.visible && JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
+    safeUpdateTableData()
+  }
 }, { deep: true })
 
-// 监听object.dataItems变化
-watch(() => props.object?.dataItems, (val) => {
-  if (!props.excelData || props.excelData.length === 0) {
-    updateTableData()
+// 监听object.dataItems变化 - 只在没有excelData且弹窗可见时调用
+watch(() => props.object?.dataItems, (newVal, oldVal) => {
+  if (props.visible && (!props.excelData || props.excelData.length === 0) && JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
+    safeUpdateTableData()
   }
 }, { deep: true })
 
@@ -294,7 +371,7 @@ function handleExportExcel() {
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(originalDataSource.value)
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-    const fileName = `${props.object.entity || 'excel_data'}.xlsx`
+    const fileName = `${displayObject.value.entity || 'excel_data'}.xlsx`
     XLSX.writeFile(wb, fileName)
     ElMessage.success(`已成功导出 ${fileName}`)
   } catch (error) {
@@ -437,6 +514,15 @@ function handleExportExcel() {
   align-items: center;
   height: 150px;
 }
+.loading-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: #909399;
+  font-size: 14px;
+}
 .is-loading {
   animation: rotating 2s linear infinite;
 }
@@ -448,5 +534,15 @@ function handleExportExcel() {
 @keyframes rotating {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* 表头样式 - 浅灰色背景 */
+:deep(.el-table__header th.el-table__cell) {
+  background-color: #f5f7fa !important;
+  color: #606266 !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  padding: 12px 8px !important;
 }
 </style>

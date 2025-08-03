@@ -33,24 +33,32 @@ const fetchDataObjectById = async (id) => {
     let dataObject = null
     try {
       const response = await axiosInstance.get(`/objects/${id}`)
-      
+      console.log('API响应:', response)
 
       if (response && response.data) {
+        let rawData = null
 
         if (response.data.code === 200 && response.data.data) {
-          dataObject = response.data.data
+          rawData = response.data.data
         }
- 
+        else if (response.data.success && response.data.data) {
+          rawData = response.data.data
+        }
         else if (response.data.code !== undefined && response.data.data) {
-          dataObject = response.data
+          rawData = response.data.data
         }
-
         else if (response.data && !Array.isArray(response.data)) {
-          dataObject = response.data
+          rawData = response.data
+        }
+        
+        // 使用adaptBackendData处理原始数据
+        if (rawData) {
+          dataObject = adaptBackendData(rawData)
+          console.log('适配后的数据:', dataObject)
         }
       }
     } catch (apiError) {
-
+      console.error('API调用失败:', apiError)
     }
     
 
@@ -66,6 +74,7 @@ const fetchDataObjectById = async (id) => {
     
     return dataObject
   } catch (error) {
+    console.error('fetchDataObjectById错误:', error)
     return null
   }
 }
@@ -297,7 +306,7 @@ const adaptBackendData = (backendItem) => {
     regionConstraint: extractConstraintData(backendItem).regionConstraint || '',
     shareConstraint: extractConstraintData(backendItem).shareConstraint || '',
     excelData: backendItem.excelData || null,
-    dataItems: backendItem.dataItems || [],
+    dataItems: (backendItem.dataEntity && backendItem.dataEntity.dataItems) ? backendItem.dataEntity.dataItems : (backendItem.dataItems || []),
     classificationValue: backendItem.classificationValue || '',
     industryCategory: backendItem.industryCategory || '',
     dataTimeliness: backendItem.dataTimeliness || '',

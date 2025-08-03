@@ -25,7 +25,7 @@
           <div class="action-buttons">
             <el-button type="success" plain @click="refreshTableData"><el-icon><Refresh /></el-icon>刷新数据</el-button>
             <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成组织机构凭证</el-button> -->
-            <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button>
+            <!-- <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button> -->
             <el-button 
               :type="hasGovernanceApplications ? 'warning' : 'info'" 
               plain 
