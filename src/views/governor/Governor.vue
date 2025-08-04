@@ -47,12 +47,12 @@
             height="100%"
             fit
           >
-            <el-table-column prop="id" label="ID" width="180" align="center">
+            <el-table-column prop="id" label="ID" width="170" align="center">
               <template #default="scope">
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="160" align="center">
+            <el-table-column prop="entity" label="实体" width="170" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
@@ -283,6 +283,7 @@
         <el-button type="primary" @click="handleRequestNotification('generate')">
           立即生成并发送数据胶囊
         </el-button>
+        <el-button type="danger" @click="handleRequestNotification('reject')">拒绝</el-button>
       </div>
     </template>
   </el-dialog>
@@ -374,7 +375,7 @@ const hasGovernanceApplications = computed(() => {
 const pollingTimer = ref(null)
 const requestNotificationVisible = ref(false)
 const pendingRequest = ref(null)
-const pollingInterval = ref(10000) 
+const pollingInterval = ref(3000) 
 
 // 从localStorage初始化已处理的请求ID集合
 const initProcessedRequestIds = () => {
@@ -605,6 +606,10 @@ const refreshTableData = async () => {
   try {
     ElMessage.info('正在刷新数据...')
     await loadDataFromBackend()
+    
+    // 刷新申请状态检查
+    await checkApplicationStatus()
+    
     ElMessage.success('数据刷新完成')
   } catch (error) {
     console.error('刷新数据失败:', error)
@@ -2080,6 +2085,18 @@ const handleRequestNotification = async (action) => {
     }
     // 继续轮询
     console.log('选择稍后处理，继续轮询')
+  } else if (action === 'reject') {
+    // 拒绝申请，将该请求ID和申请人组合永久保存到已处理集合中，防止重复弹窗
+    const currentIds = pendingRequest.value?.ids
+    const currentApplicant = pendingRequest.value?.applicant
+    if (currentIds && currentApplicant) {
+      const uniqueKey = `${currentIds}_${currentApplicant}`
+      processedRequestIds.value.add(uniqueKey)
+      saveProcessedRequestIds() // 同步保存到localStorage
+      ElMessage.success('已拒绝该申请，不会再次提醒')
+    }
+    // 继续轮询
+    console.log('选择拒绝申请，继续轮询')
   }
 }
 

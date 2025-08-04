@@ -8,6 +8,7 @@
         <div class="table-title">我的数据对象列表</div>
         <!-- ObjectList组件紧跟标题下方 -->
         <ObjectList 
+          ref="objectListRef"
           :data="filteredTableData"
           v-model:current-status="currentStatus"
           v-model:search-keyword="searchKeyword"
@@ -222,6 +223,7 @@ import ObjectPreviewDialog from '@/components/ObjectPreviewDialog.vue'
 import ClassificationLevelDialog from '@/components/source/ClassificationLevelDialog.vue'
 
 const router = useRouter()
+const objectListRef = ref(null)
 const activeTab = ref('objectList')
 const currentStatus = ref('') 
 const searchKeyword = ref('')
@@ -1750,6 +1752,17 @@ const refreshData = async () => {
     // 处理刚刚获取的数据，确保反馈意见能够正确显示
     processNewlyFetchedData();
     
+    // 同时调用application-records接口检查申请状态
+    try {
+      const response = await fetch('http://localhost:8083/api/application-records')
+      if (response.ok) {
+        const data = await response.json()
+        console.log('申请记录数据已刷新:', data)
+      }
+    } catch (error) {
+      console.warn('刷新申请记录失败:', error)
+    }
+    
     ElMessage.success('数据刷新成功')
     
     // 成功后隐藏错误提示
@@ -2617,6 +2630,12 @@ const handleRefreshData = async () => {
   try {
     console.log('用户点击刷新数据按钮');
     await refreshData();
+    
+    // 刷新申请列表按钮状态
+    if (objectListRef.value && objectListRef.value.checkApplicationStatus) {
+      await objectListRef.value.checkApplicationStatus();
+      console.log('已刷新申请列表按钮状态');
+    }
   } catch (error) {
     console.error('刷新数据失败:', error);
     ElMessage.error('刷新数据失败: ' + (error.message || '未知错误'));

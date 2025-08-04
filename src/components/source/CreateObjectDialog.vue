@@ -52,7 +52,7 @@
       </el-form-item>
 
       <!-- 添加权重赋值按钮 -->
-      <el-form-item label="权重赋值：" style="margin-bottom: 22px;">
+      <el-form-item label="行分级值权重赋值：" style="margin-bottom: 22px;">
         <el-button type="primary" @click="showWeightForm = !showWeightForm">
           {{ showWeightForm ? '隐藏权重设置' : '设置权重' }}
         </el-button>

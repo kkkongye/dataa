@@ -83,12 +83,12 @@
             <div class="id-cell highlight-blue">{{ scope.row.id }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="entity" label="实体" width="160" align="center">
+        <el-table-column prop="entity" label="实体" width="150" align="center">
           <template #default="scope">
             <el-link type="primary" @click="handlePreview(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
           </template>
         </el-table-column>
-        <el-table-column prop="locationInfo" label="定位信息" min-width="140" align="center">
+        <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center">
           <template #default="scope">
             <!-- 增加调试输出 -->
             <!-- <span style="display: none;">{{ console.log('渲染定位信息:', scope.row.id, scope.row.locationInfo) }}</span> -->
@@ -1153,6 +1153,11 @@ const handleGenerateDV = async () => {
     }
   }
 };
+
+// 暴露方法给父组件
+defineExpose({
+  checkApplicationStatus
+});
 </script>
 
 <style scoped>
