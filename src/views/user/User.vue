@@ -22,7 +22,11 @@
             </el-input>
           </div>
           <div class="action-buttons">
-            <el-button type="danger" plain @click="clearDatabase">清空使用方数据库</el-button>
+            <el-button type="success" plain @click="handleRefresh" :loading="loading">
+              <el-icon><Refresh /></el-icon>
+              刷新数据
+            </el-button>
+            <!-- <el-button type="danger" plain @click="clearDatabase"><el-icon><Delete /></el-icon>清空使用方数据库</el-button> -->
             <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
@@ -30,7 +34,7 @@
             <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button> -->
             <el-button type="info" plain @click="showDirectoryDialog">可解密的数据对象目录</el-button>
             <!-- <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button> -->
-            <el-button type="success" plain @click="goToUserMain">
+            <el-button type="warning" plain @click="goToUserMain">
               <el-icon><Back /></el-icon>
               返回查看请求的数据对象
             </el-button>
@@ -259,7 +263,7 @@
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Search, Lock, Document, DataAnalysis, Back } from '@element-plus/icons-vue'
+import { Search, Lock, Document, DataAnalysis, Back, Delete, Refresh } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '@/components/ExcelPreview.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -382,6 +386,12 @@ const loadTableData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 刷新数据
+const handleRefresh = async () => {
+  await loadTableData()
+  ElMessage.success('数据刷新成功')
 }
 
 // 监听共享服务数据变化

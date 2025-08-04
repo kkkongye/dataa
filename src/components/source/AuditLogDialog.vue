@@ -249,7 +249,7 @@ function handleViewAuditLog() {
 .audit-log-content {
   display: flex;
   flex-direction: row;
-  height: 500px;
+  height: 600px;
   align-items: stretch;
 }
 .log-directory {

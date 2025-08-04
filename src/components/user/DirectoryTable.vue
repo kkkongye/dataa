@@ -88,8 +88,42 @@
           <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
               <div class="operation-buttons">
-                <el-button type="primary" plain @click="handleApplyForGroup" size="small">申请</el-button>
-                <el-button type="success" plain @click="handleDecryptForGroup" size="small">解密</el-button>
+                <el-button 
+                  v-if="!isGroupApplied(currentGroup)"
+                  type="primary" 
+                  plain 
+                  @click="handleApplyForGroup" 
+                  size="small"
+                >
+                  申请
+                </el-button>
+                <el-button 
+                  v-else
+                  type="primary" 
+                  plain 
+                  disabled 
+                  size="small"
+                >
+                  已申请
+                </el-button>
+                <el-button 
+                  v-if="!isGroupDecrypted(currentGroup)"
+                  type="success" 
+                  plain 
+                  @click="handleDecryptForGroup" 
+                  size="small"
+                >
+                  解密
+                </el-button>
+                <el-button 
+                  v-else
+                  type="success" 
+                  plain 
+                  disabled 
+                  size="small"
+                >
+                  已解密
+                </el-button>
               </div>
             </template>
           </el-table-column>
@@ -135,6 +169,10 @@ const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(1) // 每页显示一组
 const selectedRows = ref([])
+
+// 已申请和已解密状态管理
+const appliedGroups = ref(new Set())
+const decryptedIds = ref(new Set())
 
 // 当前显示的组
 const currentGroup = computed(() => {
@@ -308,10 +346,58 @@ const formatTransferControl = (propagationControl) => {
   return controls
 }
 
+// 检查已申请的组
+const checkAppliedGroups = async () => {
+  try {
+    // 从objects接口获取已存在的ID，视为已申请
+    const objectsResponse = await axios.get('http://localhost:8083/api/objects', { withCredentials: true })
+    if (objectsResponse.data && objectsResponse.data.data) {
+      const existingIds = objectsResponse.data.data.map(obj => obj.id)
+      existingIds.forEach(id => {
+        // 如果ID已存在，视为已申请
+        appliedGroups.value.add(id.toString())
+      })
+    }
+  } catch (error) {
+    console.error('检查申请状态失败:', error)
+  }
+}
+
+// 检查已解密的ID
+const checkDecryptedIds = async () => {
+  try {
+    const response = await axios.get('http://localhost:8083/api/objects', { withCredentials: true })
+    if (response.data && response.data.data) {
+      const existingIds = response.data.data.map(obj => obj.id)
+      existingIds.forEach(id => {
+        decryptedIds.value.add(id.toString())
+      })
+    }
+  } catch (error) {
+    console.error('检查解密状态失败:', error)
+  }
+}
+
+// 判断组是否已申请
+const isGroupApplied = (group) => {
+  if (!group || !group.entities) return false
+  return group.entities.some(entity => appliedGroups.value.has(entity.id.toString()))
+}
+
+// 判断组是否已解密
+const isGroupDecrypted = (group) => {
+  if (!group || !group.entities) return false
+  return group.entities.every(entity => decryptedIds.value.has(entity.id.toString()))
+}
+
 // 加载数据
 const fetchData = async () => {
   try {
     loading.value = true
+    
+    // 检查已申请和已解密状态
+    await checkAppliedGroups()
+    await checkDecryptedIds()
     
     // 获取申请记录
     const applicationRecords = await fetchApplicationRecords()
@@ -457,6 +543,11 @@ function handleApplyForGroup() {
       
       ElMessage.success('申请成功')
       
+      // 将当前组的每个ID添加到已申请集合中
+      currentGroup.value.entities.forEach(entity => {
+        appliedGroups.value.add(entity.id.toString())
+      })
+      
       currentGroup.value.entities.forEach(row => {
         row.applied = true
         row.applyStatus = '待处理'
@@ -487,6 +578,11 @@ function handleDecryptForGroup() {
       
       // 检查新的响应格式
       if (res.data && res.data.code === 1 && res.data.data) {
+        // 将解密成功的ID添加到已解密集合中
+        ids.forEach(id => {
+          decryptedIds.value.add(id.toString())
+        })
+        
         // 显示解密成功弹框
         ElMessageBox.alert('已成功解密，请点击实体名查看数据对象具体信息', '解密成功', {
           confirmButtonText: '好的',

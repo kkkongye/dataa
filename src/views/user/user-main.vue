@@ -22,6 +22,10 @@
             </el-input>
           </div>
           <div class="action-buttons">
+            <el-button type="danger" plain @click="handleClearApplications" :loading="clearLoading">
+              <el-icon><Delete /></el-icon>
+              清空申请列表
+            </el-button>
             <el-button type="success" plain @click="handleRefresh" :loading="loading">
               <el-icon><Refresh /></el-icon>
               刷新数据
@@ -171,9 +175,9 @@
 <script setup>
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElLoading } from 'element-plus'
+import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import axios from 'axios'
-import { Search, Refresh, Download, Lock, DataAnalysis } from '@element-plus/icons-vue'
+import { Search, Refresh, Download, Lock, DataAnalysis, Delete } from '@element-plus/icons-vue'
 import AppHeader from '@/components/AppHeader.vue'
 import CommonPagination from '@/components/CommonPagination.vue'
 import VisualizationDialog from '@/components/visualization/VisualizationDialog.vue'
@@ -188,6 +192,7 @@ const selectedRows = ref([])
 // 后端数据
 const groupData = ref([])
 const loading = ref(false)
+const clearLoading = ref(false)
 
 // 获取申请记录数据
 const fetchApplicationRecords = async () => {
@@ -490,6 +495,42 @@ const previewEntity = (row) => {
 const handleRefresh = async () => {
   await loadData()
   ElMessage.success('数据已刷新')
+}
+
+// 清空申请列表
+const handleClearApplications = async () => {
+  try {
+    // 显示确认对话框
+    await ElMessageBox.confirm(
+      '确定要清空所有申请记录吗？此操作不可撤销！',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
+    clearLoading.value = true
+    const response = await axios.delete('http://localhost:8083/api/clear-application-records')
+    
+    if (response.data && response.data.code === 1) {
+      ElMessage.success('申请记录已成功清空')
+      // 清空成功后刷新数据
+      await loadData()
+    } else {
+      ElMessage.error(`清空失败: ${response.data?.msg || '未知错误'}`)
+    }
+  } catch (error) {
+    if (error === 'cancel') {
+      ElMessage.info('已取消清空操作')
+    } else {
+      console.error('清空申请记录失败:', error)
+      ElMessage.error(`清空失败: ${error.message || '未知错误'}`)
+    }
+  } finally {
+    clearLoading.value = false
+  }
 }
 
 // 导出数据

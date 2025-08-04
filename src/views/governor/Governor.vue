@@ -47,16 +47,16 @@
             height="100%"
             fit
           >
-            <el-table-column prop="id" label="ID" width="200" align="center">
+            <el-table-column prop="id" label="ID" width="180" align="center">
               <template #default="scope">
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="120" align="center">
+            <el-table-column prop="entity" label="实体" width="160" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
-            </el-table-column><el-table-column prop="locationInfo" label="定位信息" min-width="120" align="center">
+            </el-table-column><el-table-column prop="locationInfo" label="定位信息" min-width="160" align="center">
               <template #default="scope">
                 <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
                   ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
@@ -120,7 +120,7 @@
                 <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
               </template>
             </el-table-column>
-            <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
+            <el-table-column prop="classificationLevelValue" label="分类分级值" width="120" align="center">
               <template #default="scope">
                 <div class="classification-level-container">
                   <div class="classification-level-item">
@@ -374,7 +374,7 @@ const hasGovernanceApplications = computed(() => {
 const pollingTimer = ref(null)
 const requestNotificationVisible = ref(false)
 const pendingRequest = ref(null)
-const pollingInterval = ref(5000) // 轮询间隔，默认5秒
+const pollingInterval = ref(10000) 
 
 // 从localStorage初始化已处理的请求ID集合
 const initProcessedRequestIds = () => {
@@ -1947,25 +1947,29 @@ const startPollingForRequests = () => {
       const response = await axios.get('http://localhost:8082/api/last-capsule-request')
       
       if (response.data && response.data.code === 1 && response.data.data) {
-        // 使用ids字段作为唯一标识符
+        // 使用ids和申请人组合作为唯一标识符
         const currentRequestIds = response.data.data.ids
+        const currentApplicant = response.data.data.applicant
+        const uniqueKey = `${currentRequestIds}_${currentApplicant}`
         
-        // 检查是否已经处理过该ID组合，防止重复弹窗
-        if (processedRequestIds.value.has(currentRequestIds)) {
-          return // 已经处理过该ID组合，跳过弹窗但继续轮询
+        // 检查是否已经处理过该ID和申请人组合，防止重复弹窗
+        if (processedRequestIds.value.has(uniqueKey)) {
+          return // 已经处理过该ID和申请人组合，跳过弹窗但继续轮询
         }
         
         // 不停止轮询，继续监听新的请求
         // stopPollingForRequests() // 注释掉这行，保持轮询继续
         
-        // 记录当前请求ID组合
-        processedRequestIds.value.add(currentRequestIds)
+        // 记录当前请求ID和申请人组合
+        processedRequestIds.value.add(uniqueKey)
         saveProcessedRequestIds() // 同步保存到localStorage
         
         // 获取实体名
         try {
           const objectsResponse = await axios.get('http://localhost:8082/api/objects')
           let entityNames = []
+          
+          console.log('获取到的objects响应:', objectsResponse.data)
           
           let objects = []
           if (Array.isArray(objectsResponse.data)) {
@@ -1975,6 +1979,9 @@ const startPollingForRequests = () => {
           } else if (objectsResponse.data.list && Array.isArray(objectsResponse.data.list)) {
             objects = objectsResponse.data.list
           }
+          
+          console.log('解析后的objects数组:', objects)
+          console.log('请求的IDs:', response.data.data.ids)
           
           if (objects.length > 0) {
             const requestIds = response.data.data.ids
@@ -1988,6 +1995,8 @@ const startPollingForRequests = () => {
             } else {
               idsArray = [requestIds]
             }
+            
+            console.log('处理后的ID数组:', idsArray)
             
             // 为每个ID获取对应的实体名
              entityNames = idsArray.map(id => {
@@ -2019,6 +2028,9 @@ const startPollingForRequests = () => {
                }
                return '未知实体'
              })
+          } else {
+            console.log('objects数组为空，使用默认实体名')
+            entityNames = ['未知实体']
           }
           
           pendingRequest.value = {
@@ -2058,10 +2070,12 @@ const handleRequestNotification = async (action) => {
     console.log('数据胶囊生成完成，继续轮询监听新请求')
     // 保持已处理的请求ID集合，不重置
   } else if (action === 'later') {
-    // 稍后处理，从已处理集合中移除该ID，允许稍后重新提醒
+    // 稍后处理，从已处理集合中移除该ID和申请人组合，允许稍后重新提醒
     const currentIds = pendingRequest.value?.ids
-    if (currentIds) {
-      processedRequestIds.value.delete(currentIds)
+    const currentApplicant = pendingRequest.value?.applicant
+    if (currentIds && currentApplicant) {
+      const uniqueKey = `${currentIds}_${currentApplicant}`
+      processedRequestIds.value.delete(uniqueKey)
       saveProcessedRequestIds() // 同步保存到localStorage
     }
     // 继续轮询

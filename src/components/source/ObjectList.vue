@@ -76,14 +76,14 @@
         <el-table-column 
           prop="id" 
           label="ID" 
-          width="220" 
+          width="180" 
           align="center"
         >
           <template #default="scope">
             <div class="id-cell highlight-blue">{{ scope.row.id }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="entity" label="实体" width="120" align="center">
+        <el-table-column prop="entity" label="实体" width="160" align="center">
           <template #default="scope">
             <el-link type="primary" @click="handlePreview(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
           </template>
