@@ -216,7 +216,8 @@ const processBackendData = async () => {
           gradeValue: gradeValue,
           totalCategoryValue: item.totalCategoryValue, // 添加原始分类值
           totalGradeValue: item.totalGradeValue, // 添加原始分级值
-          id: item.id // 添加原始ID字段
+          id: item.id, // 添加原始ID字段
+          creatorName: item.creatorName || '浙江省税务局' // 添加数据源方信息
         };
       } catch (err) {
         console.error('处理数据项时出错:', err);
@@ -274,6 +275,7 @@ const tooltipFormatter = (params) => {
   };
   
   return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
+          <div>数源方: ${item.creatorName || '浙江省税务局'}</div>
           <div>申请时间: ${formatDateTime(date)}</div>
           <div>行业分类: ${item.industry || '未分类'}</div>
           <div>分类分级值: ${(parseFloat(item.totalCategoryValue || 0) + parseFloat(item.totalGradeValue || 0)).toFixed(4)}</div>
@@ -624,21 +626,22 @@ const forceRender = async () => {
         series: [{
           type: 'scatter3D',
           data: chartData.map(item => ({
-            name: item.name,
-            value: item.value,
-            industry: item.industry,
-            status: item.status,
-            statusColor: item.statusColor,
-            completeness: item.completeness,
-            symbolSize: item.symbolSize,
-            itemStyle: item.itemStyle,
-            entity: item.entity,
-            statusInfo: item.statusInfo,
-            metadata: item.metadata,
-            gradeValue: item.gradeValue,
-            totalCategoryValue: item.totalCategoryValue,
-            id: item.id // 确保ID字段被传递
-          })),
+          name: item.name,
+          value: item.value,
+          industry: item.industry,
+          status: item.status,
+          statusColor: item.statusColor,
+          completeness: item.completeness,
+          symbolSize: item.symbolSize,
+          itemStyle: item.itemStyle,
+          entity: item.entity,
+          statusInfo: item.statusInfo,
+          metadata: item.metadata,
+          gradeValue: item.gradeValue,
+          totalCategoryValue: item.totalCategoryValue,
+          id: item.id, // 确保ID字段被传递
+          creatorName: item.creatorName // 确保数据源方字段被传递
+        })),
           emphasis: {
             itemStyle: {
               borderWidth: 1,
@@ -1029,7 +1032,8 @@ const initChart = async () => {
           gradeValue: item.gradeValue,
           totalCategoryValue: item.totalCategoryValue,
           totalGradeValue: item.totalGradeValue, // 添加原始分级值
-          id: item.id // 确保ID字段被传递
+          id: item.id, // 确保ID字段被传递
+          creatorName: item.creatorName // 确保数据源方字段被传递
         })),
         emphasis: {
           itemStyle: {
