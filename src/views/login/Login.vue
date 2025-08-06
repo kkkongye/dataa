@@ -48,6 +48,7 @@
               <el-option label="税务局" value="税务局" />
               <el-option label="审计局" value="审计局" />
               <el-option label="财政局" value="财政局" />
+              <el-option label="发改局" value="发改局" />
               <el-option label="统计局" value="统计局" />
               <el-option label="民政局" value="民政局" />
               <el-option label="教育局" value="教育局" />
@@ -57,7 +58,7 @@
               <el-option label="体育局" value="体育局" />
               <el-option label="自定义" value="自定义" />
             </el-select>
-            <span v-if="loginForm.role === 'governor'" class="bureau-text">大数据局</span>
+            <span v-if="loginForm.role === 'governor'" class="bureau-text">数据局</span>
           </div>
           <el-input v-if="loginForm.bureau === '自定义'" v-model="loginForm.customBureau" placeholder="请输入局名" class="custom-bureau-input" />
         </el-form-item>
@@ -122,7 +123,7 @@ const handleLogin = async () => {
   
   // 治理方默认为大数据局
   if (loginForm.role === 'governor') {
-    loginForm.bureau = '大数据局'
+    loginForm.bureau = '数据局'
   } else {
     if (!loginForm.bureau) {
       ElMessage.warning('请选择局')

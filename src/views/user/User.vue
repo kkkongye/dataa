@@ -31,7 +31,7 @@
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
             </el-button>
-            <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button> -->
+            <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证机构凭证</el-button> -->
             <el-button type="info" plain @click="showDirectoryDialog">可解密的数据对象目录</el-button>
             <!-- <el-button v-if="isDecrypted" type="warning" plain @click="resetDecryption">重新解密</el-button> -->
             <el-button type="warning" plain @click="goToUserMain">

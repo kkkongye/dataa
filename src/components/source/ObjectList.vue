@@ -231,7 +231,7 @@
           <template #default="scope">
             <div class="classification-level-container">
               <div class="classification-level-item">
-                <span class="value">{{ (parseFloat(scope.row.totalCategoryValue) || 0) + (parseFloat(scope.row.totalGradeValue) || 0) || '未生成分类分级值' }}</span>
+                <span class="value">{{ ((parseFloat(scope.row.totalCategoryValue) || 0) + (parseFloat(scope.row.totalGradeValue) || 0)).toFixed(4) || '未生成分类分级值' }}</span>
               </div>
               <!-- <div class="classification-level-item">
                 <span class="label">分级值：</span>

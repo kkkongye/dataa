@@ -34,7 +34,7 @@
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
             </el-button>
-            <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证组织机构凭证</el-button> -->
+            <!-- <el-button type="primary" plain @click="handleVerifySC"> 验证机构凭证</el-button> -->
             <el-button type="warning" plain @click="goToDecrypt">
               <el-icon><Lock /></el-icon>
               去解密
@@ -436,7 +436,7 @@ const getTimelineSteps = (groupData) => {
   
   const allSteps = [
     '待数源方生成数据凭证',
-    '待治理方生成组织机构凭证', 
+    '待治理方生成机构凭证', 
     '待获得共享证书',
     '已获得共享证书,可解密'
   ]
@@ -446,7 +446,7 @@ const getTimelineSteps = (groupData) => {
   if (!groupData.dataCredentialStatus) {
     currentStepIndex = 0 // 待数源方生成数据凭证
   } else if (!groupData.orgCredentialStatus) {
-    currentStepIndex = 1 // 待治理方生成组织机构凭证
+    currentStepIndex = 1 // 待治理方生成机构凭证
   } else if (!groupData.sharedCertificateStatus) {
     currentStepIndex = 2 // 待获得共享证书
   } else {
@@ -464,7 +464,7 @@ const getTimelineSteps = (groupData) => {
     // 添加括号内容（只有当对应状态为true时才显示）
     if (stepContent === '待数源方生成数据凭证' && groupData.dataCredentialStatus) {
       stepConfig.extraInfo = `（数源方：${groupData.dataSourceUser}）`
-    } else if (stepContent === '待治理方生成组织机构凭证' && groupData.orgCredentialStatus) {
+    } else if (stepContent === '待治理方生成机构凭证' && groupData.orgCredentialStatus) {
       stepConfig.extraInfo = `（治理方：${groupData.governorUser}）`
     }
     
@@ -549,7 +549,7 @@ const showVisualization = () => {
   visualizationVisible.value = true
 }
 
-// 处理验证组织机构凭证
+// 处理验证机构凭证
 const handleVerifySC = async () => {
   // 获取当前组的申请人和申请时间
   if (!currentGroup.value) {
@@ -568,7 +568,7 @@ const handleVerifySC = async () => {
   try {
     const loadingInstance = ElLoading.service({
       fullscreen: true,
-      text: '正在验证组织机构凭证...',
+      text: '正在验证机构凭证...',
       background: 'rgba(0, 0, 0, 0.7)'
     });
 
@@ -579,14 +579,14 @@ const handleVerifySC = async () => {
     if (response.data && response.data.code === 0 && response.data.msg === '尚未接收到共享证书') {
       ElMessage.error('验证失败：尚未接收到共享证书，请联系治理方发送共享证书');
     } else if (response.data && response.data.code === 1) {
-      ElMessage.success('组织机构凭证验证成功！');
+      ElMessage.success('机构凭证验证成功！');
       // 验证成功后自动刷新数据表格
       await loadData();
     } else {
-      ElMessage.error(`组织机构凭证验证失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
+      ElMessage.error(`机构凭证验证失败: ${response.data?.msg || response.data?.message || '未知错误'}`);
     }
   } catch (error) {
-    console.error('组织机构凭证验证失败:', error);
+    console.error('机构凭证验证失败:', error);
     
     if (error.response) {
       if (error.response.status === 404) {
@@ -599,7 +599,7 @@ const handleVerifySC = async () => {
     } else if (error.request) {
       ElMessage.error('无法连接到使用方服务，请确保服务已启动');
     } else {
-      ElMessage.error(`组织机构凭证验证失败: ${error.message || '未知错误'}`);
+      ElMessage.error(`机构凭证验证失败: ${error.message || '未知错误'}`);
     }
   }
 }

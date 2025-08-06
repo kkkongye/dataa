@@ -77,7 +77,7 @@
             <span class="label">行分级值：</span>
             <span class="value">{{ (rowGradeValue*0.001).toFixed(4) }}</span>
             <el-link type="primary" class="help-link" @click="showRowDetailDialog">查看详情</el-link>
-            <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link>
+            <!-- <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link> -->
           </div>
           
           <div class="grading-rule-card">②数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</div>

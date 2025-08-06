@@ -28,7 +28,7 @@
             size="small"
             :disabled="scope.row.orgCredentialStatus === true"
           >
-            生成组织机构凭证
+            生成机构凭证
           </el-button>
         </template>
       </el-table-column>
@@ -239,7 +239,7 @@ watch(dialogVisible, v => {
   if (!v) emit('close')
 })
 
-// 生成组织机构凭证方法
+// 生成机构凭证方法
 const handleGenerateOrgVouchers = async () => {
   // 获取当前组的申请人和申请时间
   const groupIndex = currentPage.value - 1
@@ -266,26 +266,26 @@ const handleGenerateOrgVouchers = async () => {
       ElMessage.error('解密校验失败：尚未接收到加密数据，请先确保数据已正确接收')
     } else if (res1.data && res1.data.code === 1) {
       loading.close()
-      await ElMessageBox.confirm('解密校验成功，是否生成组织机构凭证？', '提示', {
+      await ElMessageBox.confirm('解密校验成功，是否生成机构凭证？', '提示', {
         confirmButtonText: '生成',
         cancelButtonText: '取消',
         type: 'info',
       })
-      // 第二步：生成组织机构凭证，传递申请人和申请时间参数
-      const loading2 = ElLoading.service({ fullscreen: true, text: '正在生成组织机构凭证...' })
+      // 第二步：生成机构凭证，传递申请人和申请时间参数
+      const loading2 = ElLoading.service({ fullscreen: true, text: '正在生成机构凭证...' })
       const res2 = await axios.post(`http://localhost:8082/api/generate-org-vouchers?applicant=${encodeURIComponent(applicant)}&applyTime=${encodeURIComponent(applyTime)}`)
       loading2.close()
       if (res2.data && res2.data.code === 0) {
-        ElMessage.error('生成组织机构凭证失败：' + (res2.data?.msg || res2.data?.message || '未知错误'))
+        ElMessage.error('生成机构凭证失败：' + (res2.data?.msg || res2.data?.message || '未知错误'))
       } else if (res2.data && res2.data.code === 1) {
-        // 更新当前组的组织机构凭证状态
+        // 更新当前组的机构凭证状态
         const groupIndex = currentPage.value - 1
         const group = groupData.value[groupIndex]
         if (group) {
           group.orgCredentialStatus = true
         }
         
-        await ElMessageBox.confirm('组织机构凭证生成成功，是否发送共享证书给使用方？', '提示', {
+        await ElMessageBox.confirm('机构凭证生成成功，是否发送共享证书给使用方？', '提示', {
           confirmButtonText: '发送',
           cancelButtonText: '取消',
           type: 'info',
@@ -302,7 +302,7 @@ const handleGenerateOrgVouchers = async () => {
           ElMessage.error('发送共享证书失败：' + (res3.data?.msg || res3.data?.message || '未知错误'))
         }
       } else {
-        ElMessage.error('生成组织机构凭证失败：' + (res2.data?.msg || res2.data?.message || '未知错误'))
+        ElMessage.error('生成机构凭证失败：' + (res2.data?.msg || res2.data?.message || '未知错误'))
       }
     } else {
       loading.close()
@@ -318,8 +318,8 @@ const handleGenerateOrgVouchers = async () => {
   }
 }
 function getStatusText(row) {
-  if (row.orgCredentialStatus === true) return '治理方已生成组织机构凭证'
-  return '待治理方生成组织机构凭证'
+  if (row.orgCredentialStatus === true) return '治理方已生成机构凭证'
+  return '待治理方生成机构凭证'
 }
 function getStatusTagType(status) {
   if (!status) return 'info'

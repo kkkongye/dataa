@@ -60,7 +60,7 @@
         <!-- 右侧按钮 -->
         <div class="footer-right">
           <el-button @click="emit('close')">关闭</el-button>
-          <el-button type="primary" plain @click="handleViewAuditLog">查看区块链详细日志</el-button>
+          <!-- <el-button type="primary" plain @click="handleViewAuditLog">查看区块链详细日志</el-button> -->
         </div>
       </div>
     </template>

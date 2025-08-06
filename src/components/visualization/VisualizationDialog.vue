@@ -19,7 +19,7 @@
         <div class="dialog-title">三维数据可视化</div>
         <el-button type="primary" class="list-button" @click="handleClose">
           <el-icon><Document /></el-icon>
-          返回我的数据对象列表
+          返回我请求的数据对象列表
         </el-button>
       </div>
     </template>
