@@ -52,7 +52,7 @@
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="170" align="center">
+            <el-table-column prop="entity" label="实体" width="150" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
@@ -97,7 +97,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="transferControl" label="传输控制操作" min-width="200" align="center">
+            <el-table-column prop="transferControl" label="传输控制操作" min-width="180" align="center">
               <template #default="scope">
                 <div class="control-container">
                   <template v-if="scope.row.transferControl && scope.row.transferControl.length">
@@ -115,7 +115,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="auditInfo" label="审计控制信息" width="150" align="center">
+            <el-table-column prop="auditInfo" label="审计控制信息" width="130" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
               </template>
@@ -140,6 +140,11 @@
                 </div>
               </template>
             </el-table-column>
+            <el-table-column prop="creatorName" label="数源方" width="120" align="center">
+              <template #default="scope">
+                <span>{{ scope.row.creatorName || '浙江省税务局' }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="scope">
                 <span :class="['status-tag', getStatusClass(scope.row.status)]">
@@ -147,7 +152,7 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="170" align="center">
+            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="150" align="center">
               <template #default="scope">
                 <div style="display: flex; flex-direction: column; align-items: center;">
                   <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
@@ -161,7 +166,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="230" align="center">
+            <el-table-column label="操作" width="210" align="center">
               <template #default="scope">
                 <div class="status-buttons">
                   <el-button type="primary" size="small" plain @click="handleReview(scope.row)">自动化审查</el-button>
@@ -566,7 +571,8 @@ function adaptBackendData(backendItem) {
     metadata,
     dataContent,
     hasReview: backendItem.hasReview || false,
-    auditReport: backendItem.auditReport || '' // 新增
+    auditReport: backendItem.auditReport || '', // 新增
+    creatorName: backendItem.creatorName || '浙江省税务局' // 添加数源方字段
   }
   
   return result;
@@ -575,6 +581,7 @@ function adaptBackendData(backendItem) {
 // 页面加载时从后端获取数据并适配
 const loadDataFromBackend = async () => {
   try {
+    // 获取主要数据
     const response = await axios.get('http://localhost:8082/api/objects')
     let dataArray = []
     if (Array.isArray(response.data)) {
@@ -588,7 +595,36 @@ const loadDataFromBackend = async () => {
       ElMessage.warning('数据格式不符合预期，请检查控制台')
     }
     
-    tableData.value = dataArray.map(item => adaptBackendData(item))
+    // 获取数源方信息
+    let creatorMap = {}
+    try {
+      const creatorResponse = await axios.get('http://localhost:8081/api/objects/list1')
+      let creatorArray = []
+      if (Array.isArray(creatorResponse.data)) {
+        creatorArray = creatorResponse.data
+      } else if (creatorResponse.data.data && Array.isArray(creatorResponse.data.data)) {
+        creatorArray = creatorResponse.data.data
+      } else if (creatorResponse.data.list && Array.isArray(creatorResponse.data.list)) {
+        creatorArray = creatorResponse.data.list
+      }
+      
+      // 创建ID到creatorName的映射
+      creatorArray.forEach(item => {
+        if (item.id) {
+          creatorMap[item.id] = item.creatorName || '浙江省税务局'
+        }
+      })
+    } catch (creatorError) {
+      console.warn('获取数源方信息失败:', creatorError)
+    }
+    
+    // 合并数据
+    tableData.value = dataArray.map(item => {
+      const adaptedItem = adaptBackendData(item)
+      // 使用从list1接口获取的creatorName，如果没有则使用默认值
+      adaptedItem.creatorName = creatorMap[item.id] || '浙江省税务局'
+      return adaptedItem
+    })
     
     if (tableData.value.length === 0) {
       ElMessage.warning('没有获取到数据对象,请等待数源方发送')
@@ -634,10 +670,24 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', () => setWatermark('治  理  方'))
 })
 
+// 获取当前用户省份
+const getCurrentUserProvince = () => {
+  const username = localStorage.getItem('username') || ''
+  const provinceMatch = username.match(/^(\S+省|\S+市|\S+区)/)
+  return provinceMatch ? provinceMatch[1] : ''
+}
+
+const isSameProvince = (creatorName) => {
+  const userProvince = getCurrentUserProvince()
+  if (!userProvince || !creatorName) return true 
+  return creatorName.includes(userProvince)
+}
+
 // 计算实际数据量
 const totalCount = computed(() => {
   let result = tableData.value;
-
+  result = result.filter(item => isSameProvince(item.creatorName))
+  
   result = result.filter(item => item.status !== '待生成分类分级值');
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验');
@@ -654,6 +704,9 @@ const totalCount = computed(() => {
 const filteredTableData = computed(() => {
   let result = tableData.value;
 
+  // 基于省份筛选
+  result = result.filter(item => isSameProvince(item.creatorName))
+  
   result = result.filter(item => item.status !== '待生成分类分级值');
   if (currentStatus.value === '待校验') {
     result = result.filter(item => item.status === '待校验' || item.status === '待检验');
@@ -1779,7 +1832,7 @@ const headerCellStyle = ({ column }) => {
     'auditInfo',
     'classificationLevelValue'
   ];
-  const grayProps = ['status', 'feedback', 'operation'];
+  const grayProps = ['status', 'feedback', 'operation', 'creatorName'];
   if (blueProps.includes(column.property)) {
     return {
       background: '#eaf6ff',
@@ -1813,7 +1866,7 @@ const headerCellStyle = ({ column }) => {
 
 // 新增内容单元格样式方法
 const cellStyle = ({ column }) => {
-  const grayProps = ['status', 'feedback', 'operation'];
+  const grayProps = ['status', 'feedback', 'operation', 'creatorName'];
   if (grayProps.includes(column.property) || column.label === '操作') {
     return {
       background: '#fafafa'

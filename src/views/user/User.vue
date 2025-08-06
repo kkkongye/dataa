@@ -167,6 +167,12 @@
                 </div>
               </template>
             </el-table-column>
+
+            <el-table-column prop="creatorName" label="数源方" width="150" align="center">
+              <template #default="scope">
+                <span>{{ scope.row.creatorName || '浙江省税务局' }}</span>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
         
@@ -306,7 +312,7 @@ const fetchObjectIds = async () => {
 // 获取对象详细信息
 const fetchObjectDetails = async () => {
   try {
-    const response = await axios.get('http://localhost:8081/api/objects/list')
+    const response = await axios.get('http://localhost:8081/api/objects/list1')
     if (response.data && response.data.code === 1 && response.data.data) {
       return response.data.data
     }
@@ -352,7 +358,8 @@ const loadTableData = async () => {
           status: detailItem.dataEntity?.status || '未知状态',
           feedback: detailItem.dataEntity?.feedback || '',
           locationInfo: detailItem.locationInfo || {},
-          auditInfo: detailItem.auditInfo || {}
+          auditInfo: detailItem.auditInfo || {},
+          creatorName: detailItem.creatorName || '浙江省税务局'
         }
       } else {
         // 如果没有找到详细信息，只使用ID信息
@@ -372,7 +379,8 @@ const loadTableData = async () => {
           status: '未知状态',
           feedback: '',
           locationInfo: {},
-          auditInfo: {}
+          auditInfo: {},
+          creatorName: '浙江省税务局'
         }
       }
     })
@@ -1442,7 +1450,8 @@ const headerCellStyle = ({ column }) => {
     'constraint',
     'transferControl',
     'auditInfo',
-    'classificationLevelValue'
+    'classificationLevelValue',
+    'creatorName'
   ];
   if (blueProps.includes(column.property)) {
     return {
