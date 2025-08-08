@@ -467,6 +467,14 @@ const tableData = computed(() => {
   } else if (props.currentStatus) {
     filtered = filtered.filter(item => item.status === props.currentStatus)
   }
+  
+  // 按创建时间从晚到早排序（最新的在前面）
+  filtered = filtered.sort((a, b) => {
+    const dateA = new Date(a.createdAt || a.dataEntity?.createdAt || 0)
+    const dateB = new Date(b.createdAt || b.dataEntity?.createdAt || 0)
+    return dateB - dateA 
+  })
+  
   const startIndex = (props.currentPage - 1) * props.pageSize
   const endIndex = startIndex + props.pageSize
   return filtered.slice(startIndex, Math.min(endIndex, filtered.length))

@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-box">
       <div class="login-title">
-        <img src="/logo.jpg" alt="系统图标" class="system-icon" />
+        <img src="/logo.png" alt="系统图标" class="system-icon" />
         政务可信数据空间
       </div>
       <div class="login-subtitle">账号登录</div>

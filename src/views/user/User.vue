@@ -26,7 +26,7 @@
               <el-icon><Refresh /></el-icon>
               刷新数据
             </el-button>
-            <!-- <el-button type="danger" plain @click="clearDatabase"><el-icon><Delete /></el-icon>清空使用方数据库</el-button> -->
+            <el-button type="danger" plain @click="clearDatabase"><el-icon><Delete /></el-icon>清空使用方数据库</el-button>
             <el-button type="primary" plain @click="showVisualization" class="visualization-btn">
               <el-icon><DataAnalysis /></el-icon>
               三维数据可视化
@@ -359,7 +359,8 @@ const loadTableData = async () => {
           feedback: detailItem.dataEntity?.feedback || '',
           locationInfo: detailItem.locationInfo || {},
           auditInfo: detailItem.auditInfo || {},
-          creatorName: detailItem.creatorName || '浙江省税务局'
+          creatorName: detailItem.creatorName || '浙江省税务局',
+          createdAt: detailItem.createdAt || detailItem.dataEntity?.createdAt || idItem.createdAt
         }
       } else {
         // 如果没有找到详细信息，只使用ID信息
@@ -380,12 +381,20 @@ const loadTableData = async () => {
           feedback: '',
           locationInfo: {},
           auditInfo: {},
-          creatorName: '浙江省税务局'
+          creatorName: '浙江省税务局',
+          createdAt: idItem.createdAt
         }
       }
     })
     
     tableData.value = mergedData
+    
+    tableData.value.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0)
+      const dateB = new Date(b.createdAt || 0)
+      return dateB - dateA // 降序排列，最新的在前面
+    })
+    
     console.log('数据加载完成，共', mergedData.length, '条记录')
     
   } catch (error) {

@@ -3,6 +3,7 @@
     :model-value="visible"
     :title="`审计日志-${entityName || objectId || '未知实体'}`"
     width="1200px"
+    height="2000px"
     :close-on-click-modal="false"
     :show-close="true"
     @close="emit('close')"
@@ -11,7 +12,7 @@
   >
     <div class="audit-log-content">
       <!-- 左侧目录 -->
-      <div class="log-directory">
+      <!-- <div class="log-directory">
         <el-menu
           :default-active="activeType"
           class="log-menu"
@@ -23,7 +24,7 @@
           <el-menu-item index="查询">查询日志</el-menu-item>
           <el-menu-item index="审核">审核日志</el-menu-item>
         </el-menu>
-      </div>
+      </div> -->
       <!-- 右侧表格 -->
       <div class="log-table-area">
         <el-table
@@ -169,7 +170,7 @@ const fetchAuditLogs = async () => {
           return mappedData
         })
       )
-      allData.value = recordsWithHash
+      allData.value = recordsWithHash.sort((a, b) => new Date(b.time) - new Date(a.time))
       console.log('最终数据:', allData.value)
     } else {
       console.error('API返回错误:', result.msg)
@@ -308,6 +309,17 @@ function handleViewAuditLog() {
   font-size: 14px !important;
   text-align: center !important;
   padding: 12px 8px !important;
+}
+
+/* 设置弹窗高度 - 能容纳10条记录 */
+:deep(.audit-log-dialog) {
+  height: 750px !important;
+  max-height: 750px !important;
+}
+
+:deep(.audit-log-dialog .el-dialog__body) {
+  height: 600px !important;
+  overflow: visible;
 }
 
 .dialog-footer {

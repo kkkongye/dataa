@@ -88,8 +88,14 @@
           <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
               <div class="operation-buttons">
-                <el-button 
+                <!-- <el-button 
                   v-if="!isGroupApplied(currentGroup)"
+                  type="primary" 
+                  plain 
+                  @click="handleApplyForGroup" 
+                  size="small"
+                > -->
+                <el-button 
                   type="primary" 
                   plain 
                   @click="handleApplyForGroup" 
@@ -97,7 +103,7 @@
                 >
                   申请
                 </el-button>
-                <el-button 
+                <!-- <el-button 
                   v-else
                   type="primary" 
                   plain 
@@ -105,7 +111,7 @@
                   size="small"
                 >
                   已申请
-                </el-button>
+                </el-button> -->
                 <el-button 
                   v-if="!isGroupDecrypted(currentGroup)"
                   type="success" 

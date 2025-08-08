@@ -2,7 +2,7 @@
   <div class="register-container">
     <div class="register-box">
       <div class="register-title">
-        <img src="/logo.jpg" alt="系统图标" class="system-icon" />
+        <img src="/logo.png" alt="系统图标" class="system-icon" />
         政务可信数据空间
       </div>
       <div class="register-subtitle">账号注册</div>

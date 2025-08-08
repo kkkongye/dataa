@@ -202,7 +202,7 @@
   >
     <template v-slot:footer>
       <span class="dialog-footer">
-        <el-button v-if="showJudgeButtonsForPreview" type="success" plain @click="handlePreviewJudge('pass')">合格</el-button>
+        <el-button v-if="showJudgeButtonsForPreview" type="success" plain @click="handleManualReviewPass()">合格</el-button>
         <el-button v-if="showJudgeButtonsForPreview" type="danger" plain @click="handlePreviewJudge('fail')">不合格</el-button>
       </span>
     </template>
@@ -572,7 +572,8 @@ function adaptBackendData(backendItem) {
     dataContent,
     hasReview: backendItem.hasReview || false,
     auditReport: backendItem.auditReport || '', // 新增
-    creatorName: backendItem.creatorName || '浙江省税务局' // 添加数源方字段
+    creatorName: backendItem.creatorName || '浙江省税务局', // 添加数源方字段
+    createdAt: backendItem.createdAt || backendItem.dataEntity?.createdAt || '' // 添加创建时间字段
   }
   
   return result;
@@ -595,35 +596,46 @@ const loadDataFromBackend = async () => {
       ElMessage.warning('数据格式不符合预期，请检查控制台')
     }
     
-    // 获取数源方信息
-    let creatorMap = {}
+    // 获取创建时间和数源方信息
+    let timeAndCreatorMap = {}
     try {
-      const creatorResponse = await axios.get('http://localhost:8081/api/objects/list1')
-      let creatorArray = []
-      if (Array.isArray(creatorResponse.data)) {
-        creatorArray = creatorResponse.data
-      } else if (creatorResponse.data.data && Array.isArray(creatorResponse.data.data)) {
-        creatorArray = creatorResponse.data.data
-      } else if (creatorResponse.data.list && Array.isArray(creatorResponse.data.list)) {
-        creatorArray = creatorResponse.data.list
+      const timeResponse = await axios.get('http://localhost:8081/api/objects/list1')
+      let timeArray = []
+      if (Array.isArray(timeResponse.data)) {
+        timeArray = timeResponse.data
+      } else if (timeResponse.data.data && Array.isArray(timeResponse.data.data)) {
+        timeArray = timeResponse.data.data
+      } else if (timeResponse.data.list && Array.isArray(timeResponse.data.list)) {
+        timeArray = timeResponse.data.list
       }
       
-      // 创建ID到creatorName的映射
-      creatorArray.forEach(item => {
+      // 创建ID到createdAt和creatorName的映射
+      timeArray.forEach(item => {
         if (item.id) {
-          creatorMap[item.id] = item.creatorName || '浙江省税务局'
+          timeAndCreatorMap[item.id] = {
+            createdAt: item.createdAt || '',
+            creatorName: item.creatorName || '浙江省税务局'
+          }
         }
       })
-    } catch (creatorError) {
-      console.warn('获取数源方信息失败:', creatorError)
+    } catch (timeError) {
+      console.warn('获取创建时间和数源方信息失败:', timeError)
     }
     
     // 合并数据
     tableData.value = dataArray.map(item => {
       const adaptedItem = adaptBackendData(item)
-      // 使用从list1接口获取的creatorName，如果没有则使用默认值
-      adaptedItem.creatorName = creatorMap[item.id] || '浙江省税务局'
+      // 使用从8081接口获取的createdAt和creatorName
+      const timeInfo = timeAndCreatorMap[item.id] || {}
+      adaptedItem.createdAt = timeInfo.createdAt || ''
+      adaptedItem.creatorName = timeInfo.creatorName || '浙江省税务局'
       return adaptedItem
+    })
+    
+    tableData.value.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0)
+      const dateB = new Date(b.createdAt || 0)
+      return dateB - dateA // 降序排列，最新的在前面
     })
     
     if (tableData.value.length === 0) {
@@ -1246,6 +1258,32 @@ const handlePreviewJudge = async (result) => {
   }
   showJudgeButtonsForPreview.value = false
   previewDialogVisible.value = false
+}
+
+// 手工审查合格处理方法 - 将状态更新为已合格并清空反馈意见
+const handleManualReviewPass = async () => {
+  // 从tableData中找到对应的行数据
+  const targetRow = tableData.value.find(row => row.id === previewForm.id)
+  if (!targetRow) {
+    ElMessage.error('无法找到对应的数据对象')
+    return
+  }
+  
+  try {
+    // 直接调用updateStatusViaBothPorts，传入空字符串作为反馈意见
+    const result = await updateStatusViaBothPorts(targetRow.id, '已合格', '')
+    if (result) {
+      ElMessage.success(`${targetRow.entity} 已更新为"已合格"状态，反馈意见已清空`)
+      loadDataFromBackend() // 重新加载数据
+      showJudgeButtonsForPreview.value = false
+      previewDialogVisible.value = false
+    } else {
+      ElMessage.warning(`${targetRow.entity} 状态更新失败`)
+    }
+  } catch (error) {
+    console.error('手工审查合格处理出错:', error)
+    ElMessage.error(`更新 ${targetRow.entity} 状态失败: ${error.message || '未知错误'}`)
+  }
 }
 
 const excelBinaryData = ref(null)
