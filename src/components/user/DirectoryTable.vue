@@ -552,23 +552,23 @@ function handleApplyForGroup() {
       }
       
       // 计算并输出耗时
-      const endTime = Date.now()
-      const duration = endTime - startTime
-      console.log(`打包数据胶囊操作执行完成，耗时: ${duration} ms`)
+      // const endTime = Date.now()
+      // const duration = endTime - startTime
+      // console.log(`打包数据胶囊操作执行完成，耗时: ${duration} ms`)
       
-      // 显示执行完成弹框
-      ElMessageBox.alert(
-        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">打包数据胶囊操作执行完成，耗时: ${duration} ms</div>`,
-        '执行完成',
-        {
-          confirmButtonText: '确定',
-          type: 'success',
-          dangerouslyUseHTMLString: true,
-          customStyle: {
-            width: '650px'
-          }
-        }
-      )
+      // // 显示执行完成弹框
+      // ElMessageBox.alert(
+      //   `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">打包数据胶囊操作执行完成，耗时: ${duration} ms</div>`,
+      //   '执行完成',
+      //   {
+      //     confirmButtonText: '确定',
+      //     type: 'success',
+      //     dangerouslyUseHTMLString: true,
+      //     customStyle: {
+      //       width: '650px'
+      //     }
+      //   }
+      // )
       
       // 将当前组的每个ID添加到已申请集合中
       currentGroup.value.entities.forEach(entity => {
@@ -599,8 +599,6 @@ function handleDecryptForGroup() {
   loading.value = true
   const ids = currentGroup.value.entities.map(row => row.id)
   
-  // 记录开始时间
-  const startTime = Date.now()
   console.log('开始执行数据胶囊解密操作...')
   
   axios.post('http://localhost:8083/api/decrypt', {}, { withCredentials: true })
@@ -614,14 +612,13 @@ function handleDecryptForGroup() {
           decryptedIds.value.add(id.toString())
         })
         
-        // 计算并输出耗时
-        const endTime = Date.now()
-        const duration = endTime - startTime
-        console.log(`数据胶囊解密操作执行完成，耗时: ${duration} ms`)
+        // 从后端响应中获取执行时间
+        const executionTime = res.data.data.executionTime || 0
+        console.log(`数据胶囊解密操作执行完成，耗时: ${executionTime} ms`)
         
         // 显示执行完成弹框
         ElMessageBox.alert(
-          `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">数据胶囊解密操作执行完成，耗时: ${duration} ms</div>`,
+          `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">数据胶囊解密操作执行完成，耗时: ${executionTime} ms</div>`,
           '执行完成',
           {
             confirmButtonText: '确定',

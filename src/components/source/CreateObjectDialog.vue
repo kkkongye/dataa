@@ -241,6 +241,7 @@ const form = reactive({
   excelData: null,
   dataItems: [],
   excelFileId: null,
+  uploadExecutionTime: 0,
   weights: {}
 })
 
@@ -501,6 +502,15 @@ const handleFileChange = (file) => {
             uploadSuccess.value = true
 
             if (uploadResult.data) {
+              // 保存文件上传的执行时间
+              if (uploadResult.data && uploadResult.data.executionTime !== null && uploadResult.data.executionTime !== undefined) {
+                form.uploadExecutionTime = uploadResult.data.executionTime
+                console.log('获取到文件上传执行时间:', form.uploadExecutionTime)
+              } else {
+                console.log('未找到文件上传执行时间，uploadResult:', uploadResult)
+                console.log('uploadResult.data:', uploadResult.data)
+                console.log('uploadResult.data.executionTime:', uploadResult.data?.executionTime)
+              }
 
               if (uploadResult.data.excelFileId) {
                 form.excelFileId = uploadResult.data.excelFileId
@@ -696,7 +706,8 @@ const handleSave = () => {
         feedback: '',
         excelData: form.excelData,
         dataItems: form.dataItems || [],
-        excelFileId: form.excelFileId
+        excelFileId: form.excelFileId,
+        uploadExecutionTime: form.uploadExecutionTime || 0
       };
       try {
         const dataContent = {
@@ -743,6 +754,7 @@ const resetForm = () => {
   form.excelData = null
   form.dataItems = []
   form.excelFileId = null
+  form.uploadExecutionTime = 0
   form.weights = {}
   
   uploadSuccess.value = false
@@ -968,4 +980,4 @@ const confirmWeightChange = () => {
   color: #909399;
   line-height: 1.5;
 }
-</style> 
+</style>

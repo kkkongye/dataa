@@ -1995,6 +1995,9 @@ const beforeUpload = (file) => {
 
 // 保存新建对象
 const saveCreateObject = async (newObject) => {
+  // 记录总操作开始时间（包含文件上传和数据对象创建）
+  const totalStartTime = Date.now();
+  
   console.log('保存新建对象:', newObject);
   console.log('用户输入的元数据:', newObject.metadata);
   
@@ -2156,36 +2159,35 @@ const saveCreateObject = async (newObject) => {
   }
   
   try {
-    console.log('调用API添加数字对象:', {
-      entity: newObject.entity,
-      status: newObject.status,
-      excelFileId: newObject.excelFileId,
-      hasDataContent: !!newObject.dataContent
-    });
+
     
-    // 增加定位信息日志输出
-    console.log('[新建数字对象] 即将上传的定位信息:', newObject.locationInfo);
     if (newObject.locationInfoJson) {
       console.log('[新建数字对象] locationInfoJson:', newObject.locationInfoJson);
     }
     
-    // 记录接口调用开始时间
-    const startTime = Date.now();
+    // 如果newObject中有uploadExecutionTime，添加到requestParams中
+    if (newObject.uploadExecutionTime) {
+      requestParams.uploadExecutionTime = newObject.uploadExecutionTime;
+      console.log('传递文件上传执行时间:', newObject.uploadExecutionTime);
+    }
     
     // 调用API添加数据对象，传递excelFileId参数
     const result = await dataObjectService.addDataObjectViaApi(newObject, requestParams);
     
-    // 计算并输出接口执行耗时
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    console.log(`新增数据对象接口执行完成，耗时: ${duration} ms`);
+    // 从后端响应中获取两个接口的执行时间并相加
+    const uploadExecutionTime = result.uploadExecutionTime || 0;
+    const createExecutionTime = result.createExecutionTime || 0;
+    const totalExecutionTime = uploadExecutionTime + createExecutionTime;
+    console.log(`文件上传接口耗时: ${uploadExecutionTime} ms`);
+    console.log(`数据对象创建接口耗时: ${createExecutionTime} ms`);
+    console.log(`数据对象封装操作总耗时: ${totalExecutionTime} ms`);
     
     if (result.success) {
       ElMessage.success('数据对象添加成功');
       
-      // 显示接口执行耗时弹框
+      // 显示总耗时弹框（使用后端返回的执行时间）
       ElMessageBox.alert(
-        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 15px; white-space: nowrap;">数据对象封装操作执行完成，耗时: ${duration} ms</div>`,
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 15px; white-space: nowrap;">数据对象封装操作执行完成，耗时: ${totalExecutionTime} ms</div>`,
         '执行完成',
         {
           confirmButtonText: '确定',

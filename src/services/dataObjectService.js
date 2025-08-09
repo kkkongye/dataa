@@ -885,8 +885,19 @@ const prepareCsrfToken = async () => {
 
 const addDataObjectViaApi = async (dataObject, extraParams = {}) => {
   try {
-
     const token = await prepareCsrfToken();
+    let uploadExecutionTime = 0;
+    let createExecutionTime = 0;
+
+    // 从 extraParams 中获取文件上传执行时间（如果有的话）
+    if (extraParams.uploadExecutionTime) {
+      uploadExecutionTime = extraParams.uploadExecutionTime;
+      console.log('从参数中获取到文件上传执行时间:', uploadExecutionTime);
+    } else if (dataObject.excelFileId) {
+      // 如果有Excel文件但没有传递执行时间，设置一个默认值
+      uploadExecutionTime = 200; // 默认200ms作为文件上传时间
+      console.log('使用默认文件上传执行时间:', uploadExecutionTime);
+    }
 
     // 添加creatorName字段，设置为当前登录用户
     const currentUsername = localStorage.getItem('username')
@@ -1049,9 +1060,16 @@ const addDataObjectViaApi = async (dataObject, extraParams = {}) => {
 
       notifyListeners();
       
+      // 从响应中获取执行时间
+      if (response.data && response.data.data && response.data.data.executionTime) {
+        createExecutionTime = response.data.data.executionTime;
+      }
+      
       return {
         success: true,
-        data: newObject
+        data: newObject,
+        uploadExecutionTime: uploadExecutionTime,
+        createExecutionTime: createExecutionTime
       };
     } else {
       console.warn('添加数据对象失败:', response);
@@ -1435,25 +1453,39 @@ const uploadExcelFile = async (file) => {
           excelFileId = response.data.id;
         }
         
+        // 提取executionTime
+        let executionTime = null;
+        if (response.data && response.data.data && response.data.data.executionTime) {
+          executionTime = response.data.data.executionTime;
+        }
+        
         return {
           success: true,
           data: {
             excelFileId,
             originalResponse: response.data,
-            timestamp
+            timestamp,
+            executionTime
           },
           originalUploadResponse: response.data
         };
       } catch (tempError) {
         console.error('获取临时对象时出错:', tempError);
 
+        // 提取executionTime
+        let executionTime = null;
+        if (response.data && response.data.data && response.data.data.executionTime) {
+          executionTime = response.data.data.executionTime;
+        }
+        
         return {
           success: true,
           message: '上传成功但获取临时对象时出错',
           error: tempError,
           data: {
             excelFileId: `upload-${Date.now()}`,
-            uploadResponse: response.data
+            uploadResponse: response.data,
+            executionTime
           },
           originalUploadResponse: response.data
         };

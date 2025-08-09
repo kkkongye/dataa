@@ -765,12 +765,21 @@ const handleReview = async (row) => {
       cancelButtonText: '取消',
       type: 'info',
     });
-    const isBasicRegistrationData = row.entity === '基本登记信息模拟数据';
-    const reportApi = isBasicRegistrationData ? 'baogao1' : 'baogao2';
-    const fillReportApi = isBasicRegistrationData ? 'fill-audit-report1' : 'fill-audit-report2';
+    let reportApi;
+    if (row.entity === '基本登记信息模拟数据') {
+      reportApi = 'baogao1';
+    } else if (row.entity === '性能测试20') {
+      reportApi = 'baogao3';
+    } else if (row.entity === '性能测试250') {
+      reportApi = 'baogao4';
+    } else {
+      reportApi = 'baogao2';
+    }
+    const fillReportApi = (row.entity === '基本登记信息模拟数据' || row.entity === '性能测试20' || row.entity === '性能测试250') ? 'fill-audit-report1' : 'fill-audit-report2';
     
+    let reportResponse;
     try {
-      await axios.get(`http://localhost:8082/api/${reportApi}`);
+      reportResponse = await axios.get(`http://localhost:8082/api/${reportApi}`);
     } catch (e) {
       ElMessage.error('8082接口调用失败: ' + (e.message || '未知错误'));
       return;
@@ -780,22 +789,19 @@ const handleReview = async (row) => {
       text: '正在进行审查...',
       background: 'rgba(0, 0, 0, 0.7)'
     });   
-    // 记录开始时间
-    const startTime = Date.now();
     console.log('开始执行审查接口...');
     
     let updateResponse;
     try {
       updateResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/${fillReportApi}`);
       
-      // 计算并输出耗时
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      console.log(`接口执行完成，耗时: ${duration} ms`);
+      // 从reportApi响应中获取执行时间
+      const executionTime = reportResponse.data?.data?.executionTime || 0;
+      console.log(`接口执行完成，后端执行耗时: ${executionTime} ms`);
       
-      // 显示执行完成弹框
+      // 显示执行完成弹框，使用后端返回的执行时间
       ElMessageBox.alert(
-        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">自动化审查操作执行完成，耗时: ${duration} ms</div>`,
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">自动化审查操作执行完成，耗时: ${executionTime} ms</div>`,
         '执行完成',
         {
           confirmButtonText: '确定',
@@ -808,10 +814,7 @@ const handleReview = async (row) => {
       );
       
     } catch (error) {
-      // 即使出错也要记录耗时
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      console.log(`接口执行失败，耗时: ${duration} ms`);
+      console.log('接口执行失败');
       console.error('审查接口调用失败:', error);
       ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
       loading2.close();
@@ -1199,6 +1202,8 @@ const logout = async () => {
   } finally {
     // 无论成功失败，都执行退出登录
     localStorage.removeItem('role');
+    // localStorage.removeItem('processedRequestIds');
+    // processedRequestIds.value.clear();
     router.push('/login');
   }
 }
@@ -2231,7 +2236,23 @@ const handleGenerateAndSendCapsule = async () => {
     if (response.data && response.data.code === 0) {
       ElMessage.error(`操作失败：${response.data?.msg || response.data?.message || '未知错误'}`);
     } else if (response.data && response.data.code === 1) {
-      ElMessage.success('数据胶囊已成功生成并发送给使用方');
+      // 从后端响应中获取执行时间
+      const executionTime = response.data?.data?.executionTime || 0;
+      console.log(`打包数据胶囊操作执行完成，耗时: ${executionTime} ms`);
+      
+      // 显示执行完成弹框
+      ElMessageBox.alert(
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">打包数据胶囊操作执行完成，耗时: ${executionTime} ms</div>`,
+        '执行完成',
+        {
+          confirmButtonText: '确定',
+          type: 'success',
+          dangerouslyUseHTMLString: true,
+          customStyle: {
+            width: '650px'
+          }
+        }
+      );
     } else {
       ElMessage.error(`操作失败：${response.data?.msg || response.data?.message || '未知错误'}`);
     }
