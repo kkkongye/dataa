@@ -1862,7 +1862,53 @@ const resetCreateForm = () => {
   }
 }
 
+// 添加测试方法
+const testEditDialog = () => {
+  console.log('测试打开编辑对话框')
+  
+  // 使用第一行数据作为测试数据
+  if (tableData.value && tableData.value.length > 0) {
+    const testRow = tableData.value[0]
+    console.log('使用测试数据:', testRow)
+    handleEdit(testRow)
+  } else {
+    console.error('没有可用数据用于测试')
+    ElMessage.error('没有可用数据用于测试')
+  }
+}
 
+// 处理文件变更
+const handleFileChange = (file) => {
+  // 验证文件类型
+  const isExcel = file.raw.type === 'application/vnd.ms-excel' || 
+                 file.raw.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (!isExcel) {
+    ElMessage.warning('请上传Excel格式的文件（.xls或.xlsx）');
+    return false;
+  }
+  
+  // 设置实体名称为文件名（不带扩展名）
+  const fileName = file.name;
+  const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+  createForm.entity = fileNameWithoutExt;
+  
+  // 读取并保存Excel文件内容
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      // 保存文件的二进制数据
+      createForm.excelData = e.target.result;
+      ElMessage.success(`已选择Excel表格"${fileName}"`);
+    } catch (error) {
+      console.error('读取Excel文件失败:', error);
+      ElMessage.error('读取Excel文件失败');
+    }
+  };
+  reader.onerror = () => {
+    ElMessage.error('读取文件失败');
+  };
+  reader.readAsBinaryString(file.raw);
+}
 
 // 处理编辑框中的文件变更
 const handleEditFileChange = (file) => {
