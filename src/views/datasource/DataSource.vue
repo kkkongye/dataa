@@ -518,7 +518,6 @@ const handleEdit = async (row) => {
 
   // 优先从dataEntity中获取dataItems
   if (sourceObj.dataEntity && Array.isArray(sourceObj.dataEntity.dataItems)) {
-    console.log('从dataEntity中获取dataItems:', sourceObj.dataEntity.dataItems.length);
     editForm.dataItems = [...sourceObj.dataEntity.dataItems];
     // 保存dataEntity引用，以便后续使用
     editForm.dataEntity = sourceObj.dataEntity;
@@ -566,7 +565,6 @@ const handleEdit = async (row) => {
         }
       }
     } catch (e) {
-      console.warn(`解析 ${sourceObj.entity} 的dataContent失败:`, e);
     }
   }
   
@@ -599,7 +597,6 @@ const handleEdit = async (row) => {
             fetchedDataItems = dataContent.dataItems;
           }
         } catch (e) {
-          console.error('解析dataContent失败:', e);
         }
       }
       
@@ -619,7 +616,6 @@ const handleEdit = async (row) => {
       }
     }
   } catch (error) {
-    console.error(`获取dataItems失败:`, error);
   }
   
 
@@ -693,7 +689,6 @@ const saveEditObject = async (updatedObject) => {
                 fetchedDataItems = dataContent.dataItems;
               }
             } catch (e) {
-              console.error('解析dataContent失败:', e);
             }
           }
           
@@ -702,7 +697,6 @@ const saveEditObject = async (updatedObject) => {
           }
         }
       } catch (error) {
-        console.error(`获取dataItems失败:`, error);
       }
     }
 
@@ -731,7 +725,6 @@ const saveEditObject = async (updatedObject) => {
         dataContent = updatedObject.dataContent
       }
     } catch (e) {
-      console.warn('解析现有dataContent失败，创建新对象', e)
       dataContent = {}
     }
     
@@ -832,7 +825,6 @@ const saveEditObject = async (updatedObject) => {
       refreshData()
     }
   } catch (error) {
-    console.error('保存编辑时出错:', error)
     ElMessage.error(`保存编辑失败: ${error.message || '未知错误'}`)
     
     // 尝试在本地保存
@@ -886,9 +878,7 @@ const logout = () => {
 }
 
 const showCreateDialog = () => {
-  console.log('触发显示创建对话框')
   createDialogVisible.value = true
-  console.log('createDialogVisible设置为:', createDialogVisible.value)
   
   setTimeout(() => {
     createForm.entity = ''
@@ -944,13 +934,7 @@ const formRules = {
   locationInfo: [
     { 
       validator: (rule, value, callback) => {
-      
-        console.log('验证定位信息: ', {
-          isEditDialogVisible: editDialogVisible.value,
-          'editForm.locationInfo': editForm.locationInfo,
-          value: value,
-          'form.locationInfo': value
-        });
+    
         
        
         if ((value && value.row && value.col) || (!value || (!value.row && !value.col))) {
@@ -1077,8 +1061,6 @@ const handleSaveEditManually = () => {
         editDialogVisible.value = false
       } else {
 
-        console.error('表单验证错误:', fields);
-
         let firstErrorField = '';
         let firstErrorMessage = '';
         
@@ -1150,7 +1132,6 @@ const currentExcelFile = ref(null)
  * 6. 提供详细的日志记录，便于调试
  */
 const previewEntity = (row) => {
-  console.log('预览实体数据:', row)
   
   // 深拷贝row，防止后续操作影响原始数据
   const rowCopy = JSON.parse(JSON.stringify(row))
@@ -1179,10 +1160,9 @@ const previewEntity = (row) => {
   // 保存原始dataItems数据 - 优先从dataEntity中提取
   if (rowCopy.dataEntity && Array.isArray(rowCopy.dataEntity.dataItems)) {
     previewForm.dataItems = [...rowCopy.dataEntity.dataItems]
-    console.log('从dataEntity中获取到dataItems:', previewForm.dataItems.length)
+
   } else if (Array.isArray(rowCopy.dataItems)) {
     previewForm.dataItems = [...rowCopy.dataItems]
-    console.log('从顶层获取到dataItems:', previewForm.dataItems.length)
   } else {
     previewForm.dataItems = []
   }
@@ -1240,12 +1220,10 @@ const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
       // 优先检查dataEntity内部的dataItems
       if (targetObject.dataEntity && Array.isArray(targetObject.dataEntity.dataItems)) {
         dataItems = targetObject.dataEntity.dataItems
-        console.log('从dataEntity内部获取到dataItems:', dataItems.length)
       } 
       // 然后检查顶层的dataItems
       else if (targetObject.dataItems && Array.isArray(targetObject.dataItems)) {
         dataItems = targetObject.dataItems
-        console.log('从顶层获取到dataItems:', dataItems.length)
       } 
       // 再检查dataContent内的数据
       else if (targetObject.dataContent) {
@@ -1256,13 +1234,10 @@ const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
             
           if (dataContent && dataContent.dataItems && Array.isArray(dataContent.dataItems)) {
             dataItems = dataContent.dataItems
-            console.log('从dataContent中获取到dataItems:', dataItems.length)
           } else if (dataContent && dataContent.dataEntity && dataContent.dataEntity.dataItems) {
             dataItems = dataContent.dataEntity.dataItems
-            console.log('从dataContent.dataEntity中获取到dataItems:', dataItems.length)
           }
         } catch (e) {
-          console.error('解析dataContent失败:', e)
         }
       }
     } 
@@ -1292,16 +1267,14 @@ const fetchExcelDataFromApi = async (objectId, originalDataItems = []) => {
     
     createExcelFromDataItems(dataItems)
   } catch (error) {
-    console.error('获取Excel数据失败:', error.message)
     ElMessage.error(`获取Excel数据失败: ${error.message}`)
     isExcelLoading.value = false
     
     // 出错时，优先使用原始数据
     if (originalDataItems && originalDataItems.length > 0) {
-      console.log('API请求出错，使用原始dataItems:', originalDataItems.length)
+
       createExcelFromDataItems(originalDataItems)
     } else {
-      console.log('API请求出错，无数据可显示')
       excelTableData.value = []
       excelTableColumns.value = []
       isExcelLoading.value = false
@@ -1420,7 +1393,6 @@ const createExcelFromDataItems = (dataItems) => {
     isExcelLoading.value = false
     ElMessage.success(`成功获取${dataItems.length}条数据记录`)
   } catch (error) {
-    console.error('创建Excel数据失败:', error)
     ElMessage.error(`创建Excel数据失败: ${error.message}`)
     isExcelLoading.value = false
   }
@@ -1453,7 +1425,6 @@ const getMockDataItems = (objectId) => {
 
 // 添加新的处理方法
 const handleExcelDataLoaded = (data) => {
-  console.log('Excel数据加载完成:', data)
   
 
   const isUserUploadedFile = tableData.value.some(row => 
@@ -1503,7 +1474,6 @@ const handleExport = () => {
 }
 
 const clearAllTestData = () => {
-  console.log('清除所有测试数据')
 
   tableData.value.forEach(row => {
     row.excelData = null
@@ -1639,7 +1609,6 @@ const prettifyJson = (json) => {
 // 从后端加载数据
 const loadDataFromBackend = async () => {
   try {
-    console.log('开始从后端加载数据...')
     ElMessage.info('正在从后端加载数据...')
     await dataObjectService.fetchDataObjectsFromBackend()
     
@@ -1648,14 +1617,12 @@ const loadDataFromBackend = async () => {
     
     // 处理刚刚获取的数据，确保反馈意见能够正确显示
     processNewlyFetchedData();
-    
-    console.log('后端数据加载完成')
+
     ElMessage.success('数据加载成功')
     
     // 成功后隐藏错误提示
     apiErrorVisible.value = false
   } catch (error) {
-    console.error('从后端加载数据失败:', error)
     
     // 判断是否为跨域错误
     const isCORSError = error.message && (
@@ -1673,8 +1640,7 @@ const loadDataFromBackend = async () => {
       apiErrorVisible.value = true
     }
     
-    // API失败时不使用模拟数据，显示NoData状态
-    console.log('API失败，显示NoData状态')
+
   }
 }
 
@@ -1767,10 +1733,8 @@ const refreshData = async () => {
       const response = await fetch('http://localhost:8083/api/application-records')
       if (response.ok) {
         const data = await response.json()
-        console.log('申请记录数据已刷新:', data)
       }
     } catch (error) {
-      console.warn('刷新申请记录失败:', error)
     }
     
     ElMessage.success('数据刷新成功')
@@ -1898,53 +1862,7 @@ const resetCreateForm = () => {
   }
 }
 
-// 添加测试方法
-const testEditDialog = () => {
-  console.log('测试打开编辑对话框')
-  
-  // 使用第一行数据作为测试数据
-  if (tableData.value && tableData.value.length > 0) {
-    const testRow = tableData.value[0]
-    console.log('使用测试数据:', testRow)
-    handleEdit(testRow)
-  } else {
-    console.error('没有可用数据用于测试')
-    ElMessage.error('没有可用数据用于测试')
-  }
-}
 
-// 处理文件变更
-const handleFileChange = (file) => {
-  // 验证文件类型
-  const isExcel = file.raw.type === 'application/vnd.ms-excel' || 
-                 file.raw.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  if (!isExcel) {
-    ElMessage.warning('请上传Excel格式的文件（.xls或.xlsx）');
-    return false;
-  }
-  
-  // 设置实体名称为文件名（不带扩展名）
-  const fileName = file.name;
-  const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-  createForm.entity = fileNameWithoutExt;
-  
-  // 读取并保存Excel文件内容
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      // 保存文件的二进制数据
-      createForm.excelData = e.target.result;
-      ElMessage.success(`已选择Excel表格"${fileName}"`);
-    } catch (error) {
-      console.error('读取Excel文件失败:', error);
-      ElMessage.error('读取Excel文件失败');
-    }
-  };
-  reader.onerror = () => {
-    ElMessage.error('读取文件失败');
-  };
-  reader.readAsBinaryString(file.raw);
-}
 
 // 处理编辑框中的文件变更
 const handleEditFileChange = (file) => {
@@ -1972,7 +1890,6 @@ const handleEditFileChange = (file) => {
       editForm.excelData = e.target.result;
       ElMessage.success(`已选择Excel表格"${file.name}"`);
     } catch (error) {
-      console.error('读取Excel文件失败:', error);
       ElMessage.error('读取Excel文件失败');
     }
   };
@@ -1998,24 +1915,15 @@ const saveCreateObject = async (newObject) => {
   // 记录总操作开始时间（包含文件上传和数据对象创建）
   const totalStartTime = Date.now();
   
-  console.log('保存新建对象:', newObject);
-  console.log('用户输入的元数据:', newObject.metadata);
-  
   // 保存原始元数据副本
   const originalMetadata = newObject.metadata ? { ...newObject.metadata } : null;
   if (!newObject.originalMetadata && originalMetadata) {
     newObject.originalMetadata = originalMetadata;
-    console.log('添加原始元数据副本:', newObject.originalMetadata);
   }
-  
-  // 不再强制修改状态，保留由dataObjectService设置的默认状态"待生成分类分级值"
-  console.log('当前对象状态值:', newObject.status);
   
   // 检查是否有excelFileId（从服务器上传时获取）
   if (!newObject.excelFileId && newObject.excelData) {
-    console.warn('没有发现Excel文件ID，但有Excel数据，这可能是客户端上传导致的');
     newObject.excelFileId = `temp-${Date.now()}`;
-    console.log('使用临时文件ID:', newObject.excelFileId);
   }
   
   // 创建dataContent字段
@@ -2051,9 +1959,7 @@ const saveCreateObject = async (newObject) => {
       
       // 验证通过后，设置dataContent
       newObject.dataContent = testJson;
-      console.log('已生成并验证dataContent字段，包含元数据和excelFileId:', newObject.excelFileId);
     } catch (error) {
-      console.error('生成dataContent失败:', error);
       // 创建一个最简单的dataContent，确保不会导致解析错误
       newObject.dataContent = JSON.stringify({
         entity: newObject.entity,
@@ -2068,7 +1974,7 @@ const saveCreateObject = async (newObject) => {
           headers: []
         }
       });
-      console.log('使用简化的dataContent作为备选');
+     
     }
   } else if (newObject.dataContent && typeof newObject.dataContent === 'string' && !newObject.dataContent.includes('excelFileId')) {
     // 如果dataContent已存在但不包含excelFileId，尝试添加
@@ -2078,7 +1984,7 @@ const saveCreateObject = async (newObject) => {
       try {
         dataContentObj = JSON.parse(newObject.dataContent);
       } catch (jsonError) {
-        console.error('现有dataContent不是有效JSON，重新创建:', jsonError);
+      
         // 如果现有dataContent无效，重新创建一个
         dataContentObj = {
           entity: newObject.entity,
@@ -2117,9 +2023,8 @@ const saveCreateObject = async (newObject) => {
       
       // 验证通过后，更新dataContent
       newObject.dataContent = testJson;
-      console.log('向现有dataContent添加excelFileId和元数据:', newObject.excelFileId);
+     
     } catch (error) {
-      console.error('修改现有dataContent失败:', error);
       // 出错时创建一个新的简单dataContent
       newObject.dataContent = JSON.stringify({
         entity: newObject.entity,
@@ -2144,7 +2049,6 @@ const saveCreateObject = async (newObject) => {
     
     // 添加metadataJson参数，增加成功率
     requestParams.metadataJson = metadataJsonStr;
-    console.log('将元数据添加到请求参数:', metadataJsonStr);
     
     // 将元数据存储到dataContent中，作为备份
     if (newObject.dataContent && typeof newObject.dataContent === 'string') {
@@ -2222,15 +2126,12 @@ const saveCreateObject = async (newObject) => {
       // 显示详细错误消息
       ElMessage.error(`添加失败: ${result.message}${errorDetail ? ` (${errorDetail})` : ''}`);
       
-      // 如果API调用失败，尝试添加到本地数据
-      console.log('尝试添加到本地数据');
       dataObjectService.addDataObject(newObject);
       
       // 仍然关闭对话框，但不刷新数据
       createDialogVisible.value = false;
     }
   } catch (error) {
-    console.error('添加数据对象时发生异常:', error);
     ElMessage.error(`添加过程中发生错误: ${error.message || '未知错误'}`);
     
     // 如果异常，尝试添加到本地数据
@@ -2267,10 +2168,8 @@ const resetEditForm = () => {
 
 // 处理元数据字符串的函数
 const processMetadataString = (metadataString) => {
-  console.log('处理元数据字符串，原始输入:', metadataString)
   
   if (!metadataString) {
-    console.warn('元数据字符串为空')
     return {  // 返回一个默认的元数据对象，而不是空对象
       dataName: '未知数据',
       sourceUnit: '未知来源',
@@ -2283,7 +2182,6 @@ const processMetadataString = (metadataString) => {
   
   // 检查是否已经是对象
   if (typeof metadataString === 'object') {
-    console.log('元数据已经是对象，无需解析')
     return {
       ...metadataString,
       contactPhone: metadataString.contactPhone || '未提供'  // 确保contactPhone字段存在
@@ -2299,14 +2197,14 @@ const processMetadataString = (metadataString) => {
     // 首先尝试去掉外层引号，处理字符串形式的JSON
     if (cleanString.startsWith('"') && cleanString.endsWith('"')) {
       const unquoted = cleanString.slice(1, -1).replace(/\\"/g, '"')
-      console.log('移除外层引号后:', unquoted)
+
       cleanString = unquoted
     }
     
     // 处理被转义多次的情况
     if (cleanString.includes('\\\"') || cleanString.includes('\\\\')) {
       cleanString = cleanString.replace(/\\\\/g, '\\').replace(/\\"/g, '"')
-      console.log('处理转义字符后:', cleanString)
+
     }
     
     // 修复结尾多余的]}问题
@@ -2326,9 +2224,7 @@ const processMetadataString = (metadataString) => {
     if (!cleanString.endsWith('}') && cleanString.includes('":"')) {
       cleanString = cleanString + '}'
     }
-    
-    console.log('清理后的字符串:', cleanString)
-    
+
     // 尝试直接解析清理后的字符串
     try {
       const parsed = JSON.parse(cleanString)
@@ -2357,7 +2253,7 @@ const processMetadataString = (metadataString) => {
       }
       
       if (Object.keys(keyValuePairs).length > 0) {
-        console.log('使用正则表达式提取的键值对:', keyValuePairs)
+      
         return {
           dataName: keyValuePairs.dataName || '未知数据',
           sourceUnit: keyValuePairs.sourceUnit || '未知来源',
@@ -2368,8 +2264,7 @@ const processMetadataString = (metadataString) => {
         }
       }
       
-      // 如果所有尝试都失败，返回默认元数据
-      console.warn('所有解析方法都失败，返回默认元数据')
+
       return {
         dataName: '解析错误',
         sourceUnit: '数据部',
@@ -2395,15 +2290,11 @@ const processMetadataString = (metadataString) => {
 // 检查数据的各种可能位置，提取元数据
 const extractMetadata = (row) => {
   if (!row) {
-    console.warn('提取元数据时收到空对象')
     return createDefaultMetadata('未知实体')
   }
   
-  console.log('开始提取元数据，数据源:', row)
-  
   // 直接检查row中的metadata对象
   if (row.metadata && typeof row.metadata === 'object') {
-    console.log('直接使用row.metadata对象:', row.metadata)
     // 确保所有必要字段都存在
     return {
       dataName: row.metadata.dataName || row.entity || '未知数据',
@@ -2418,10 +2309,9 @@ const extractMetadata = (row) => {
   
   // 检查row中的metadataJson字段
   if (row.metadataJson) {
-    console.log('从row.metadataJson提取元数据')
+
     try {
       const parsedMetadata = processMetadataString(row.metadataJson)
-      console.log('成功解析metadataJson:', parsedMetadata)
       return parsedMetadata
     } catch (e) {
       console.warn('解析row.metadataJson失败:', e)
@@ -2430,7 +2320,7 @@ const extractMetadata = (row) => {
   
   // 检查dataContent字段中的元数据
   if (row.dataContent) {
-    console.log('检查row.dataContent中的元数据')
+
     try {
       // 尝试解析dataContent
       const contentObj = typeof row.dataContent === 'string' ? 
@@ -2520,7 +2410,7 @@ const createDefaultMetadata = (entityName) => {
     contactPerson = '张总监'
   }
   
-  console.log('创建默认元数据，实体名称:', entityName)
+
   return {
     dataName: entityName,
     sourceUnit: sourceUnit,
@@ -2637,7 +2527,7 @@ const handleDataUpdate = (newData) => {
     
 
     if (!newData || newData.length === 0) {
-      console.warn('接收到的更新数据为空，尝试从dataObjectService获取数据');
+      
       tableData.value = dataObjectService.getAllDataObjects();
     } else {
       tableData.value = newData;
@@ -2646,7 +2536,7 @@ const handleDataUpdate = (newData) => {
     dataObjectService.syncDataObjects(tableData.value);
 
     if (!tableData.value || tableData.value.length === 0) {
-      console.warn('同步后表格数据仍为空，尝试刷新数据');
+     
       refreshData();
     } else {
 
@@ -2662,16 +2552,16 @@ const handleDataUpdate = (newData) => {
 // 处理刷新数据按钮点击
 const handleRefreshData = async () => {
   try {
-    console.log('用户点击刷新数据按钮');
+   
     await refreshData();
     
     // 刷新申请列表按钮状态
     if (objectListRef.value && objectListRef.value.checkApplicationStatus) {
       await objectListRef.value.checkApplicationStatus();
-      console.log('已刷新申请列表按钮状态');
+     
     }
   } catch (error) {
-    console.error('刷新数据失败:', error);
+  
     ElMessage.error('刷新数据失败: ' + (error.message || '未知错误'));
   }
 }
@@ -2723,7 +2613,7 @@ const handleExportExcel = () => {
     
     ElMessage.success(`已成功导出 ${fileName}`);
   } catch (error) {
-    console.error('导出Excel失败:', error);
+  
     ElMessage.error(`导出Excel失败: ${error.message}`);
   }
 }
@@ -2828,7 +2718,6 @@ const openClassificationLevelDialog = () => {
   
   // 如果有dataEntity，从中提取数据
   if (rowData.dataEntity) {
-    console.log('从dataEntity中提取分类分级数据');
     
     // 提取dataItems
     if (rowData.dataEntity.dataItems) {
@@ -2871,12 +2760,6 @@ const openClassificationLevelDialog = () => {
   // 额外尝试从API获取最新的分类分级数据
   fetchClassificationData(editForm.id);
   
-  console.log('打开分类分级弹窗，初始数据值:', {
-    classificationValue: classificationLevelData.value.classificationValue,
-    levelValue: classificationLevelData.value.levelValue,
-    industryCategory: classificationLevelData.value.industryCategory,
-    dataItems: (classificationLevelData.value.dataItems || []).length
-  });
 }
 
 // 修改获取分类分级数据的函数
@@ -2892,7 +2775,6 @@ const fetchClassificationData = async (objectId) => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('获取到的对象数据:', data);
       
       // 处理返回的数据
       if (data && data.data) {
@@ -2942,9 +2824,7 @@ const fetchClassificationData = async (objectId) => {
         } else if (objectData.dataEntity && objectData.dataEntity.dataItems) {
           updatedData.dataItems = objectData.dataEntity.dataItems;
         }
-        
-        // 直接更新弹窗数据
-        console.log('更新分类分级弹窗数据:', updatedData);
+
         classificationLevelData.value = updatedData;
         
         // 同时更新editForm中的数据（保持同步）
