@@ -657,8 +657,6 @@ const refreshTableData = async () => {
     
     // 刷新申请状态检查
     await checkApplicationStatus()
-    
-    ElMessage.success('数据刷新完成')
   } catch (error) {
     console.error('刷新数据失败:', error)
     ElMessage.error('刷新数据失败: ' + (error.message || '未知错误'))
@@ -781,11 +779,39 @@ const handleReview = async (row) => {
       fullscreen: true,
       text: '正在进行审查...',
       background: 'rgba(0, 0, 0, 0.7)'
-    });
+    });   
+    // 记录开始时间
+    const startTime = Date.now();
+    console.log('开始执行审查接口...');
+    
     let updateResponse;
     try {
       updateResponse = await axios.post(`http://localhost:8082/api/objects/${row.id}/${fillReportApi}`);
+      
+      // 计算并输出耗时
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.log(`接口执行完成，耗时: ${duration} ms`);
+      
+      // 显示执行完成弹框
+      ElMessageBox.alert(
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">自动化审查操作执行完成，耗时: ${duration} ms</div>`,
+        '执行完成',
+        {
+          confirmButtonText: '确定',
+          type: 'success',
+          dangerouslyUseHTMLString: true,
+          customStyle: {
+            width: '650px'
+          }
+        }
+      );
+      
     } catch (error) {
+      // 即使出错也要记录耗时
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.log(`接口执行失败，耗时: ${duration} ms`);
       console.error('审查接口调用失败:', error);
       ElMessage.error(`审查失败: ${error.message || '未知错误'}`);
       loading2.close();

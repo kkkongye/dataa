@@ -802,7 +802,17 @@ const saveEditObject = async (updatedObject) => {
     
     // 尝试通过API保存
     ElMessage.info('正在向后端保存数据...')
+    
+    // 记录接口调用开始时间
+    const startTime = Date.now();
+    console.log('开始调用编辑数据对象接口...');
+    
     const result = await dataObjectService.updateDataObjectViaApi(objectId, updatedObject)
+    
+    // 计算并输出接口执行耗时
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    console.log(`编辑数据对象接口执行完成，耗时: ${duration} ms`);
     
     if (result) {
       ElMessage.success(`已保存更改: ${updatedObject.entity}`)
@@ -2159,11 +2169,33 @@ const saveCreateObject = async (newObject) => {
       console.log('[新建数字对象] locationInfoJson:', newObject.locationInfoJson);
     }
     
+    // 记录接口调用开始时间
+    const startTime = Date.now();
+    
     // 调用API添加数据对象，传递excelFileId参数
     const result = await dataObjectService.addDataObjectViaApi(newObject, requestParams);
     
+    // 计算并输出接口执行耗时
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    console.log(`新增数据对象接口执行完成，耗时: ${duration} ms`);
+    
     if (result.success) {
       ElMessage.success('数据对象添加成功');
+      
+      // 显示接口执行耗时弹框
+      ElMessageBox.alert(
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 15px; white-space: nowrap;">数据对象封装操作执行完成，耗时: ${duration} ms</div>`,
+        '执行完成',
+        {
+          confirmButtonText: '确定',
+          type: 'success',
+          dangerouslyUseHTMLString: true,
+          customStyle: {
+            width: '650px'
+          }
+        }
+      );
       
       // 刷新表格数据
       loadDataFromBackend();

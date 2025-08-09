@@ -88,22 +88,22 @@
           <el-table-column label="操作" width="200" align="center">
             <template #default="scope">
               <div class="operation-buttons">
-                <!-- <el-button 
-                  v-if="!isGroupApplied(currentGroup)"
-                  type="primary" 
-                  plain 
-                  @click="handleApplyForGroup" 
-                  size="small"
-                > -->
                 <el-button 
+                  v-if="!isGroupDecrypted(currentGroup)"
                   type="primary" 
                   plain 
                   @click="handleApplyForGroup" 
                   size="small"
                 >
+                <!-- <el-button 
+                  type="primary" 
+                  plain 
+                  @click="handleApplyForGroup" 
+                  size="small"
+                > -->
                   申请
                 </el-button>
-                <!-- <el-button 
+                <el-button 
                   v-else
                   type="primary" 
                   plain 
@@ -111,7 +111,7 @@
                   size="small"
                 >
                   已申请
-                </el-button> -->
+                </el-button>
                 <el-button 
                   v-if="!isGroupDecrypted(currentGroup)"
                   type="success" 
@@ -537,6 +537,10 @@ function handleApplyForGroup() {
   loading.value = true
   const ids = currentGroup.value.entities.map(row => row.id).join(',')
   
+  // 记录开始时间
+  const startTime = Date.now()
+  console.log('开始执行打包数据胶囊操作...')
+  
   axios.get(`http://localhost:8083/api/selectIds?ids=${encodeURIComponent(ids)}`, { withCredentials: true })
     .then(res => {
       console.log('申请接口返回结果:', res.data)
@@ -547,7 +551,24 @@ function handleApplyForGroup() {
         return
       }
       
-      ElMessage.success('申请成功')
+      // 计算并输出耗时
+      const endTime = Date.now()
+      const duration = endTime - startTime
+      console.log(`打包数据胶囊操作执行完成，耗时: ${duration} ms`)
+      
+      // 显示执行完成弹框
+      ElMessageBox.alert(
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">打包数据胶囊操作执行完成，耗时: ${duration} ms</div>`,
+        '执行完成',
+        {
+          confirmButtonText: '确定',
+          type: 'success',
+          dangerouslyUseHTMLString: true,
+          customStyle: {
+            width: '650px'
+          }
+        }
+      )
       
       // 将当前组的每个ID添加到已申请集合中
       currentGroup.value.entities.forEach(entity => {
@@ -578,6 +599,10 @@ function handleDecryptForGroup() {
   loading.value = true
   const ids = currentGroup.value.entities.map(row => row.id)
   
+  // 记录开始时间
+  const startTime = Date.now()
+  console.log('开始执行数据胶囊解密操作...')
+  
   axios.post('http://localhost:8083/api/decrypt', {}, { withCredentials: true })
     .then(res => {
       console.log('解密接口返回结果:', res.data)
@@ -589,15 +614,28 @@ function handleDecryptForGroup() {
           decryptedIds.value.add(id.toString())
         })
         
-        // 显示解密成功弹框
-        ElMessageBox.alert('已成功解密，请点击实体名查看数据对象具体信息', '解密成功', {
-          confirmButtonText: '好的',
-          type: 'success',
-          callback: () => {
-            // 传递解密后的完整数据给父组件
-            emit('show-decrypt', { ids, decryptedData: res.data.data })
+        // 计算并输出耗时
+        const endTime = Date.now()
+        const duration = endTime - startTime
+        console.log(`数据胶囊解密操作执行完成，耗时: ${duration} ms`)
+        
+        // 显示执行完成弹框
+        ElMessageBox.alert(
+          `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 20px; white-space: nowrap;">数据胶囊解密操作执行完成，耗时: ${duration} ms</div>`,
+          '执行完成',
+          {
+            confirmButtonText: '确定',
+            type: 'success',
+            dangerouslyUseHTMLString: true,
+            customStyle: {
+              width: '650px'
+            },
+            callback: () => {
+              // 传递解密后的完整数据给父组件
+              emit('show-decrypt', { ids, decryptedData: res.data.data })
+            }
           }
-        })
+        )
       } else {
         ElMessage.error(`解密失败,请等待治理方生成发送数据胶囊`)
       }

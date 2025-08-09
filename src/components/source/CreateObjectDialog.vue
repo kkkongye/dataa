@@ -715,7 +715,6 @@ const handleSave = () => {
       console.log('[定位信息] 发送前 newObject.locationInfo:', newObject.locationInfo)
       emit('save', newObject);
       dialogVisible.value = false;
-      ElMessage.success('数据对象创建成功');
       resetForm();
     } else {
       ElMessage.warning('请填写必填字段')
