@@ -29,7 +29,7 @@
       <div class="search-area">
         <el-input
           v-model="searchValue"
-          placeholder="搜索实体名、约束条件、传输控制操作"
+          placeholder="搜索实体名、约束条件、传输控制"
           class="search-input"
           @input="handleSearchInput"
         >
@@ -44,7 +44,7 @@
           <el-icon><DataAnalysis /></el-icon>
           三维数据可视化
         </el-button> -->
-        <el-button type="primary" plain @click="$emit('create')">新建数据对象</el-button>
+        <el-button type="primary" plain @click="$emit('create')" >新建数据对象</el-button>
         <el-button type="primary" plain @click="handlePushToGovernance">发送数字对象至治理方</el-button>
         <!-- <el-button type="primary" plain @click="handleGenerateDV">生成数据凭证</el-button> -->
         <el-button 
@@ -76,7 +76,7 @@
         <el-table-column 
           prop="id" 
           label="ID" 
-          width="180" 
+          width="200" 
           align="center"
         >
           <template #default="scope">
@@ -88,7 +88,7 @@
             <el-link type="primary" @click="handlePreview(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
           </template>
         </el-table-column>
-        <el-table-column prop="locationInfo" label="定位信息" min-width="150" align="center">
+        <el-table-column prop="locationInfo" label="定位信息" min-width="200" align="center">
           <template #default="scope">
             <!-- 增加调试输出 -->
             <!-- <span style="display: none;">{{ console.log('渲染定位信息:', scope.row.id, scope.row.locationInfo) }}</span> -->
@@ -128,7 +128,7 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
+        <el-table-column prop="constraint" label="约束条件" min-width="500" align="center">
           <template #default="scope">
             <div class="constraint-container">
               <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -224,7 +224,7 @@
         </el-table-column>
         <el-table-column prop="auditInfo" label="审计控制信息" width="140" align="center">
           <template #default="scope">
-            <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
+            <el-link type="primary" @click="showAuditLogDialog(scope.row)" class="audit-log-link">查看审计日志</el-link>
           </template>
         </el-table-column>
         <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
@@ -249,7 +249,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="状态" width="140" align="center">
           <template #default="scope">
             <span :class="['status-tag', getStatusClass(scope.row.status)]">
               {{ (scope.row.status === '待检验' || scope.row.status === '待校验') ? '待校验' : scope.row.status }}
@@ -266,7 +266,7 @@
               {{ extractFeedback(scope.row.dataContent) }}
             </span>
               <span v-else style="margin-bottom: 10px;"></span>
-              <el-button v-if="hasReportContent(scope.row)" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button>
+              <el-button v-if="hasReportContent(scope.row)" link type="info" size="small" class="audit-report-btn" style="margin-top: 0;" @click="handleViewReport(scope.row)">自动化审查报告</el-button>
               <!-- <el-button v-if="scope.row.auditReport && scope.row.status !== '已合格'" link type="info" size="small" style="margin-top: 0;" @click="handleViewReport(scope.row)">查看审查报告</el-button> -->
             </div>
           </template>
@@ -1185,6 +1185,10 @@ defineExpose({
 
 .status-btn {
   border: none;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  padding: 10px 24px !important;
+  height: auto !important;
 }
 
 .status-btn.active {
@@ -1200,12 +1204,29 @@ defineExpose({
 }
 
 .search-input {
-  width: 300px;
+  width: 380px;
+}
+
+:deep(.search-input .el-input__inner) {
+  font-size: 18px !important;
+  padding: 14px 18px !important;
+  height: 30px !important;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  padding: 14px 18px !important;
 }
 
 .action-buttons {
   display: flex;
   gap: 12px;
+}
+
+.action-buttons .el-button {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px 24px;
+  height: 48px;
 }
 
 /* 表格容器区域 */
@@ -1216,12 +1237,45 @@ defineExpose({
   flex: 1;
 }
 
+/* 表格整体字体样式 */
+:deep(.el-table) {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+:deep(.el-table th) {
+  font-size: 18px !important;
+  font-weight: 700;
+  background-color: #f8f9fa;
+}
+
+/* :deep(.el-table__header th.el-table__cell) {
+  font-size: 25px !important;
+  font-weight: 700 !important;
+  background-color: #f8f9fa !important;
+  color: #606266 !important;
+  text-align: center !important;
+  padding: 12px 8px !important;
+} */
+
+:deep(.el-table td) {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 8px;
+}
+
+:deep(.el-table .cell) {
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 /* 状态标签样式 */
 .status-tag {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 4px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .status-success {
@@ -1298,21 +1352,29 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
-  padding: 4px;
+  gap: 8px;
+  padding: 6px;
+  color: black;
 }
 
 .control-tag {
   margin: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 32px;
+  color:black;
+  border: 2px solid #409EFF;
+  border-radius: 6px;
 }
 
 /* 反馈意见样式 */
 .feedback-text {
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 16px;
   display: inline-block;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border-radius: 4px;
+  color: #1a1a1a;
 }
 
 /* 反馈状态样式类 */
@@ -1336,11 +1398,11 @@ defineExpose({
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  max-width: 240px;
+  max-width: 280px;
   width: 100%;
   padding: 0 8px;
   font-family: monospace;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: bold;
   word-break: break-all;
 }
@@ -1356,22 +1418,26 @@ defineExpose({
 .classification-level-item {
   display: flex;
   gap: 5px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
 .classification-level-item .label {
-  font-weight: bold;
+  font-weight: 700;
   color: #606266;
 }
 
 .classification-level-item .value {
-  color: #409EFF;
+  color: #2162de;
+  font-weight: 700;
 }
 
 .generate-btn {
   margin-top: 5px;
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 14px;
+  min-height: 44px;
 }
 
 .visualization-btn {
@@ -1396,5 +1462,23 @@ defineExpose({
   line-height: 1.4;
   display: inline-block;
   max-width: 100%;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.audit-log-link {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* 自动化审查报告按钮样式 */
+.audit-report-btn {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+}
+
+.audit-report-btn:hover {
+  color: #333333 !important;
 }
 </style>

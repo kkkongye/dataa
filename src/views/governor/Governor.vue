@@ -48,16 +48,16 @@
             height="100%"
             fit
           >
-            <el-table-column prop="id" label="ID" width="170" align="center">
+            <el-table-column prop="id" label="ID" width="200" align="center">
               <template #default="scope">
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="150" align="center">
+            <el-table-column prop="entity" label="实体" width="200" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
-            </el-table-column><el-table-column prop="locationInfo" label="定位信息" min-width="160" align="center">
+            </el-table-column><el-table-column prop="locationInfo" label="定位信息" min-width="200" align="center">
               <template #default="scope">
                 <span v-if="getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson)">
                   ({{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).databaseName || '-' }},
@@ -73,7 +73,7 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column prop="constraint" label="约束条件" min-width="350" align="center">
+            <el-table-column prop="constraint" label="约束条件" min-width="500" align="center">
               <template #default="scope">
                 <div class="constraint-container">
                   <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -98,9 +98,10 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="transferControl" label="传输控制操作" min-width="180" align="center">
+            <el-table-column prop="transferControl" label="传输控制操作" min-width="250" align="center">
               <template #default="scope">
                 <div class="control-container">
+                  <!-- 优先使用transferControl数组 -->
                   <template v-if="scope.row.transferControl && scope.row.transferControl.length">
                     <el-tag
                       v-for="(item, index) in (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])"
@@ -113,15 +114,64 @@
                       {{ item }}
                     </el-tag>
                   </template>
+                  <!-- 如果没有transferControl，尝试使用propagationControl对象 -->
+                  <template v-else-if="scope.row.propagationControl">
+                    <el-tag
+                      v-if="scope.row.propagationControl.canRead"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      可读
+                    </el-tag>
+                    <el-tag
+                      v-if="scope.row.propagationControl.canModify"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      可修改
+                    </el-tag>
+                    <el-tag
+                      v-if="scope.row.propagationControl.canShare"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      可共享
+                    </el-tag>
+                    <el-tag
+                      v-if="scope.row.propagationControl.canDelegate"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      可委托
+                    </el-tag>
+                    <el-tag
+                      v-if="scope.row.propagationControl.canDestroy"
+                      size="small"
+                      type="primary"
+                      effect="plain"
+                      class="control-tag"
+                    >
+                      可销毁
+                    </el-tag>
+                  </template>
+                  <template v-else>-</template>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="auditInfo" label="审计控制信息" width="130" align="center">
+            <el-table-column prop="auditInfo" label="审计控制信息" width="140" align="center">
               <template #default="scope">
-                <el-link type="primary" @click="showAuditLogDialog(scope.row)">查看日志</el-link>
+                <el-link type="primary" @click="showAuditLogDialog(scope.row)" class="audit-log-link">查看审计日志</el-link>
               </template>
             </el-table-column>
-            <el-table-column prop="classificationLevelValue" label="分类分级值" width="120" align="center">
+            <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
               <template #default="scope">
                 <div class="classification-level-container">
                   <div class="classification-level-item">
@@ -141,19 +191,19 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="creatorName" label="数源方" width="120" align="center">
+            <el-table-column prop="creatorName" label="数源方" width="150" align="center">
               <template #default="scope">
                 <span>{{ scope.row.creatorName || '浙江省税务局' }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="100" align="center">
+            <el-table-column prop="status" label="状态" width="130" align="center">
               <template #default="scope">
                 <span :class="['status-tag', getStatusClass(scope.row.status)]">
                   {{ (scope.row.status === '待检验' || scope.row.status === '待校验') ? '待校验' : scope.row.status }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="150" align="center">
+            <el-table-column v-if="!isQualifiedStatus && currentStatus !== '待校验'" prop="feedback" label="反馈意见" min-width="160" align="center">
               <template #default="scope">
                 <div style="display: flex; flex-direction: column; align-items: center;">
                   <span v-if="scope.row.feedback" :class="['feedback-text', getFeedbackClass(scope.row.status)]" style="margin-bottom: 10px;">
@@ -163,7 +213,7 @@
                     {{ extractFeedback(scope.row.dataContent) }}
                   </span>
                   <span v-else style="margin-bottom: 10px;"></span>
-                  <el-button v-if="scope.row.auditReport" link type="info" size="small" style="margin-top: 0;" @click="showReviewReport(scope.row)">自动化审查报告</el-button>
+                  <el-button v-if="scope.row.auditReport" link type="info" size="small" class="audit-report-btn" style="margin-top: 0;" @click="showReviewReport(scope.row)">自动化审查报告</el-button>
                 </div>
               </template>
             </el-table-column>
@@ -2355,7 +2405,8 @@ onBeforeUnmount(() => {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   position: absolute;
   top: 0;
   left: 0;
@@ -2392,6 +2443,10 @@ onBeforeUnmount(() => {
 
 .status-btn {
   border: none;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  padding: 10px 24px !important;
+  height: auto !important;
 }
 
 .status-btn.active {
@@ -2407,7 +2462,17 @@ onBeforeUnmount(() => {
 }
 
 .search-input {
-  width: 300px;
+  width: 380px;
+}
+
+:deep(.search-input .el-input__inner) {
+  font-size: 18px !important;
+  padding: 14px 18px !important;
+  height: 30px !important;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  padding: 14px 18px !important;
 }
 
 .action-buttons {
@@ -2415,23 +2480,85 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
+.action-buttons .el-button {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px 24px;
+  height: 48px;
+}
+
 /* 表格容器区域 */
 .table-container {
   margin-bottom: 16px;
-  height: calc(100vh - 340px);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  flex: 1;
+}
+
+/* 表格整体字体样式 */
+:deep(.el-table) {
+  font-size: 16px;
+  font-weight: 600;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+:deep(.el-table__body-wrapper) {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+:deep(.el-table__header-wrapper) {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* 确保表格标题栏和内容同步滚动 */
+:deep(.el-table__header) {
+  width: 100% !important;
+}
+
+:deep(.el-table__body) {
+  width: 100% !important;
+}
+
+/* 表格内容区域滚动条样式 */
+:deep(.el-table__body-wrapper)::-webkit-scrollbar {
+  height: 8px;
+}
+
+:deep(.el-table__body-wrapper)::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 4px;
+}
+
+:deep(.el-table__body-wrapper)::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+  border-radius: 4px;
+}
+
+:deep(.el-table th) {
+  font-size: 18px !important;
+  font-weight: 700;
+  background-color: #f8f9fa;
+}
+
+:deep(.el-table td) {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 8px;
+}
+
+:deep(.el-table .cell) {
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 /* 状态标签样式 */
 .status-tag {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 4px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* 移除按钮点击后的黑色边框 */
@@ -2441,13 +2568,13 @@ onBeforeUnmount(() => {
 }
 
 .status-success {
-  background-color: #e1f3d8;
-  color: #67c23a;
+  background-color: #f6ffed;
+  color: #52c41a;
 }
 
 .status-error {
-  background-color: #fde2e2;
-  color: #f56c6c;
+  background-color: #fff2f0;
+  color: #ff4d4f;
 }
 
 .status-pending {
@@ -2487,13 +2614,18 @@ onBeforeUnmount(() => {
 /* 按钮组样式 */
 .status-buttons {
   display: flex;
-  gap: 2px;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .status-buttons :deep(.el-button--small) {
-  padding: 5px 8px;
-  min-width: 44px;
+  padding: 12px 16px;
+  min-width: 100px;
+  width: 100px;
+  font-size: 16px;
+  font-weight: 700;
+  height: auto;
 }
 
 /* 自定义禁用按钮样式 */
@@ -2818,13 +2950,23 @@ onBeforeUnmount(() => {
 
 /* 反馈意见样式 */
 .feedback-text {
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 16px;
   display: inline-block;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border-radius: 4px;
-  min-height: 0;
-  min-width: 0;
+  color: #1a1a1a;
+}
+
+/* 自动化审查报告按钮样式 */
+.audit-report-btn {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+}
+
+.audit-report-btn:hover {
+  color: #333333 !important;
 }
 
 /* 反馈意见状态样式 */
@@ -2852,11 +2994,11 @@ onBeforeUnmount(() => {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  max-width: 240px;
+  max-width: 280px;
   width: 100%;
   padding: 0 8px;
   font-family: monospace;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: bold;
   word-break: break-all;
 }
@@ -2866,12 +3008,19 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
-  padding: 4px;
+  gap: 8px;
+  padding: 6px;
+  color: black;
 }
 
 .control-tag {
-  margin: 2px 5px;
+  margin: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 32px;
+  color:black;
+  border: 2px solid #409EFF;
+  border-radius: 6px;
 }
 
 /* 分类分级值样式 */
@@ -2885,17 +3034,26 @@ onBeforeUnmount(() => {
 .classification-level-item {
   display: flex;
   gap: 5px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
 .classification-level-item .label {
-  font-weight: bold;
+  font-weight: 700;
   color: #606266;
 }
 
 .classification-level-item .value {
-  color: #409EFF;
+  color: #2162de;
+  font-weight: 700;
+}
+
+.generate-btn {
+  margin-top: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 14px;
+  min-height: 44px;
 }
 
 /* 分类分级值样式 */
@@ -2939,6 +3097,23 @@ onBeforeUnmount(() => {
 
 .select-fields-link {
   text-decoration: underline;
+}
+
+/* 实体列换行样式 */
+.entity-link {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.4;
+  display: inline-block;
+  max-width: 100%;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.audit-log-link {
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .status-to-generate {
