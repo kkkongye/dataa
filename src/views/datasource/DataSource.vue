@@ -2137,7 +2137,10 @@ const saveCreateObject = async (newObject) => {
       
       // 显示总耗时弹框（使用后端返回的执行时间）
       ElMessageBox.alert(
-        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 15px; white-space: nowrap;">数据对象封装操作执行完成，耗时: ${totalExecutionTime} ms</div>`,
+        `<div style="font-size: 17px; font-weight: bold; text-align: center; padding: 15px; line-height: 1.8;">
+          文件上传操作执行完成，耗时: ${uploadExecutionTime} ms<br/>
+          数据对象封装操作执行完成，耗时: ${createExecutionTime} ms
+          </div>`,
         '执行完成',
         {
           confirmButtonText: '确定',

@@ -47,7 +47,7 @@
               <el-option label="税务局" value="税务局" />
               <el-option label="审计局" value="审计局" />
               <el-option label="财政局" value="财政局" />
-              <el-option label="发改局" value="发改局" />
+              <el-option label="发改委" value="发改委" />
               <el-option label="统计局" value="统计局" />
               <el-option label="民政局" value="民政局" />
               <el-option label="教育局" value="教育局" />
@@ -229,7 +229,7 @@ const goToLogin = () => {
   height: 200%;
   top: -50%;
   left: -50%;
-  background: radial-gradient(circle, rgba(235,245,255,0.2) 0%, rgba(235,245,255,0) 70%);
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
   animation: pulse 15s infinite ease-in-out;
   pointer-events: none;
 }
@@ -241,22 +241,21 @@ const goToLogin = () => {
 }
 
 .register-box {
-  width: 420px;
+  width: 520px;
   padding: 40px;
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
   transform: translateY(0);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   animation: fadeIn 0.8s ease-out;
-  border: 1px solid rgba(235, 245, 255, 0.3);
 }
 
 .username-selector {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -268,7 +267,7 @@ const goToLogin = () => {
 
 .bureau-text {
   color: #606266;
-  font-size: 14px;
+  font-size: 18px;
   padding: 8px 15px;
   background-color: #f5f7fa;
   border: 1px solid #dcdfe6;
@@ -286,11 +285,23 @@ const goToLogin = () => {
   min-width: 0;
 }
 
+.province-select :deep(.el-select__wrapper),
+.bureau-select :deep(.el-select__wrapper) {
+  min-height: 45px;
+}
+
+.province-select :deep(.el-input__inner),
+.bureau-select :deep(.el-input__inner) {
+  font-size: 18px;
+  padding: 12px 15px;
+}
+
 .province-select :deep(.el-input__wrapper),
 .bureau-select :deep(.el-input__wrapper) {
-  padding: 8px 15px;
+  padding: 10px 15px;
   border-radius: 8px;
   transition: all 0.3s ease;
+  font-size: 18px;
 }
 
 .province-select :deep(.el-input__wrapper:hover),
@@ -301,6 +312,13 @@ const goToLogin = () => {
 .custom-bureau-input {
   margin-top: 10px;
   width: 100%;
+}
+
+.custom-bureau-input :deep(.el-input__wrapper) {
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 18px;
 }
 
 .register-box:hover {
@@ -316,7 +334,7 @@ const goToLogin = () => {
 .register-title {
   margin-bottom: 35px;
   text-align: center;
-  font-size: 28px;
+  font-size: 36px;
   font-weight: bold;
   color: #2c3e50;
   position: relative;
@@ -327,8 +345,8 @@ const goToLogin = () => {
 }
 
 .system-icon {
-  width: 24px;
-  height: 24px;
+  width: 40px;
+  height: 40px;
   margin-right: 8px;
   object-fit: contain;
 }
@@ -341,13 +359,13 @@ const goToLogin = () => {
   transform: translateX(-50%);
   height: 3px;
   width: 80px;
-  background: linear-gradient(90deg, #3d8cdd, #6aa9ef);
+  background: linear-gradient(90deg, #409EFF, #53a8ff);
   border-radius: 3px;
 }
 
 .register-subtitle {
   text-align: center;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
   color: #606266;
   margin-bottom: 20px;
@@ -363,9 +381,10 @@ const goToLogin = () => {
 }
 
 .register-input :deep(.el-input__wrapper) {
-  padding: 8px 15px;
+  padding: 10px 15px;
   border-radius: 8px;
   transition: all 0.3s ease;
+  font-size: 18px;
 }
 
 .register-input :deep(.el-input__wrapper:hover) {
@@ -377,20 +396,43 @@ const goToLogin = () => {
 }
 
 .role-label {
-  font-size: 14px;
+  font-size: 18px;
   color: #606266;
   margin-bottom: 10px;
 }
 
 .register-role-select {
   width: 100%;
-  display: flex;
-  justify-content: space-around;
+  display: flex !important;
+  justify-content: space-between;
   margin: 10px 0;
+  padding: 20px 15px;
+  border: 2px solid #e4e7ed;
+  border-radius: 8px;
+  background-color: #fafafa;
+  gap: 15px;
+  flex-wrap: nowrap !important;
 }
 
 .role-option {
   transition: all 0.3s ease;
+  flex: 1;
+  text-align: center;
+  min-width: 120px;
+  display: inline-flex !important;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.register-role-select :deep(.el-radio) {
+  display: inline-flex !important;
+  margin-right: 0 !important;
+  flex: 1;
+  justify-content: center;
+}
+
+.register-role-select :deep(.el-radio__label) {
+  padding-left: 8px;
 }
 
 .role-option:hover .role-content {
@@ -402,12 +444,14 @@ const goToLogin = () => {
   flex-direction: column;
   align-items: center;
   transition: all 0.3s ease;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .register-btn {
   width: 100%;
   padding: 12px 0;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 500;
   border-radius: 6px;
   background: linear-gradient(90deg, #409EFF, #53a8ff);
@@ -430,7 +474,7 @@ const goToLogin = () => {
   margin-top: 20px;
   text-align: center;
   color: #909399;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .login-link {

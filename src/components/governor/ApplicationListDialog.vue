@@ -25,16 +25,16 @@
             type="primary" 
             plain 
             @click="handleGenerateOrgVouchers" 
-            size="small"
+            size="middle"
             :disabled="scope.row.orgCredentialStatus === true"
           >
             生成机构凭证
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="申请状态" min-width="200" align="center">
+      <el-table-column label="申请状态" min-width="240" align="center" :show-overflow-tooltip="false">
         <template #default="scope">
-          <el-tag :type="getStatusTagType(getStatusText(scope.row))">
+          <el-tag :type="getStatusTagType(getStatusText(scope.row))" size="large" class="status-tag-large">
             {{ getStatusText(scope.row) }}
           </el-tag>
         </template>
@@ -355,5 +355,17 @@ function getStatusTagType(status) {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
+}
+
+/* 申请状态标签样式 - 增大尺寸 */
+.status-tag-large {
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  min-width: 200px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
 }
 </style>

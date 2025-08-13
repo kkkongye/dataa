@@ -273,8 +273,8 @@
         </el-table-column>
         <el-table-column prop="operation" label="操作" width="150" align="center">
           <template #default="scope">
-            <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button link type="primary" size="middle" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button link type="danger" size="middle" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

@@ -48,7 +48,7 @@
               <el-option label="税务局" value="税务局" />
               <el-option label="审计局" value="审计局" />
               <el-option label="财政局" value="财政局" />
-              <el-option label="发改局" value="发改局" />
+              <el-option label="发改委" value="发改委" />
               <el-option label="统计局" value="统计局" />
               <el-option label="民政局" value="民政局" />
               <el-option label="教育局" value="教育局" />
@@ -230,7 +230,7 @@ const goToRegister = () => {
 }
 
 .login-box {
-  width: 420px;
+  width: 520px;
   padding: 40px;
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
@@ -254,7 +254,7 @@ const goToRegister = () => {
 .login-title {
   margin-bottom: 35px;
   text-align: center;
-  font-size: 28px;
+  font-size: 36px;
   font-weight: bold;
   color: #2c3e50;
   position: relative;
@@ -285,7 +285,7 @@ const goToRegister = () => {
 
 .login-subtitle {
   text-align: center;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
   color: #606266;
   margin-bottom: 20px;
@@ -295,7 +295,7 @@ const goToRegister = () => {
 .username-selector {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -307,7 +307,7 @@ const goToRegister = () => {
 
 .bureau-text {
   color: #606266;
-  font-size: 14px;
+  font-size: 18px;
   padding: 8px 15px;
   background-color: #f5f7fa;
   border: 1px solid #dcdfe6;
@@ -325,11 +325,23 @@ const goToRegister = () => {
   min-width: 0;
 }
 
+.province-select :deep(.el-select__wrapper),
+.bureau-select :deep(.el-select__wrapper) {
+  min-height: 45px;
+}
+
+.province-select :deep(.el-input__inner),
+.bureau-select :deep(.el-input__inner) {
+  font-size: 18px;
+  padding: 12px 15px;
+}
+
 .province-select :deep(.el-input__wrapper),
 .bureau-select :deep(.el-input__wrapper) {
-  padding: 8px 15px;
+  padding: 10px 15px;
   border-radius: 8px;
   transition: all 0.3s ease;
+  font-size: 18px;
 }
 
 .province-select :deep(.el-input__wrapper:hover),
@@ -342,6 +354,13 @@ const goToRegister = () => {
   width: 100%;
 }
 
+.custom-bureau-input :deep(.el-input__wrapper) {
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 18px;
+}
+
 .login-form {
   margin-top: 25px;
 }
@@ -351,9 +370,10 @@ const goToRegister = () => {
 }
 
 .login-input :deep(.el-input__wrapper) {
-  padding: 8px 15px;
+  padding: 10px 15px;
   border-radius: 8px;
   transition: all 0.3s ease;
+  font-size: 18px;
 }
 
 .login-input :deep(.el-input__wrapper:hover) {
@@ -365,20 +385,43 @@ const goToRegister = () => {
 }
 
 .role-label {
-  font-size: 14px;
+  font-size: 18px;
   color: #606266;
   margin-bottom: 10px;
 }
 
 .login-role-select {
   width: 100%;
-  display: flex;
-  justify-content: space-around;
+  display: flex !important;
+  justify-content: space-between;
   margin: 10px 0;
+  padding: 20px 15px;
+  border: 2px solid #e4e7ed;
+  border-radius: 8px;
+  background-color: #fafafa;
+  gap: 15px;
+  flex-wrap: nowrap !important;
 }
 
 .role-option {
   transition: all 0.3s ease;
+  flex: 1;
+  text-align: center;
+  min-width: 120px;
+  display: inline-flex !important;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.login-role-select :deep(.el-radio) {
+  display: inline-flex !important;
+  margin-right: 0 !important;
+  flex: 1;
+  justify-content: center;
+}
+
+.login-role-select :deep(.el-radio__label) {
+  padding-left: 8px;
 }
 
 .role-option:hover .role-content {
@@ -390,12 +433,14 @@ const goToRegister = () => {
   flex-direction: column;
   align-items: center;
   transition: all 0.3s ease;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .login-btn {
   width: 100%;
   padding: 12px 0;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 500;
   border-radius: 6px;
   background: linear-gradient(90deg, #409EFF, #53a8ff);
@@ -418,7 +463,7 @@ const goToRegister = () => {
   margin-top: 20px;
   text-align: center;
   color: #909399;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .register-link {

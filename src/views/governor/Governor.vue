@@ -24,6 +24,7 @@
           </div>
           <div class="action-buttons">
             <el-button type="success" plain @click="refreshTableData"><el-icon><Refresh /></el-icon>刷新数据</el-button>
+            <el-button type="danger" plain @click="clearLocalRecords"><el-icon><Delete /></el-icon>清空本地记录</el-button>
             <!-- <el-button type="primary" plain @click="handleGenerateOrgVouchers">生成机构凭证</el-button> -->
             <!-- <el-button type="primary" plain @click="handleGenerateAndSendCapsule">生成并发送数据胶囊给使用方</el-button> -->
             <el-button 
@@ -298,7 +299,7 @@
 import { ref, computed, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Search, Lock, Document, UploadFilled, Download, Refresh } from '@element-plus/icons-vue'
+import { Search, Lock, Document, UploadFilled, Download, Refresh, Delete } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import ExcelPreview from '../../components/ExcelPreview.vue'
 import AppHeader from '../../components/AppHeader.vue'
@@ -768,14 +769,14 @@ const handleReview = async (row) => {
     let reportApi;
     if (row.entity === '基本登记信息模拟数据') {
       reportApi = 'baogao1';
-    } else if (row.entity === '性能测试20') {
+    } else if (row.entity === '性能测试20auto') {
       reportApi = 'baogao3';
-    } else if (row.entity === '性能测试250') {
+    } else if (row.entity === '性能测试250auto') {
       reportApi = 'baogao4';
     } else {
       reportApi = 'baogao2';
     }
-    const fillReportApi = (row.entity === '基本登记信息模拟数据' || row.entity === '性能测试20' || row.entity === '性能测试250') ? 'fill-audit-report1' : 'fill-audit-report2';
+    const fillReportApi = (row.entity === '基本登记信息模拟数据' || row.entity === '性能测试20auto' || row.entity === '性能测试250auto') ? 'fill-audit-report1' : 'fill-audit-report2';
     
     let reportResponse;
     try {
@@ -1206,6 +1207,25 @@ const logout = async () => {
     // processedRequestIds.value.clear();
     router.push('/login');
   }
+}
+
+// 清空本地记录
+const clearLocalRecords = () => {
+  ElMessageBox.confirm(
+    '确定要清空本地记录吗？这将清除已处理的请求ID记录。',
+    '确认清空',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    localStorage.removeItem('processedRequestIds');
+    processedRequestIds.value.clear();
+    ElMessage.success('本地记录已清空');
+  }).catch(() => {
+    ElMessage.info('已取消清空操作');
+  });
 }
 
 // 处理每页显示数量变化
