@@ -301,12 +301,12 @@ function handleViewAuditLog() {
   position: relative;
 }
 
-/* 表头样式 - 浅灰色背景 */
+/* 表头样式 - 浅灰色背景，与治理方主表格保持一致 */
 :deep(.el-table__header th.el-table__cell) {
   background-color: #f5f7fa !important;
   color: #606266 !important;
   font-weight: bold !important;
-  font-size: 14px !important;
+  font-size: 16px !important;
   text-align: center !important;
   padding: 12px 8px !important;
 }

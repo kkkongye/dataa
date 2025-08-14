@@ -99,7 +99,7 @@
                 {{ scope.row.locationInfo.tableName || scope.row.locationInfo.table || '-' }},
                 <el-popover placement="top" trigger="click">
                   <template #reference>
-                    <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                    <span class="select-fields-link" style="color:#2f58d0;cursor:pointer;">"select字段"</span>
                   </template>
                   <div style="max-width:400px;word-break:break-all;">{{ scope.row.locationInfo.selectFields || scope.row.locationInfo.fields || '-' }}</div>
                 </el-popover>
@@ -1418,17 +1418,17 @@ defineExpose({
 .classification-level-item {
   display: flex;
   gap: 5px;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.5;
 }
 
 .classification-level-item .label {
   font-weight: 700;
-  color: #606266;
+  color: #2f58d0;
 }
 
 .classification-level-item .value {
-  color: #2162de;
+  color:#2f58d0;
   font-weight: 700;
 }
 
@@ -1464,11 +1464,14 @@ defineExpose({
   max-width: 100%;
   font-size: 18px;
   font-weight: 700;
+  color:#3549be;
 }
 
 .audit-log-link {
   font-size: 16px;
   font-weight: 700;
+  color:#3549be;
+
 }
 
 /* 自动化审查报告按钮样式 */

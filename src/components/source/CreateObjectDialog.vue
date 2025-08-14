@@ -52,7 +52,7 @@
       </el-form-item>
 
       <!-- 添加权重赋值按钮 -->
-      <el-form-item label="行分级值权重赋值：" style="margin-bottom: 22px;">
+      <el-form-item label="行分级值权重：" style="margin-bottom: 22px;">
         <el-button type="primary" @click="showWeightForm = !showWeightForm">
           {{ showWeightForm ? '隐藏权重设置' : '设置权重' }}
         </el-button>
@@ -823,6 +823,43 @@ const confirmWeightChange = () => {
   margin-top: 15vh !important;
 }
 
+/* 全局字体加粗和增大样式 */
+:deep(.el-form-item__label) {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #303133 !important;
+}
+
+:deep(.el-input__inner) {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-button) {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+:deep(.el-select .el-input__inner) {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-input-number .el-input__inner) {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-tag) {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+:deep(.el-dialog__title) {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
 /* 自定义选择控件样式 */
 .custom-select-wrapper {
   position: relative;
@@ -848,7 +885,8 @@ const confirmWeightChange = () => {
   align-items: center;
   padding-left: 12px;
   color: #409EFF;
-  font-weight: bold;
+  font-size: 15px !important;
+  font-weight: 600 !important;
   background-color: #fff;
   border-radius: 4px;
   border: 1px solid #dcdfe6;
@@ -870,7 +908,7 @@ const confirmWeightChange = () => {
 .custom-select-wrapper::after {
   content: '▼';
   position: absolute;
-  right: 10px;
+  right: 30px;
   top: 50%;
   transform: translateY(-50%);
   color: #409EFF;
@@ -900,14 +938,16 @@ const confirmWeightChange = () => {
 }
 
 .constraint-item label {
-  min-width: 110px;
+  min-width: 140px;
   text-align: right;
-  font-size: 14px;
-  color: #606266;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #303133 !important;
 }
 
 .constraint-item .el-select {
   flex: 1;
+  margin-right: 20px;
 }
 
 /* 传输控制操作样式 */
@@ -964,8 +1004,9 @@ const confirmWeightChange = () => {
 
 .weight-label {
   width: 150px;
-  font-size: 14px;
-  color: #606266;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #303133 !important;
 }
 
 .weight-actions {

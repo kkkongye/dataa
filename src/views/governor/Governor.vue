@@ -64,7 +64,7 @@
                   {{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).tableName || '-' }},
                   <el-popover placement="top" trigger="click">
                     <template #reference>
-                      <span class="select-fields-link" style="color:#409EFF;cursor:pointer;">"select字段"</span>
+                      <span class="select-fields-link" style="color:#3239cd;cursor:pointer;">"select字段"</span>
                     </template>
                     <div style="max-width:400px;word-break:break-all;">{{ getLocationInfoObj(scope.row.locationInfo, scope.row.locationInfoJson).selectFields }}</div>
                   </el-popover>
@@ -3090,7 +3090,7 @@ onBeforeUnmount(() => {
 }
 
 .classification-level-item .value {
-  color: #409EFF;
+    color: #3239cd;
   font-weight: bold;
 }
 
@@ -3116,11 +3116,13 @@ onBeforeUnmount(() => {
   max-width: 100%;
   font-size: 18px;
   font-weight: 700;
+  color: #3239cd;
 }
 
 .audit-log-link {
   font-size: 16px;
   font-weight: 700;
+  color: #3239cd;
 }
 
 .status-to-generate {

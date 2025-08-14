@@ -2173,7 +2173,7 @@ onBeforeUnmount(() => {
 }
 
 .classification-level-item .value {
-  color: #409EFF;
+    color: #2f58d0;
   font-weight: bold;
 }
 
@@ -2212,5 +2212,6 @@ onBeforeUnmount(() => {
   max-width: 100%;
   font-size: 18px;
   font-weight: 700;
+  color: #2f58d0;
 }
 </style>

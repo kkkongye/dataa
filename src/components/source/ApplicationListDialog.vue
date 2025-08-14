@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialogVisible" title="申请列表" width="1200px" :close-on-click-modal="false">
+  <el-dialog v-model="dialogVisible" title="申请列表" width="1600px" :close-on-click-modal="false">
     <el-table 
       :data="currentGroupData" 
       border 
@@ -19,14 +19,15 @@
       <el-table-column prop="entity" label="实体名" min-width="120" align="center" />
       <el-table-column prop="applicant" label="申请人" min-width="120" align="center" />
       <el-table-column prop="applyTime" label="申请时间" min-width="160" align="center" />
-      <el-table-column label="操作" width="160" align="center">
+      <el-table-column label="操作" width="170" align="center">
         <template #default="scope">
           <el-button 
             type="primary" 
             plain 
             @click="handleGenerateDV" 
-            size="middle"
+            size="large"
             :disabled="scope.row.dataCredentialStatus === true"
+            style="font-size: 16px; padding: 12px 20px; font-weight: 600;"
           >
             生成数据凭证
           </el-button>
@@ -376,9 +377,16 @@ function getStatusTagType(status) {
   background-color: #f5f7fa !important;
   color: #606266 !important;
   font-weight: bold !important;
-  font-size: 14px !important;
+  font-size: 18px !important;
   text-align: center !important;
   padding: 12px 8px !important;
+}
+
+/* 表格内容样式 - 加大加粗字体 */
+:deep(.el-table__body td.el-table__cell) {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
 }
 
 /* 内容行样式 */
@@ -400,10 +408,10 @@ function getStatusTagType(status) {
 
 /* 申请状态标签样式 - 增大尺寸 */
 .status-tag-large {
-  padding: 8px 16px !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  min-width: 180px !important;
+  padding: 12px 20px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  min-width: 200px !important;
   text-align: center !important;
   white-space: nowrap !important;
   overflow: visible !important;

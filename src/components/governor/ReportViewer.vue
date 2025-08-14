@@ -381,7 +381,7 @@ defineExpose({
   padding: 16px 16px 16px 40px;
   white-space: pre-wrap;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.8;
   color: #303133;
   text-align: left;
