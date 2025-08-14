@@ -55,9 +55,9 @@
             v-loading="loading"
             element-loading-text="正在加载数据..."
           >
-            <el-table-column prop="entity" label="实体" width="300" align="center">
+            <el-table-column prop="entity" label="实体" width="260" align="center">
               <template #default="scope">
-                <el-link type="primary" @click="previewEntity(scope.row)">{{ scope.row.entity }}</el-link>
+                <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
             </el-table-column>
             <el-table-column prop="metadata" label="元数据信息" min-width="250" align="center">
@@ -102,7 +102,7 @@
                 <span v-else>-</span>
               </template>
             </el-table-column> -->
-            <el-table-column prop="constraint" label="约束条件" min-width="200" align="center">
+            <el-table-column prop="constraint" label="约束条件" min-width="180" align="center">
               <template #default="scope">
                 <div class="constraint-container">
                   <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -128,7 +128,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="transferControl" label="传输控制操作" min-width="180" align="center">
+            <el-table-column prop="transferControl" label="传输控制操作" min-width="140" align="center">
               <template #default="scope">
                 <div class="control-container">
                   <template v-if="scope.row.transferControl && scope.row.transferControl.length">
@@ -170,7 +170,7 @@
 
             <el-table-column prop="creatorName" label="数源方" width="150" align="center">
               <template #default="scope">
-                <span>{{ scope.row.creatorName || '浙江省税务局' }}</span>
+                <span class="creator-name">{{ scope.row.creatorName || '浙江省税务局' }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -1467,7 +1467,7 @@ const headerCellStyle = ({ column }) => {
       background: '#eaf6ff',
       color: '#1677c7',
       fontWeight: 'bold',
-      fontSize: '16px',
+      fontSize: '24px',
       textAlign: 'center',
       padding: '10px 0'
     };
@@ -1477,7 +1477,7 @@ const headerCellStyle = ({ column }) => {
     background: '#f5f7fa',
     color: '#606266',
     fontWeight: 'bold',
-    fontSize: '15px',
+    fontSize: '24px',
     textAlign: 'center',
     padding: '10px 0'
   };
@@ -1647,9 +1647,26 @@ onBeforeUnmount(() => {
   width: 300px;
 }
 
+:deep(.search-input .el-input__inner) {
+  font-size: 18px !important;
+  padding: 14px 18px !important;
+  height: 30px !important;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  padding: 14px 18px !important;
+}
+
 .action-buttons {
   display: flex;
   gap: 12px;
+}
+
+.action-buttons .el-button {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px 24px;
+  height: 48px;
 }
 
 /* 表格容器区域 */
@@ -1697,6 +1714,8 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   width: 100%;
   display: inline-block;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 /* 确保ID单元格不被全局样式覆盖 */
@@ -1723,8 +1742,31 @@ onBeforeUnmount(() => {
   background-color: #f5f7fa;
   color: #606266;
   font-weight: bold;
+  font-size: 24px !important;
   padding: 8px 0;
   text-align: center;
+}
+
+/* 表格整体字体样式 */
+:deep(.el-table) {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+:deep(.el-table th) {
+  font-size: 24px !important;
+  font-weight: 700;
+}
+
+:deep(.el-table td) {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 8px;
+}
+
+:deep(.el-table .cell) {
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 /* 状态标签样式 */
@@ -2064,6 +2106,19 @@ onBeforeUnmount(() => {
 
 .control-tag {
   margin: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 32px;
+  color: black;
+  border: 2px solid #409EFF;
+  border-radius: 6px;
+}
+
+/* 数源方样式 */
+.creator-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #303133;
 }
 
 /* 分类分级值样式 */
@@ -2077,17 +2132,18 @@ onBeforeUnmount(() => {
 .classification-level-item {
   display: flex;
   gap: 5px;
-  font-size: 12px;
+  font-size: 20px;
   line-height: 1.5;
 }
 
 .classification-level-item .label {
-  font-weight: bold;
+  font-weight: 700;
   color: #606266;
 }
 
 .classification-level-item .value {
-  color: #409EFF;
+  color: #2162de;
+  font-weight: 700;
 }
 
 /* 分类分级值样式 */
@@ -2144,5 +2200,17 @@ onBeforeUnmount(() => {
 
 .select-fields-link {
   text-decoration: underline;
+}
+
+/* 实体列换行样式 */
+.entity-link {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.4;
+  display: inline-block;
+  max-width: 100%;
+  font-size: 18px;
+  font-weight: 700;
 }
 </style>

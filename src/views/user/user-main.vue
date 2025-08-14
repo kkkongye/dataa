@@ -10,7 +10,7 @@
         <div class="table-title">我请求的数据对象列表</div>
         <!-- 搜索和操作区 -->
         <div class="action-bar">
-          <div class="search-area">
+          <!-- <div class="search-area">
             <el-input
               v-model="searchKeyword"
               placeholder="搜索实体名、约束条件、传输控制操作"
@@ -20,7 +20,7 @@
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-          </div>
+          </div> -->
           <div class="action-buttons">
             <el-button type="danger" plain @click="handleClearApplications" :loading="clearLoading">
               <el-icon><Delete /></el-icon>
@@ -64,30 +64,22 @@
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="150" align="center">
+            <el-table-column prop="entity" label="实体" width="180" align="center">
               <template #default="scope">
                 {{ scope.row.entity }}
               </template>
             </el-table-column>
-            <el-table-column prop="constraint" label="约束条件" width="330" align="center">
+            <el-table-column prop="constraint" label="约束条件" width="260" align="center">
               <template #default="scope">
                 <div class="constraint-container">
                   <template v-if="scope.row.constraint && scope.row.constraint.length">
                     <div 
-                      v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint]).length / 2)" 
-                      :key="rowIndex"
+                      v-for="(item, index) in (Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])" 
+                      :key="index"
                       class="constraint-row"
                     >
-                      <!-- 第一项 -->
-                      <div class="constraint-item-pair">
-                        <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2]" 
-                              v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2])"></span>
-                      </div>
-                      
-                      <!-- 第二项 -->
-                      <div class="constraint-item-pair">
-                        <span v-if="(Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1]" 
-                              v-html="formatConstraintText((Array.isArray(scope.row.constraint) ? scope.row.constraint : [scope.row.constraint])[rowIndex * 2 + 1])"></span>
+                      <div class="constraint-item">
+                        <span v-html="formatConstraintText(item)"></span>
                       </div>
                     </div>
                   </template>
@@ -125,21 +117,22 @@
                           size="large"
                           :hollow="step.hollow"
                         >
-                          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                          <div style="width: 100%;">
                             <div>
-                              <span :style="{ fontWeight: 'bold', color: step.color }">{{ step.content }}</span>
-                              <span v-if="step.extraInfo" style="font-weight: normal;">{{ step.extraInfo }}</span>
+                              <div :style="{ fontWeight: 'bold', color: step.color }">{{ step.content }}</div>
+                              <div v-if="step.extraInfo" style="font-weight: normal; margin-top: 4px; font-size: 20px; color: #666;">{{ step.extraInfo }}</div>
                             </div>
-                            <el-button 
-                              v-if="step.content === '待获得共享证书' && currentGroup && currentGroup.dataCredentialStatus && currentGroup.orgCredentialStatus && !currentGroup.sharedCertificateStatus"
-                              type="primary" 
-                              plain 
-                              @click="handleVerifySC"
-                              size="medium"
-                              style="margin-left: 20px;"
-                            >
-                              接受并验证共享证书
-                            </el-button>
+                            <div v-if="step.content === '待获得共享证书' && currentGroup && currentGroup.dataCredentialStatus && currentGroup.orgCredentialStatus && !currentGroup.sharedCertificateStatus" style="margin-top: 12px; text-align: center;">
+                              <el-button 
+                                type="primary" 
+                                plain 
+                                @click="handleVerifySC"
+                                size="large"
+                                style="padding: 12px 24px; font-size: 16px; font-weight: 600; min-width: 180px;"
+                              >
+                                接受并验证共享证书
+                              </el-button>
+                            </div>
                           </div>
                         </el-timeline-item>
                       </el-timeline>
@@ -721,9 +714,26 @@ onBeforeUnmount(() => {
   width: 300px;
 }
 
+:deep(.search-input .el-input__inner) {
+  font-size: 18px !important;
+  padding: 14px 18px !important;
+  height: 30px !important;
+}
+
+:deep(.search-input .el-input__wrapper) {
+  padding: 14px 18px !important;
+}
+
 .action-buttons {
   display: flex;
   gap: 12px;
+}
+
+.action-buttons .el-button {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px 24px;
+  height: 48px;
 }
 
 /* 表格容器区域 */
@@ -770,12 +780,13 @@ onBeforeUnmount(() => {
 
 :deep(.el-table .el-table__cell .cell) {
   padding: 0 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
   box-sizing: border-box;
   width: 100%;
   display: inline-block;
+  line-height: 1.4;
 }
 
 :deep(.el-table__row) {
@@ -790,9 +801,27 @@ onBeforeUnmount(() => {
   background-color: #f5f7fa;
   color: #606266;
   font-weight: bold;
+  font-size: 20px !important;
   padding: 8px 0;
   text-align: center;
   height: 45px !important;
+}
+
+/* 表格整体字体样式 */
+:deep(.el-table) {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+:deep(.el-table th) {
+  font-size: 24px !important;
+  font-weight: 700;
+}
+
+:deep(.el-table td) {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 8px;
 }
 
 /* 分页区域 */
@@ -817,17 +846,16 @@ onBeforeUnmount(() => {
 
 .constraint-row {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: center;
+  width: 100%;
 }
 
-.constraint-item-pair {
-  flex: 1;
-  text-align: left;
+.constraint-item {
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-left: 15px;
+  width: 100%;
 }
 
 :deep(.constraint-prefix) {
@@ -841,12 +869,19 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
-  padding: 4px;
+  gap: 8px;
+  padding: 6px;
+  color: black;
 }
 
 .control-tag {
   margin: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 32px;
+  color: black;
+  border: 2px solid #409EFF;
+  border-radius: 6px;
 }
 
 /* 表头信息部分样式 */
@@ -890,5 +925,26 @@ onBeforeUnmount(() => {
 /* 时间线组件文本对齐样式 */
 .el-timeline-item__content {
   text-align: left !important;
+}
+
+/* 申请状态时间线字体样式 */
+:deep(.el-timeline-item__content) {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+:deep(.el-timeline-item__content span) {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+/* 实体列自动换行样式 */
+:deep(.el-table__body .el-table__cell:nth-child(2) .cell) {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  line-height: 1.4 !important;
+  height: auto !important;
+  min-height: 40px !important;
 }
 </style>

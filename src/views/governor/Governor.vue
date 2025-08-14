@@ -14,7 +14,7 @@
           <div class="search-area">
               <el-input
                 v-model="searchKeyword"
-                placeholder="搜索实体名、约束条件、传输控制操作"
+                placeholder="搜索实体名、约束条件、传输控制"
                 class="search-input"
               >
                 <template #suffix>
@@ -53,7 +53,7 @@
                 <div class="id-cell">{{ scope.row.id }}</div>
               </template>
             </el-table-column>
-            <el-table-column prop="entity" label="实体" width="200" align="center">
+            <el-table-column prop="entity" label="实体" width="180" align="center">
               <template #default="scope">
                 <el-link type="primary" @click="previewEntity(scope.row)" class="entity-link">{{ scope.row.entity }}</el-link>
               </template>
@@ -171,7 +171,7 @@
                 <el-link type="primary" @click="showAuditLogDialog(scope.row)" class="audit-log-link">查看审计日志</el-link>
               </template>
             </el-table-column>
-            <el-table-column prop="classificationLevelValue" label="分类分级值" width="180" align="center">
+            <el-table-column prop="classificationLevelValue" label="分类分级值" width="150" align="center">
               <template #default="scope">
                 <div class="classification-level-container">
                   <div class="classification-level-item">
@@ -191,9 +191,20 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="creatorName" label="数源方" width="150" align="center">
+            <!-- <el-table-column label="操作" width="210" align="center">
               <template #default="scope">
-                <span>{{ scope.row.creatorName || '浙江省税务局' }}</span>
+                <div class="status-buttons">
+                  <el-button type="primary" size="small" plain @click="handleReview(scope.row)">自动化审查</el-button>
+                  <el-button type="warning" size="small" plain @click="previewEntity(scope.row)">手工审查</el-button>
+                </div>
+              </template>
+            </el-table-column> -->
+            <el-table-column label="操作" width="250" align="center">
+              <template #default="scope">
+                <div class="status-buttons">
+                  <el-button type="primary" size="small" plain @click="handleReview(scope.row)">自动化审查</el-button>
+                  <el-button type="warning" size="small" plain @click="previewEntity(scope.row)">手工审查</el-button>
+                </div>
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="130" align="center">
@@ -217,14 +228,9 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="210" align="center">
+            <el-table-column prop="creatorName" label="数源方" width="150" align="center">
               <template #default="scope">
-                <div class="status-buttons">
-                  <el-button type="primary" size="small" plain @click="handleReview(scope.row)">自动化审查</el-button>
-                  <!-- <el-button type="success" size="small" plain :disabled="scope.row.status === '已合格'" @click="updateStatus(scope.row, '已合格')">正确</el-button>
-                  <el-button type="danger" size="small" plain :disabled="scope.row.status === '不合格'" @click="updateStatus(scope.row, '不合格')">错误</el-button> -->
-                  <el-button type="warning" size="small" plain @click="previewEntity(scope.row)">手工审查</el-button>
-                </div>
+                <span>{{ scope.row.creatorName || '浙江省税务局' }}</span>
               </template>
             </el-table-column>
           </el-table>
@@ -2614,8 +2620,9 @@ onBeforeUnmount(() => {
 /* 按钮组样式 */
 .status-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -3034,7 +3041,7 @@ onBeforeUnmount(() => {
 .classification-level-item {
   display: flex;
   gap: 5px;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.5;
 }
 
