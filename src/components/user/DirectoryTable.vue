@@ -30,17 +30,19 @@
           :row-key="row => row.id"
           :span-method="spanMethod"
         >
-          <el-table-column prop="id" label="ID" width="320" show-overflow-tooltip>
+          <el-table-column prop="id" label="ID" width="220" show-overflow-tooltip>
             <template #default="scope">
               <div class="id-cell">{{ scope.row.id }}</div>
             </template>
           </el-table-column>
           <el-table-column prop="entity" label="实体" width="180">
             <template #default="scope">
-              <span class="entity-text">{{ scope.row.entity }}</span>
+              <div class="entity-container">
+                <span class="entity-text">{{ scope.row.entity }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column prop="constraint" label="约束条件" width="400" align="center">
+          <el-table-column prop="constraint" label="约束条件" width="420" align="center">
             <template #default="scope">
               <div class="constraint-container">
                 <template v-if="scope.row.constraint && scope.row.constraint.length">
@@ -66,20 +68,41 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="传输控制操作" width="200">
+          <el-table-column label="传输控制操作" width="180">
             <template #default="scope">
               <div class="control-container">
                 <template v-if="scope.row.transferControl && scope.row.transferControl.length">
-                  <el-tag
-                    v-for="(item, index) in (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])"
-                    :key="index"
-                    size="small"
-                    type="primary"
-                    effect="plain"
-                    class="control-tag"
+                  <div 
+                    v-for="(_, rowIndex) in Math.ceil((Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl]).length / 2)" 
+                    :key="rowIndex"
+                    class="control-row"
                   >
-                    {{ item }}
-                  </el-tag>
+                    <!-- 第一项 -->
+                    <div class="control-item-pair">
+                      <el-tag
+                        v-if="(Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])[rowIndex * 2]"
+                        size="small"
+                        type="primary"
+                        effect="plain"
+                        class="control-tag"
+                      >
+                        {{ (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])[rowIndex * 2] }}
+                      </el-tag>
+                    </div>
+                    
+                    <!-- 第二项 -->
+                    <div class="control-item-pair">
+                      <el-tag
+                        v-if="(Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])[rowIndex * 2 + 1]"
+                        size="small"
+                        type="primary"
+                        effect="plain"
+                        class="control-tag"
+                      >
+                        {{ (Array.isArray(scope.row.transferControl) ? scope.row.transferControl : [scope.row.transferControl])[rowIndex * 2 + 1] }}
+                      </el-tag>
+                    </div>
+                  </div>
                 </template>
                 <template v-else>-</template>
               </div>
@@ -94,13 +117,8 @@
                   plain 
                   @click="handleApplyForGroup" 
                   size="small"
+                  class="operation-btn"
                 >
-                <!-- <el-button 
-                  type="primary" 
-                  plain 
-                  @click="handleApplyForGroup" 
-                  size="small"
-                > -->
                   申请
                 </el-button>
                 <el-button 
@@ -109,6 +127,7 @@
                   plain 
                   disabled 
                   size="small"
+                  class="operation-btn"
                 >
                   已申请
                 </el-button>
@@ -118,6 +137,7 @@
                   plain 
                   @click="handleDecryptForGroup" 
                   size="small"
+                  class="operation-btn"
                 >
                   解密
                 </el-button>
@@ -127,6 +147,7 @@
                   plain 
                   disabled 
                   size="small"
+                  class="operation-btn"
                 >
                   已解密
                 </el-button>
@@ -746,7 +767,7 @@ function spanMethod({ row, column, rowIndex, columnIndex }) {
 
 .entity-text {
   color: #606266;
-  font-size: 14px;
+  font-size: 18px;
   padding: 0 5px;
 }
 
@@ -805,5 +826,77 @@ function spanMethod({ row, column, rowIndex, columnIndex }) {
 .group-info {
   font-size: 14px;
   font-weight: 500;
+}
+
+/* 实体容器自动分行样式 */
+.entity-container {
+  width: 100%;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.entity-text {
+  display: inline-block;
+  width: 100%;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+}
+
+/* 传输控制操作样式 - 参考治理方样式 */
+.control-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px;
+  color: black;
+}
+
+.control-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: center;
+}
+
+.control-item-pair {
+  flex: 1;
+  min-width: 0;
+}
+
+.control-tag {
+  margin: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 32px;
+  color: black;
+  border: 2px solid #409EFF;
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+}
+
+/* 申请和解密按钮加大加粗样式 */
+.operation-btn {
+  font-size: 14px !important;
+  font-weight: bold !important;
+  padding: 8px 16px !important;
+  min-width: 60px;
+  height: 32px;
+}
+
+.operation-btn span {
+  font-weight: bold;
+  font-size: 14px;
 }
 </style>

@@ -274,19 +274,19 @@ const tooltipFormatter = (params) => {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   };
   
-  return `<div style="font-weight:bold;margin-bottom:5px;">${item.entity || '未命名'}</div>
-          <div>数源方: ${item.creatorName || '浙江省税务局'}</div>
-          <div>申请时间: ${formatDateTime(date)}</div>
-          <div>行业分类: ${item.industry || '未分类'}</div>
-          <div>分类分级值: ${(parseFloat(item.totalCategoryValue || 0) + parseFloat(item.totalGradeValue || 0)).toFixed(4)}</div>
-          <div>状态: <span style="color:${item.statusColor}">${item.status || '未知'}</span></div>
-          <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;"><b>元数据信息:</b></div>
-          <div>数据名称: ${item.metadata?.dataName || '未知'}</div>
-          <div>来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
-          <div>联系人: ${item.metadata?.contactPerson || '未知'}</div>
-          <div>联系电话: ${item.metadata?.contactPhone || '未知'}</div>
-          <div>资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
-          <div>字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
+  return `<div style="font-weight:bold;margin-bottom:5px;font-size:24px;">${item.entity || '未命名'}</div>
+          <div style="font-size:20px;">数源方: ${item.creatorName || '浙江省税务局'}</div>
+          <div style="font-size:20px;">申请时间: ${formatDateTime(date)}</div>
+          <div style="font-size:20px;">行业分类: ${item.industry || '未分类'}</div>
+          <div style="font-size:20px;">分类分级值: ${(parseFloat(item.totalCategoryValue || 0) + parseFloat(item.totalGradeValue || 0)).toFixed(4)}</div>
+          <div style="font-size:20px;">状态: <span style="color:${item.statusColor}">${item.status || '未知'}</span></div>
+          <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px;font-size:22px;"><b>元数据信息:</b></div>
+          <div style="font-size:20px;">数据名称: ${item.metadata?.dataName || '未知'}</div>
+          <div style="font-size:20px;">来源单位: ${item.metadata?.sourceUnit || '未知'}</div>
+          <div style="font-size:20px;">联系人: ${item.metadata?.contactPerson || '未知'}</div>
+          <div style="font-size:20px;">联系电话: ${item.metadata?.contactPhone || '未知'}</div>
+          <div style="font-size:20px;">资源摘要: ${item.metadata?.resourceSummary || '未知'}</div>
+          <div style="font-size:20px;">字段分类: ${item.metadata?.fieldClassification || '未知'}</div>`;
 };
 
 // 原始模拟数据生成函数保留为备用方案
@@ -421,8 +421,13 @@ const forceRender = async () => {
           top: 'middle',
           orient: 'vertical',
           textStyle: {
-            color: '#333'
-          }
+            color: '#333',
+            fontSize: 18,
+            fontWeight: 'bold'
+          },
+          itemWidth: 20,
+          itemHeight: 14,
+          itemGap: 8
         },
         xAxis3D: {
           type: 'time',
@@ -540,8 +545,26 @@ const forceRender = async () => {
             formatter: function(value) {
               return parseFloat(value).toFixed(2);
             },
-            margin: 10,
-            fontSize: 12
+            margin: 16,
+            fontSize: 16,
+            show: true,
+            lineHeight: 23,
+            interval: 0,
+            textStyle: {
+              color: '#333',
+              fontWeight: 'bold',
+              fontSize: 16
+            }
+          },
+          axisTick: {
+            show: true,
+            interval: 0,
+            inside: false,
+            length: 6,
+            lineStyle: {
+              color: '#666666',
+              width: 2
+            }
           }
         },
         grid3D: {
@@ -1186,6 +1209,24 @@ onMounted(() => {
     if (chartContainer.value) {
       console.log('容器已找到，可在需要时初始化图表');
       console.log('容器尺寸:', chartContainer.value.offsetWidth, chartContainer.value.offsetHeight);
+      
+      // 监听图表渲染完成，修改图例样式
+      const observer = new MutationObserver(() => {
+        const legendTexts = chartContainer.value.querySelectorAll('text');
+        legendTexts.forEach(text => {
+          if (text.textContent && (text.textContent.includes('待校验') || 
+              text.textContent.includes('已合格') || 
+              text.textContent.includes('不合格'))) {
+            text.style.fontSize = '18px';
+            text.style.fontWeight = 'bold';
+          }
+        });
+      });
+      
+      observer.observe(chartContainer.value, {
+        childList: true,
+        subtree: true
+      });
     } else {
       console.warn('组件已挂载但容器引用未找到');
     }
@@ -1287,6 +1328,8 @@ defineExpose({
   border-bottom: 1px solid #f0f0f0;
   margin: 0 auto 5px auto;
   z-index: 4;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .control-items {
@@ -1307,5 +1350,70 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+:deep(.el-divider__text) {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+:deep(.el-switch__label) {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* 强制覆盖ECharts图例样式 */
+:deep(.ec-legend) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+:deep(.ec-legend-item) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+:deep(.ec-legend-item text) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+/* 更通用的ECharts文字选择器 */
+:deep(canvas + div) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+:deep([class*="legend"]) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+:deep([class*="visualMap"]) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+:deep([class*="visualMap"] text) {
+  font-size: 18px !important;
+  font-weight: bold !important;
+}
+
+/* 强制覆盖z轴刻度样式 */
+:deep(.echarts-for-react) text {
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+:deep([class*="axis"]) text {
+  font-size: 16px !important;
+  font-weight: bold !important;
+}
+
+:deep(g[class*="tick"]) text {
+  font-size: 16px !important;
+  font-weight: bold !important;
 }
 </style>

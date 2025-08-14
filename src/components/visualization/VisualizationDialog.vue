@@ -17,7 +17,7 @@
     <template #header>
       <div class="custom-header">
         <div class="dialog-title">三维数据可视化</div>
-        <el-button type="primary" class="list-button" @click="handleClose">
+        <el-button type="primary" class="list-button" @click="handleClose" size="large">
           <el-icon><Document /></el-icon>
           返回我请求的数据对象列表
         </el-button>
@@ -309,6 +309,7 @@ const handleDialogOpened = async () => {
 .visualization-dialog {
   display: flex;
   flex-direction: column;
+  font-size: 25px;
 }
 
 /* 自定义标题栏样式 */
@@ -321,13 +322,15 @@ const handleDialogOpened = async () => {
 }
 
 .dialog-title {
-  font-size: 18px;
+  font-size: 25px;
   font-weight: bold;
   color: #303133;
 }
 
 .list-button {
   margin-left: auto;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .visualization-content {
@@ -375,10 +378,15 @@ const handleDialogOpened = async () => {
   background: #fff;
 }
 
+.list-header .el-button {
+  font-size: 16px;
+  font-weight: bold;
+}
+
 .list-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: bold;
   color: #303133;
 }
 
@@ -396,6 +404,8 @@ const handleDialogOpened = async () => {
   height: 200px;
   color: #909399;
   text-align: center;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .empty-icon {
@@ -405,9 +415,10 @@ const handleDialogOpened = async () => {
 }
 
 .empty-tip {
-  font-size: 12px;
+  font-size: 16px;
   color: #c0c4cc;
   margin-top: 5px;
+  font-weight: bold;
 }
 
 .application-items {
@@ -438,17 +449,17 @@ const handleDialogOpened = async () => {
 }
 
 .item-id {
-  font-size: 12px;
+  font-size: 14px;
   color: #409eff;
-  font-weight: 600;
+  font-weight: bold;
   margin-bottom: 4px;
   word-break: break-all;
 }
 
 .item-name {
-  font-size: 14px;
+  font-size: 18px;
   color: #303133;
-  font-weight: 500;
+  font-weight: bold;
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -456,8 +467,9 @@ const handleDialogOpened = async () => {
 }
 
 .item-industry {
-  font-size: 12px;
+  font-size: 16px;
   color: #909399;
+  font-weight: bold;
 }
 
 .remove-btn {
@@ -473,6 +485,8 @@ const handleDialogOpened = async () => {
 
 .list-footer .el-button {
   width: 100%;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .manual-render-options {

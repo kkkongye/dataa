@@ -80,7 +80,7 @@
             <!-- <el-link type="primary" class="help-link" @click="showWeightForm = !showWeightForm">修改权重</el-link> -->
           </div>
           
-          <div class="grading-rule-card">②数据表中往往含有若干行，根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</div>
+          <div class="grading-rule-card">②根据每行记录的权重值与对所含字段分级值的平均值累加，得到行分级值;</div>
           
           <!-- 权重修改表单 -->
           <div v-if="showWeightForm" class="weight-form">
@@ -106,7 +106,7 @@
             <span class="value">{{ (tableGradeValue*0.001).toFixed(4) }}</span>
           </div>
           
-          <div class="grading-rule-card">③由表内总的记录数对应的分级值与对所有行的行分级值的最大值累加求得出表分级值;</div>
+          <div class="grading-rule-card">③由表内总记录数对应的分级值与对行分级值累加求得出表分级值;</div>
           
 
           <div class="level-item">
@@ -1349,26 +1349,29 @@ const handleColumnSizeChange = (size) => {
   width: 140px;
   text-align: right;
   margin-right: 10px;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: bold;
   color: #606266;
 }
 
 .value-display {
   margin-left: 15px;
   color: #409EFF;
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .value {
   font-weight: bold;
   color: #409EFF;
-  font-size: 16px;
+  font-size: 20px;
   margin-right: 15px;
 }
 
 .help-link {
   margin-left: 10px;
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .classification-result,
@@ -1381,20 +1384,21 @@ const handleColumnSizeChange = (size) => {
 }
 
 .formula {
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: bold;
   color: #606266;
   margin-bottom: 8px;
 }
 
 .calculation {
-  font-size: 15px;
+  font-size: 19px;
   color: #606266;
   font-weight: bold;
   margin-bottom: 10px;
 }
 
 .result-value {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   color: #409EFF;
   margin-bottom: 5px;
@@ -1429,6 +1433,8 @@ const handleColumnSizeChange = (size) => {
 .weight-label {
   margin-right: 10px;
   width: 150px;
+  font-size: 18px;
+  font-weight: bold;
   color: #606266;
 }
 
@@ -1451,14 +1457,16 @@ const handleColumnSizeChange = (size) => {
 .excel-data-preview h3 {
   margin-top: 0;
   margin-bottom: 15px;
-  font-size: 16px;
+  font-size: 20px;
+  font-weight: bold;
   color: #303133;
   text-align: center;
 }
 
 .data-info {
   margin-bottom: 10px;
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: bold;
   color: #606266;
 }
 
@@ -1470,7 +1478,8 @@ const handleColumnSizeChange = (size) => {
 
 .loading-text {
   margin-top: 10px;
-  font-size: 14px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .column-grade-cell {
@@ -1481,7 +1490,7 @@ const handleColumnSizeChange = (size) => {
 
 .column-grade-label {
   margin-right: 5px;
-  font-size: 12px;
+  font-size: 16px;
   color: #606266;
   font-weight: bold;
 }
@@ -1504,7 +1513,8 @@ const handleColumnSizeChange = (size) => {
   margin-bottom: 12px;
   margin-left: 140px;
   margin-right: 20px;
-  font-size: 15px;
+  font-size: 17px;
+  /* font-weight: bold; */
   color: #333;
   display: flex;
   align-items: center;
@@ -1517,5 +1527,15 @@ const handleColumnSizeChange = (size) => {
   align-items: center;
   margin-top: 15px;
   padding: 10px 0;
+}
+
+/* 选项卡标题样式 */
+:deep(.el-tabs__item) {
+  font-size: 20px !important;
+  font-weight: bold !important;
+}
+
+:deep(.el-tabs__nav-wrap) {
+  padding: 0 20px;
 }
 </style>
